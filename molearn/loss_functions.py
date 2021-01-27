@@ -246,7 +246,7 @@ class Auto_potential():
 
     def _conv_bond_loss(self, x):
         #x shape[B, 3, N]
-        loss=torch.tensor(0.0).float()
+        loss=torch.tensor(0.0).float().to(self.device)
         for i, weight in enumerate(self.b_weights):
             y = torch.nn.functional.conv1d(x, weight.view(1,1,-1).repeat(3,1,1).to(self.device), groups=3, padding=(len(weight)-2))
             loss+=(self.b_force[i]*((y.norm(dim=1)-self.b_equil[i])**2)).sum()
@@ -254,19 +254,19 @@ class Auto_potential():
 
     def _conv_angle_loss(self, x):
         #x shape[X, 3, N]
-        loss=torch.tensor(0.0).float()
+        loss=torch.tensor(0.0).float().to(self.device)
         for i, weight in enumerate(self.a_weights):
             v1 = torch.nn.functional.conv1d(x, weight[0].view(1,1,-1).repeat(3,1,1).to(self.device), groups=3, padding=(len(weight[0])-3))
             v2 = torch.nn.functional.conv1d(x, weight[1].view(1,1,-1).repeat(3,1,1).to(self.device), groups=3, padding=(len(weight[1])-3))
             xyz=torch.sum(v1*v2, dim=1) / (torch.norm(v1, dim=1) * torch.norm(v2, dim=1))
-            theta = torch.acos(torch.clamp(xyz, min=-0.999999, max=0.999999)) 
+            theta = torch.acos(torch.clamp(xyz, min=-0.999999, max=0.999999))
             energy = (self.a_force[i]*((theta-self.a_equil[i])**2)).sum(dim=0)[self.a_masks[i]].sum()
             loss+=energy
         return loss
 
     def _conv_torsion_loss(self, x):
         #x shape[X, 3, N]
-        loss=torch.tensor(0.0).float()
+        loss=torch.tensor(0.0).float().to(self.device)
         for i, weight in enumerate(self.t_weights):
             b1 = torch.nn.functional.conv1d(x, weight[0].view(1,1,-1).repeat(3,1,1).to(self.device), groups=3, padding=(len(weight[0])-4))#i-j
             b2 = torch.nn.functional.conv1d(x, weight[1].view(1,1,-1).repeat(3,1,1).to(self.device), groups=3, padding=(len(weight[1])-4))#j-k
@@ -281,9 +281,9 @@ class Auto_potential():
 
     def _roll_bond_angle_torsion_loss(self, x):
         #x.shape [5,3,2145]
-        bloss = torch.tensor(0.0).float()
-        aloss = torch.tensor(0.0).float()
-        tloss = torch.tensor(0.0).float()
+        bloss = torch.tensor(0.0).float().to(self.device)
+        aloss = torch.tensor(0.0).float().to(self.device)
+        tloss = torch.tensor(0.0).float().to(self.device)
         v = []
         for i, diff in enumerate(self.brdiff):
             v.append(x-x.roll(-diff,2))

@@ -27,11 +27,11 @@ floc = ["./test/MurD_test.pdb"] # test protein (contains only 16 conformations o
 batch_size = 4 # if this is too small, gpu utilization goes down
 epoch = 0
 iter_per_epoch = 5 #use higher iter_per_epoch = 1000 for smoother plots (iter_per_epoch = smoothness  of statistics)
-method = 'roll' # 3 method for  available in Auto_potential: 'roll', 'convolutional', 'indexing'
+method = 'convolutional' # 3 method for  available in Auto_potential: 'roll', 'convolutional', 'indexing'
 
 # load multiPDB and create loss function
 dataset, meanval, stdval, atom_names, mol, test0, test1 = load_data(floc[0], atoms = ["CA", "C", "N", "CB", "O"], device=device)
-lf = Auto_potential(frame=dataset[0]*stdval, pdb_atom_names=atom_names, method = method, device=device)
+lf = Auto_potential(frame=dataset[0]*stdval, pdb_atom_names=atom_names, method = method, device=torch.device('cpu'))
 
 # Saving test structures (the most extreme conformations in terms of RMSD)
 # Remember to rescale with stdval, permute axis from [3,N] to [N,3]
@@ -65,7 +65,6 @@ optimiser = torch.optim.Adam(network.parameters(), lr=0.001, amsgrad=True)
 while (epoch<200):
     print("> epoch: ", epoch)
     for i in range(iter_per_epoch):
-        print(i)
         # get two batches of training data
         x0 = next(iterator)[0].to(device)
         x1 = next(iterator)[0].to(device)
@@ -105,6 +104,7 @@ while (epoch<200):
         optimiser.step()
 
     #save interpolations between test0 and test1 every 5 epochs
+    epoch+=1
     if epoch%5 == 0:
         interpolation_out = torch.zeros(20, x0.size(2), 3)
         #encode test with each network
