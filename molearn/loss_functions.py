@@ -75,7 +75,7 @@ class Auto_potential():
             a_masks, a_equil, a_force, a_weights,
             t_masks, t_para, t_weights,
             vdw_R, vdw_e, vdw_14R, vdw_14e,
-            q1q2, q1q2_14 )=get_convolutions(frame, pdb_atom_names, fix_slice_method=False)
+            q1q2, q1q2_14 )=get_convolutions(frame, pdb_atom_names, fix_slice_method=True)
 
         self.brdiff=[]
         self.br_equil=[]
