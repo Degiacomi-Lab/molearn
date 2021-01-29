@@ -106,11 +106,11 @@ def load_data(f_name='test.pdb' , atoms=["CA", "C", "N", "CB", "O"],
 
     to_return = []
     ##########  get coordinates, meanval, stdval  ##########
+    crds = mol.coordinates.copy()
+    meanval = crds.mean()
+    stdval = crds.std()
+    crds = (crds-meanval)/stdval
     if get_crds:
-        crds = mol.coordinates.copy()
-        meanval = crds.mean()
-        stdval = crds.std()
-        crds = (crds-meanval)/stdval
         if padded_residues:
             # dataset.shape = [F, R, M, 3] 
             dataset=np.full((crds.shape[0], unique.shape[0], unique.max(),3), np.nan)
@@ -120,11 +120,6 @@ def load_data(f_name='test.pdb' , atoms=["CA", "C", "N", "CB", "O"],
                 total+=count
             dataset = torch.from_numpy(dataset).to(device)
         else:
-            crds = mol.coordinates.copy()
-            meanval = crds.mean()
-            stdval = crds.std()
-            crds = (crds-meanval)/stdval
-            crdsflat = np.reshape(crds, (crds.shape[0], crds.shape[1]*crds.shape[2]), order='F')
             dataset = torch.from_numpy(crds).to(device)
             # dataset.shape [F, N, 3] -> [F, 3, N]
             dataset = dataset.permute(0,2,1)
@@ -156,8 +151,8 @@ def load_data(f_name='test.pdb' , atoms=["CA", "C", "N", "CB", "O"],
         #BxB matrix
         #arg max returns index in a flattened array, np.unravel_index recreates index
         max_rmsd_index = np.unravel_index(rmsd_matrix.argmax(), rmsd_matrix.shape)
-        test0 = subset.coordinates[max_rmsd_index[0]].copy()
-        test1 = subset.coordinates[max_rmsd_index[1]].copy()
+        test0 = (subset.coordinates[max_rmsd_index[0]].copy()-meanval)/stdval
+        test1 = (subset.coordinates[max_rmsd_index[1]].copy()-meanval)/stdval
         to_return.append(torch.from_numpy(test0).to(device).permute(1,0))
         to_return.append(torch.from_numpy(test1).to(device).permute(1,0))
     return to_return

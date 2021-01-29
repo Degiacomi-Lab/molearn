@@ -70,7 +70,7 @@ class Auto_potential():
             return self._padded_residues_loss(x)
 
     def _roll_init(self, frame, pdb_atom_names, NB='full'):
-        from torch_potential import get_convolutions
+        from molearn import get_convolutions
         (b_masks, b_equil, b_force, b_weights,
             a_masks, a_equil, a_force, a_weights,
             t_masks, t_para, t_weights,
@@ -136,7 +136,7 @@ class Auto_potential():
             self._nb_loss = self._cdist_nb
 
     def _convolutional_init(self, frame, pdb_atom_names, NB='full'):
-        from torch_potential import get_convolutions
+        from molearn import get_convolutions
         (b_masks, b_equil, b_force, b_weights,
          a_masks, a_equil, a_force, a_weights,
          t_masks, t_para, t_weights,
@@ -166,7 +166,7 @@ class Auto_potential():
             self._nb_loss = self._cdist_nb
 
     def _padded_indexed_init(self, frame, pdb_atom_names, NB = 'full'):
-        from torch_potential import get_conv_pad_res
+        from molearn import get_conv_pad_res
         (bond_idxs, bond_para,
              angle_idxs, angle_para, angle_mask, ij_jk,
              torsion_idxs, torsion_para, torsion_mask, ij_jk_kl,
