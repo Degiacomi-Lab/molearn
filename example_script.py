@@ -27,7 +27,7 @@ floc = ["./test/MurD_test.pdb"] # test protein (contains only 16 conformations o
 batch_size = 4 # if this is too small, gpu utilization goes down
 epoch = 0
 iter_per_epoch = 5 #use higher iter_per_epoch = 1000 for smoother plots (iter_per_epoch = smoothness  of statistics)
-method = 'convolutional' # 3 method for  available in Auto_potential: 'roll', 'convolutional', 'indexing'
+method = 'roll' # 3 method for  available in Auto_potential: 'roll', 'convolutional', 'indexing'
 
 # load multiPDB and create loss function
 dataset, meanval, stdval, atom_names, mol, test0, test1 = load_data(floc[0], atoms = ["CA", "C", "N", "CB", "O"], device=device)

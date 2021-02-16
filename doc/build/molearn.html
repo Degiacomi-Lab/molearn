@@ -43,8 +43,8 @@
   <div class="section" id="loss-functions">
 <h1>loss functions<a class="headerlink" href="#loss-functions" title="Permalink to this headline">¶</a></h1>
 <dl class="py class">
-<dt id="torch_potential.Auto_potential">
-<em class="property">class </em><code class="sig-name descname">Auto_potential</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">frame</span></em>, <em class="sig-param"><span class="n">pdb_atom_names</span></em>, <em class="sig-param"><span class="n">padded_residues</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">method</span><span class="o">=</span><span class="default_value">'indexed'</span></em>, <em class="sig-param"><span class="n">device</span><span class="o">=</span><span class="default_value">device(type='cpu')</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torch_potential/loss_functions.html#Auto_potential"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torch_potential.Auto_potential" title="Permalink to this definition">¶</a></dt>
+<dt id="molearn.Auto_potential">
+<em class="property">class </em><code class="sig-name descname">Auto_potential</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">frame</span></em>, <em class="sig-param"><span class="n">pdb_atom_names</span></em>, <em class="sig-param"><span class="n">padded_residues</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">method</span><span class="o">=</span><span class="default_value">'roll'</span></em>, <em class="sig-param"><span class="n">device</span><span class="o">=</span><span class="default_value">device(type='cpu')</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/loss_functions.html#Auto_potential"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#molearn.Auto_potential" title="Permalink to this definition">¶</a></dt>
 <dd><p>At instantiation will load amber parameters and create the necessary convolutions/indexs/rolls to calculate the energy of the molecule. Energy can be assessed with the
 <code class="docutils literal notranslate"><span class="pre">Auto_conv_potential.get_loss(x)</span></code> method</p>
 <dl class="field-list simple">
@@ -59,17 +59,17 @@ and M is the maximum number of atoms in a residue.</p></li>
 <li><p><strong>padded_residues</strong> – If true the dataset should be formatted as <code class="docutils literal notranslate"><span class="pre">shape</span> <span class="pre">[R,</span> <span class="pre">M,</span> <span class="pre">3]</span></code> where R is the number of residues and M is the maximum number of atoms.
 Padding should be <code class="docutils literal notranslate"><span class="pre">nan</span></code>.
 <strong>Note</strong> only <code class="docutils literal notranslate"><span class="pre">method</span> <span class="pre">=</span> <span class="pre">&quot;indexed&quot;</span></code> is currently implemented currently for this.</p></li>
-<li><p><strong>method</strong> – <p><code class="docutils literal notranslate"><span class="pre">method</span> <span class="pre">=</span> <span class="pre">&quot;convolutional&quot;</span></code> method uses convolutions to calculate force (padded_residues=false only).</p>
+<li><p><strong>method</strong> – <p><code class="docutils literal notranslate"><span class="pre">method</span> <span class="pre">=</span> <span class="pre">&quot;convolutional&quot;</span></code> (currently experimental) method uses convolutions to calculate force (padded_residues=false only).</p>
 <p><code class="docutils literal notranslate"><span class="pre">method</span> <span class="pre">=</span> <span class="pre">&quot;roll&quot;</span></code> method uses rolling and slicing to calculate force (padded_residues = false only)</p>
-<p><code class="docutils literal notranslate"><span class="pre">method</span> <span class="pre">=</span> <span class="pre">&quot;indexed&quot;</span></code> method is only impremented for padded_residues=True. Uses indexes to calculate forces.</p>
+<p><code class="docutils literal notranslate"><span class="pre">method</span> <span class="pre">=</span> <span class="pre">&quot;indexed&quot;</span></code> (experimental) method is only impremented for padded_residues=True. Uses indexes to calculate forces.</p>
 </p></li>
 <li><p><strong>device</strong> – <code class="docutils literal notranslate"><span class="pre">torch.device(&quot;cuda&quot;)</span> <span class="pre">if</span> <span class="pre">torch.cuda.is_available()</span> <span class="pre">else</span> <span class="pre">torch.device(&quot;cpu&quot;)</span></code></p></li>
 </ul>
 </dd>
 </dl>
 <dl class="py method">
-<dt id="torch_potential.Auto_potential.get_loss">
-<code class="sig-name descname">get_loss</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torch_potential/loss_functions.html#Auto_potential.get_loss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torch_potential.Auto_potential.get_loss" title="Permalink to this definition">¶</a></dt>
+<dt id="molearn.Auto_potential.get_loss">
+<code class="sig-name descname">get_loss</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/loss_functions.html#Auto_potential.get_loss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#molearn.Auto_potential.get_loss" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>x</strong> – tensor of shape [B, 3, N] where B is batch_size, N is number of atoms. If padded_residues = True then tensor of shape [B, R, M, 3] where B is R is number of Residues and M is
@@ -93,11 +93,11 @@ the maximum number of atoms in a residue.</p>
 </dd></dl>
 
 </div>
-<div class="section" id="module-torch_potential">
-<span id="protein-loading"></span><h1>protein loading<a class="headerlink" href="#module-torch_potential" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="module-molearn">
+<span id="protein-loading"></span><h1>protein loading<a class="headerlink" href="#module-molearn" title="Permalink to this headline">¶</a></h1>
 <dl class="py function">
-<dt id="torch_potential.load_data">
-<code class="sig-name descname">load_data</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">f_name</span><span class="o">=</span><span class="default_value">'test.pdb'</span></em>, <em class="sig-param"><span class="n">atoms</span><span class="o">=</span><span class="default_value">['CA', 'C', 'N', 'CB', 'O']</span></em>, <em class="sig-param"><span class="n">restart</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">dataset_sample_size</span><span class="o">=</span><span class="default_value">- 1</span></em>, <em class="sig-param"><span class="n">get_crds</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">padded_residues</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">get_name_resname</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">get_max_rmsd</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">get_bb_mol</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">device</span><span class="o">=</span><span class="default_value">device(type='cpu')</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torch_potential/protein_handler.html#load_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torch_potential.load_data" title="Permalink to this definition">¶</a></dt>
+<dt id="molearn.load_data">
+<code class="sig-name descname">load_data</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">f_name</span><span class="o">=</span><span class="default_value">'test.pdb'</span></em>, <em class="sig-param"><span class="n">atoms</span><span class="o">=</span><span class="default_value">['CA', 'C', 'N', 'CB', 'O']</span></em>, <em class="sig-param"><span class="n">restart</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">dataset_sample_size</span><span class="o">=</span><span class="default_value">- 1</span></em>, <em class="sig-param"><span class="n">get_crds</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">padded_residues</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">get_name_resname</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">get_max_rmsd</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">get_bb_mol</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">device</span><span class="o">=</span><span class="default_value">device(type='cpu')</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/protein_handler.html#load_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#molearn.load_data" title="Permalink to this definition">¶</a></dt>
 <dd><p>This function will load and prepare data from a pdb file returning the data as a tuple of of the coordinates, dataset std, dataset mean.</p>
 <p>The coordinates of the dataset will be centered around the mean and scaled by the std <code class="docutils literal notranslate"><span class="pre">(dataset-dataset.mean())/dataset.std()</span></code>. Coordinates are usually represented in an array shape [B, N,
 3] where B is the number of conformations, N is the number of atoms and 3 is the dimensionality of the data (here cartesian). We permute the data to be shape [B, 3, N] so that we have 1D data
@@ -159,8 +159,8 @@ atoms per residue, 3 corresponds to the cartesian coordinates. The dataset is <c
 <div class="section" id="example-network">
 <h1>example network<a class="headerlink" href="#example-network" title="Permalink to this headline">¶</a></h1>
 <dl class="py class">
-<dt id="torch_potential.Autoencoder">
-<em class="property">class </em><code class="sig-name descname">Autoencoder</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">init_z</span><span class="o">=</span><span class="default_value">32</span></em>, <em class="sig-param"><span class="n">latent_z</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">depth</span><span class="o">=</span><span class="default_value">4</span></em>, <em class="sig-param"><span class="n">m</span><span class="o">=</span><span class="default_value">1.5</span></em>, <em class="sig-param"><span class="n">r</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">droprate</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torch_potential/networks.html#Autoencoder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torch_potential.Autoencoder" title="Permalink to this definition">¶</a></dt>
+<dt id="molearn.Autoencoder">
+<em class="property">class </em><code class="sig-name descname">Autoencoder</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">init_z</span><span class="o">=</span><span class="default_value">32</span></em>, <em class="sig-param"><span class="n">latent_z</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">depth</span><span class="o">=</span><span class="default_value">4</span></em>, <em class="sig-param"><span class="n">m</span><span class="o">=</span><span class="default_value">1.5</span></em>, <em class="sig-param"><span class="n">r</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">droprate</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/networks.html#Autoencoder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#molearn.Autoencoder" title="Permalink to this definition">¶</a></dt>
 <dd><p>Simple 1D convolutional Autoencoder with residueal blocks</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -176,8 +176,8 @@ atoms per residue, 3 corresponds to the cartesian coordinates. The dataset is <c
 </dd>
 </dl>
 <dl class="py method">
-<dt id="torch_potential.Autoencoder.decode">
-<code class="sig-name descname">decode</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torch_potential/networks.html#Autoencoder.decode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torch_potential.Autoencoder.decode" title="Permalink to this definition">¶</a></dt>
+<dt id="molearn.Autoencoder.decode">
+<code class="sig-name descname">decode</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/networks.html#Autoencoder.decode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#molearn.Autoencoder.decode" title="Permalink to this definition">¶</a></dt>
 <dd><p>Decode the latent coordinates</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -190,8 +190,8 @@ atoms per residue, 3 corresponds to the cartesian coordinates. The dataset is <c
 </dd></dl>
 
 <dl class="py method">
-<dt id="torch_potential.Autoencoder.encode">
-<code class="sig-name descname">encode</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/torch_potential/networks.html#Autoencoder.encode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#torch_potential.Autoencoder.encode" title="Permalink to this definition">¶</a></dt>
+<dt id="molearn.Autoencoder.encode">
+<code class="sig-name descname">encode</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/networks.html#Autoencoder.encode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#molearn.Autoencoder.encode" title="Permalink to this definition">¶</a></dt>
 <dd><p>Encode the data to the latent space</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -217,7 +217,7 @@ atoms per residue, 3 corresponds to the cartesian coordinates. The dataset is <c
   <h3><a href="index.html">Table of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">loss functions</a></li>
-<li><a class="reference internal" href="#module-torch_potential">protein loading</a></li>
+<li><a class="reference internal" href="#module-molearn">protein loading</a></li>
 <li><a class="reference internal" href="#example-network">example network</a></li>
 </ul>
 

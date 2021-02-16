@@ -19,7 +19,7 @@ from copy import deepcopy
 class Auto_potential():
     def __init__(self, frame, pdb_atom_names,
                 padded_residues=False,
-                method =('indexed', 'convolutional', 'roll')[0],
+                method =('indexed', 'convolutional', 'roll')[2],
                 device=torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')):
 
         '''
@@ -35,11 +35,11 @@ class Auto_potential():
         :param padded_residues: If true the dataset should be formatted as ``shape [R, M, 3]`` where R is the number of residues and M is the maximum number of atoms.
             Padding should be ``nan``.
             **Note** only ``method = "indexed"`` is currently implemented currently for this.
-        :param method: ``method = "convolutional"`` method uses convolutions to calculate force (padded_residues=false only).
+        :param method: ``method = "convolutional"`` (currently experimental) method uses convolutions to calculate force (padded_residues=false only).
 
             ``method = "roll"`` method uses rolling and slicing to calculate force (padded_residues = false only)
 
-            ``method = "indexed"`` method is only impremented for padded_residues=True. Uses indexes to calculate forces.
+            ``method = "indexed"`` (experimental) method is only impremented for padded_residues=True. Uses indexes to calculate forces.
         :param device: ``torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")``
         '''
         self.device = device
