@@ -23,7 +23,10 @@ def load_data(f_name='test.pdb' , atoms=["CA", "C", "N", "CB", "O"],
         padded_residues=False,
         get_name_resname=True,
         get_max_rmsd=True,
+        rmsd_from_file='',
         get_bb_mol=True,
+        ignore_atoms=[],
+        vdw=False,
         device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu'),
              ):
     '''
@@ -78,11 +81,14 @@ def load_data(f_name='test.pdb' , atoms=["CA", "C", "N", "CB", "O"],
     #loading dataset
     mol = biobox.Molecule()
     mol.import_pdb(f_name)
-    _, idxs = mol.atomselect("*", "*", atoms, get_index=True)
 
     if atoms == "*":
         #list like default above of atom names
         atoms = list(np.unique(mol.data["name"].values))
+        if ignore_atoms:
+            for to_remove in ignore_atoms:
+                if to_remove in atoms:
+                    atoms.remove(to_remove)
     if restart:
         conformations = np.load('dataset_conformations.npy')
     else:
@@ -91,6 +97,7 @@ def load_data(f_name='test.pdb' , atoms=["CA", "C", "N", "CB", "O"],
         else:
             conformations = np.random.permutation(mol.coordinates.shape[0])[:dataset_sample_size]
         np.save('dataset_conformations.npy',conformations)
+    _, idxs = mol.atomselect("*", "*", atoms, get_index=True)
     mol = mol.get_subset(idxs,conformations)
     print('Conformations: (also saved to dataset_conformations.npy)')
     print(conformations)
@@ -143,11 +150,20 @@ def load_data(f_name='test.pdb' , atoms=["CA", "C", "N", "CB", "O"],
         to_return.append(mol)
     if get_max_rmsd:
         _, idxs = mol.atomselect("*", "*", atoms, get_index=True)
-        conformations = np.random.permutation(mol.coordinates.shape[0])[:min(dataset_sample_size,1000)] #limit to 1000 structures otherwise it takes forever
-        subset = mol.get_subset(idxs,conformations)
-        print('Determine rmsd matrix')
-        rmsd_matrix = subset.rmsd_distance_matrix()
-        print('rmsd calcs Done')
+        if rmsd_from_file:
+            print('Getting rmsd from file: ', rmsd_from_file)
+            if conformations:
+                rmsd_matrix = np.load(rmsd_from_file)[conformations, conformations]
+            else:
+                rmsd_matrix = np.load(rmsd_from_file)
+            subset = mol.get_subset(idxs,conformations)
+        else:
+            conformations = np.random.permutation(mol.coordinates.shape[0])[:min(dataset_sample_size,1000)] #limit to 1000 structures otherwise it takes forever
+            subset = mol.get_subset(idxs,conformations)
+            print('Determine rmsd matrix')
+            rmsd_matrix = subset.rmsd_distance_matrix()
+            print('rmsd calcs Done')
+            np.save('rmsd_matrix.npy', rmsd_matrix)
         #BxB matrix
         #arg max returns index in a flattened array, np.unravel_index recreates index
         max_rmsd_index = np.unravel_index(rmsd_matrix.argmax(), rmsd_matrix.shape)
@@ -155,6 +171,13 @@ def load_data(f_name='test.pdb' , atoms=["CA", "C", "N", "CB", "O"],
         test1 = (subset.coordinates[max_rmsd_index[1]].copy()-meanval)/stdval
         to_return.append(torch.from_numpy(test0).to(device).permute(1,0))
         to_return.append(torch.from_numpy(test1).to(device).permute(1,0))
+    if vdw:
+        #mol.assign_atomtype()
+        types_all = mol.get_data(columns=['atomtype'])[:, 0]
+        vdw_all=[]
+        for atype in types_all:
+            vdw_all.append(mol.know("atom_vdw")[atype])
+        to_return.append(vdw_all)
     return to_return
 
 def read_lib_file(file_name, amber_atoms, atom_charge):
@@ -478,7 +501,9 @@ def get_convolutions(dataset, pdb_atom_names,
                               NB=('matrix',)[0],
                               fix_terminal=True,
                               fix_charmm_residues=True,
-                              fix_slice_method=False
+                              fix_slice_method=False,
+                              fix_h=False,
+                              alt_vdw = []
                              ):
     '''
     ##INPUTS##
@@ -540,9 +565,72 @@ def get_convolutions(dataset, pdb_atom_names,
     if fix_charmm_residues:
         pdb_atom_names[pdb_atom_names[:,1]=='HSD',1]='HID'
         pdb_atom_names[pdb_atom_names[:,1]=='HSE',1]='HIE'
+    if fix_h:
+        pdb_atom_names[np.logical_and(pdb_atom_names[:,0]=='HB1', pdb_atom_names[:,1]=='MET'),0]='HB3'
+        pdb_atom_names[np.logical_and(pdb_atom_names[:,0]=='HG1', pdb_atom_names[:,1]=='MET'),0]='HG3'
+        pdb_atom_names[np.logical_and(pdb_atom_names[:,0]=='HB1', pdb_atom_names[:,1]=='ASN'),0]='HB3'
+        pdb_atom_names[pdb_atom_names[:,0]=='HN',0]='H'
+        pdb_atom_names[pdb_atom_names[:,0]=='1HD2',0]='HD21'
+        pdb_atom_names[pdb_atom_names[:,0]=='2HD2',0]='HD22'
+        pdb_atom_names[pdb_atom_names[:,0]=='1HG2',0]='HG21'
+        pdb_atom_names[pdb_atom_names[:,0]=='2HG2',0]='HG22'
+        pdb_atom_names[pdb_atom_names[:,0]=='3HG2',0]='HG23'
+        pdb_atom_names[pdb_atom_names[:,0]=='3HG1',0]='HG13'
+        pdb_atom_names[pdb_atom_names[:,0]=='1HG1',0]='HG11'
+        pdb_atom_names[pdb_atom_names[:,0]=='2HG1',0]='HG12'
+        pdb_atom_names[pdb_atom_names[:,0]=='1HD1',0]='HD11'
+        pdb_atom_names[pdb_atom_names[:,0]=='2HD1',0]='HD12'
+        pdb_atom_names[pdb_atom_names[:,0]=='3HD1',0]='HD13'
+        pdb_atom_names[pdb_atom_names[:,0]=='3HD2',0]='HD23'
+        pdb_atom_names[pdb_atom_names[:,0]=='1HH1',0]='HH11'
+        pdb_atom_names[pdb_atom_names[:,0]=='2HH1',0]='HH12'
+        pdb_atom_names[pdb_atom_names[:,0]=='1HH2',0]='HH21'
+        pdb_atom_names[pdb_atom_names[:,0]=='2HH2',0]='HH22'
+        pdb_atom_names[pdb_atom_names[:,0]=='1HE2',0]='HE21'
+        pdb_atom_names[pdb_atom_names[:,0]=='2HE2',0]='HE22'
+        pdb_atom_names[np.logical_and(pdb_atom_names[:,0]=='HG11', pdb_atom_names[:,1]=='ILE'),0]='HG13'
+        pdb_atom_names[np.logical_and(pdb_atom_names[:,0]=='CD', pdb_atom_names[:,1]=='ILE'),0]='CD1'
+        pdb_atom_names[np.logical_and(pdb_atom_names[:,0]=='HD1', pdb_atom_names[:,1]=='ILE'),0]='HD11'
+        pdb_atom_names[np.logical_and(pdb_atom_names[:,0]=='HD2', pdb_atom_names[:,1]=='ILE'),0]='HD12'
+        pdb_atom_names[np.logical_and(pdb_atom_names[:,0]=='HD3', pdb_atom_names[:,1]=='ILE'),0]='HD13'
+        pdb_atom_names[np.logical_and(pdb_atom_names[:,0]=='HB1', pdb_atom_names[:,1]=='PHE'),0]='HB3'
+        pdb_atom_names[np.logical_and(pdb_atom_names[:,0]=='HB1', pdb_atom_names[:,1]=='GLU'),0]='HB3'
+        pdb_atom_names[np.logical_and(pdb_atom_names[:,0]=='HG1', pdb_atom_names[:,1]=='GLU'),0]='HG3'
+        pdb_atom_names[np.logical_and(pdb_atom_names[:,0]=='HB1', pdb_atom_names[:,1]=='LEU'),0]='HB3'
+        pdb_atom_names[np.logical_and(pdb_atom_names[:,0]=='HB1', pdb_atom_names[:,1]=='ARG'),0]='HB3'
+        pdb_atom_names[np.logical_and(pdb_atom_names[:,0]=='HG1', pdb_atom_names[:,1]=='ARG'),0]='HG3'
+        pdb_atom_names[np.logical_and(pdb_atom_names[:,0]=='HD1', pdb_atom_names[:,1]=='ARG'),0]='HD3'
+        pdb_atom_names[np.logical_and(pdb_atom_names[:,0]=='HB1', pdb_atom_names[:,1]=='ASP'),0]='HB3'
+        pdb_atom_names[np.logical_and(pdb_atom_names[:,0]=='HA1', pdb_atom_names[:,1]=='GLY'),0]='HA3'
+        pdb_atom_names[np.logical_and(pdb_atom_names[:,0]=='HB1', pdb_atom_names[:,1]=='LYS'),0]='HB3'
+        pdb_atom_names[np.logical_and(pdb_atom_names[:,0]=='HG1', pdb_atom_names[:,1]=='LYS'),0]='HG3'
+        pdb_atom_names[np.logical_and(pdb_atom_names[:,0]=='HD1', pdb_atom_names[:,1]=='LYS'),0]='HD3'
+        pdb_atom_names[np.logical_and(pdb_atom_names[:,0]=='HE1', pdb_atom_names[:,1]=='LYS'),0]='HE3'
+        pdb_atom_names[np.logical_and(pdb_atom_names[:,0]=='HB1', pdb_atom_names[:,1]=='TYR'),0]='HB3'
+        pdb_atom_names[np.logical_and(pdb_atom_names[:,0]=='HB1', pdb_atom_names[:,1]=='HIP'),0]='HB3'
+        pdb_atom_names[np.logical_and(pdb_atom_names[:,0]=='HB1', pdb_atom_names[:,1]=='SER'),0]='HB3'
+        pdb_atom_names[np.logical_and(pdb_atom_names[:,0]=='HG1', pdb_atom_names[:,1]=='SER'),0]='HG'
+        pdb_atom_names[np.logical_and(pdb_atom_names[:,0]=='HB1', pdb_atom_names[:,1]=='PRO'),0]='HB3'
+        pdb_atom_names[np.logical_and(pdb_atom_names[:,0]=='HG1', pdb_atom_names[:,1]=='PRO'),0]='HG3'
+        pdb_atom_names[np.logical_and(pdb_atom_names[:,0]=='HD1', pdb_atom_names[:,1]=='PRO'),0]='HD3'
+        pdb_atom_names[np.logical_and(pdb_atom_names[:,0]=='HB1', pdb_atom_names[:,1]=='LEU'),0]='HB3'
+        pdb_atom_names[np.logical_and(pdb_atom_names[:,0]=='HB1', pdb_atom_names[:,1]=='GLN'),0]='HB3'
+        pdb_atom_names[np.logical_and(pdb_atom_names[:,0]=='HG1', pdb_atom_names[:,1]=='GLN'),0]='HG3'
+        pdb_atom_names[np.logical_and(pdb_atom_names[:,0]=='HB1', pdb_atom_names[:,1]=='TRP'),0]='HB3'
 
     atom_names = [[amber_atoms[res][atom],res] for atom, res in pdb_atom_names ]
     atom_charges=[other_parameters['charge'][res][atom] for atom, res in atom_names]
+    if NB == 'matrix':
+        equiv_t=other_parameters['equivalences']
+        vdw_para = other_parameters['vdw_potential_well_depth']
+        #switch these around so that values point to key
+        equiv = {}
+        for i in equiv_t.keys():
+            j = equiv_t[i]
+            for k in j:
+                equiv[k]=i
+        atom_R = torch.tensor([vdw_para[equiv.get(i,i)][0] for i, j in atom_names]) #radius
+        atom_e = torch.tensor([vdw_para[equiv.get(i,i)][1] for i, j in atom_names]) #welldepth
 
     print('Determining bonds')
     version = v # method of selecting bonded atoms
@@ -562,8 +650,23 @@ def get_convolutions(dataset, pdb_atom_names,
         mid = cmat[bond_idxs[-1]]+((cmat[u]-cmat[bond_idxs[-1]])/2) #mid point 
         full_mask = (cmat<mid).astype('int8')
     if version == 2:
-        full_mask = (cmat<(1.643+2.129)/2).astype('int8') 
+        full_mask = (cmat<(1.643+2.129)/2).astype('int8')
         bond_idxs = np.where(full_mask)[0] # for some reason returns tuple with one array
+    if version == 3:
+        if alt_vdw:
+            vdw = torch.tensor(alt_vdw)
+            max_bond_dist = (0.6*(vdw.view(1,-1)+vdw.view(-1,1)))
+            cdist = torch.cdist(dataset.T,dataset.T)
+            i,j = np.where((max_bond_dist>cdist).triu(diagonal=1).numpy())
+            remove = np.where(np.abs(j-i)>30)
+            max_bond_dist[i[remove],j[remove]]=0.0
+            max_bond_dist = max_bond_dist.numpy()
+        else:
+            max_bond_dist = (0.6*(atom_R.view(1,-1)+atom_R.view(-1,1))).cpu().numpy()
+        max_bond_dist = max_bond_dist[np.where(np.triu(np.ones((N,N)),k=1))]
+        full_mask = np.greater(max_bond_dist,cmat)
+        bond_idxs = np.where(full_mask)[0] # for some reason returns tuple with one array
+
     all_bond_idxs = np.sort(bond_idxs)
 
     bond_types = []
@@ -770,16 +873,6 @@ def get_convolutions(dataset, pdb_atom_names,
         t_para[i,mask_index] = torsion_para[(torsion_conv==torsion).all(axis=1)]
 
     if NB=='matrix':
-        equiv_t=other_parameters['equivalences']
-        vdw_para = other_parameters['vdw_potential_well_depth']
-        #switch these around so that values point to key
-        equiv = {}
-        for i in equiv_t.keys():
-            j = equiv_t[i]
-            for k in j:
-                equiv[k]=i
-        atom_R = torch.tensor([vdw_para[equiv.get(i,i)][0] for i, j in atom_names]) #radius
-        atom_e = torch.tensor([vdw_para[equiv.get(i,i)][1] for i, j in atom_names]) #welldepth
         #cdist is easier to work with than pdist, batch pdist was removed from torch and has not been readded as of writting this
         vdw_R = 0.5*torch.cdist(atom_R.view(-1,1), -atom_R.view(-1, 1)).triu(diagonal=1)
         vdw_e = (atom_e.view(1,-1)*atom_e.view(-1, 1)).triu(diagonal=1).sqrt()
