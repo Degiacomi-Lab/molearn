@@ -32,6 +32,11 @@ molearn requires no installation. Simply clone the repository and make sure the 
 ## Usage ##
 See the example script "*example_script.py*" and the documentation in the **doc** folder
 
+## Reference ##
+
+If you use molearn in your work, please cite:
+[V.K. Ramaswamy, S.C. Musson, C.G. Willcocks, M.T. Degiacomi (2021). Learning protein conformational space with convolutions and latent interpolations, Physical Review X 11](
+https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.011052)
 
 ## Contact ##
 
