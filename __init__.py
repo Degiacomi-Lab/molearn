@@ -13,6 +13,7 @@
 __author__ = "V. K. Ramaswamy, S. C. Musson, C. G. Willcocks, M. T. Degiacomi"
 __version__ = '1.0'
 __date__ = '$Date: 2021-01-01 $'
-from .loss_functions import Auto_potential
-from .protein_handler import *
-from .networks import *
+from .molearn import *
+#from .molearn.loss_functions import Auto_potential
+#from .molearn.protein_handler import *
+#from .molearn.networks import *

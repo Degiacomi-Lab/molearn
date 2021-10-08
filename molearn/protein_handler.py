@@ -565,6 +565,7 @@ def get_convolutions(dataset, pdb_atom_names,
     if fix_charmm_residues:
         pdb_atom_names[pdb_atom_names[:,1]=='HSD',1]='HID'
         pdb_atom_names[pdb_atom_names[:,1]=='HSE',1]='HIE'
+        pdb_atom_names[pdb_atom_names[:,1]=='HIS',1]='HIE'
     if fix_h:
         pdb_atom_names[np.logical_and(pdb_atom_names[:,0]=='HB1', pdb_atom_names[:,1]=='MET'),0]='HB3'
         pdb_atom_names[np.logical_and(pdb_atom_names[:,0]=='HG1', pdb_atom_names[:,1]=='MET'),0]='HG3'
