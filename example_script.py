@@ -80,7 +80,7 @@ while (epoch<200):
 
         #decode
         out = network.decode(z0)[:,:,:x0.size(2)]
-        out_interpolated = network.decode(z0)[:,:,:x0.size(2)]
+        out_interpolated = network.decode(z_interpolated)[:,:,:x0.size(2)]
 
         #calculate MSE
         mse_loss = ((x0-out)**2).mean() # reconstructive loss (Mean square error)
