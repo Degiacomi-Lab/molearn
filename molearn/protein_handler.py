@@ -145,7 +145,7 @@ def load_data(f_name='test.pdb' , atoms=["CA", "C", "N", "CB", "O"],
                 total += count
             to_return.append(padded_names)
         else:
-            to_return.append(mol.get_data(columns=['name', 'resname']))
+            to_return.append(mol.get_data(columns=['name', 'resname','resid']))
     if get_bb_mol:
         to_return.append(mol)
     if get_max_rmsd:
@@ -180,7 +180,7 @@ def load_data(f_name='test.pdb' , atoms=["CA", "C", "N", "CB", "O"],
         to_return.append(vdw_all)
     return to_return
 
-def read_lib_file(file_name, amber_atoms, atom_charge):
+def read_lib_file(file_name, amber_atoms, atom_charge, connectivity):
     try:
         f_in = open('./parameters/'+file_name)
         print('File %s opened' % file_name)
@@ -190,6 +190,7 @@ def read_lib_file(file_name, amber_atoms, atom_charge):
 
     lines = f_in.readlines()
     depth = 0
+    indexs = {}
     for tline in lines:
         if tline.split()==['!!index', 'array', 'str']:
             depth+=1
@@ -203,16 +204,17 @@ def read_lib_file(file_name, amber_atoms, atom_charge):
                 if res[0]=='"' and res[-1] =='"':
                    amber_atoms[res[1:-1]]={}
                    atom_charge[res[1:-1]]={}
+                   indexs[res[1:-1]]={}
+                   connectivity[res[1:-1]]={}
                 else:
                    raise Exception(('I was expecting something of the form'
                                        +'"XXX" but got %s instead' % res))
                 depth+=1
             break
         depth+=1
-
     for i, tline in enumerate(lines):
-        entry, res, section = tline[0:7],tline[7:10], tline[10:22]
-        if entry=='!entry.' and section=='.unit.atoms ':
+        entry, res, unit_atoms, unit_connectivity = tline[0:7],tline[7:10], tline[10:22], tline[10:29]
+        if entry=='!entry.' and unit_atoms=='.unit.atoms ':
             depth=i+1
             for line in lines[depth:]:
                 if line[ 0]!=' ':
@@ -220,14 +222,28 @@ def read_lib_file(file_name, amber_atoms, atom_charge):
                 contents = line.split()
                 if len(contents)<3 and len(contents[0])>4 and len(contents[1])>4:
                     break
-                pdb_name, amber_name,_,_,_,_,_,charge = contents
+                pdb_name, amber_name,_,_,_,index,element_number,charge = contents
                 if (pdb_name[0]=='"' and pdb_name[-1]=='"'
                     and amber_name[0]=='"' and amber_name[-1]=='"'):
                     amber_atoms[res][contents[0][1:-1]] = contents[1][1:-1]
                     atom_charge[res][amber_name[1:-1]] = float(charge)
+                    #indexs[res][amber_name[1:-1]] = int(index)
+                    indexs[res][int(index)] = amber_name[1:-1]
+                    connectivity[res][amber_name[1:-1]] = []
                 else:
                    raise Exception(('I was expecting something of the form'
                                        +'"XXX" but got %s instead' % res))
+        elif entry=='!entry.' and unit_connectivity=='.unit.connectivity ':
+            depth=i+1
+            for line in lines[depth:]:
+                if line[0]!=' ':
+                    break
+                contents = line.split()
+                if len(contents)!=3:
+                    break
+                a1,a2,flag = contents
+                connectivity[res][indexs[res][int(a1)]].append(indexs[res][int(a2)])
+                connectivity[res][indexs[res][int(a2)]].append(indexs[res][int(a1)])
 
 def get_amber_parameters(order=False, radians=True):
 
@@ -258,8 +274,8 @@ def get_amber_parameters(order=False, radians=True):
     other_parameters['H_bond_10_12_parameters']={}
     other_parameters['equivalences']={}
     other_parameters['charge']={}
-
-    read_lib_file(file_names[0],amber_atoms,other_parameters['charge'])
+    other_parameters['connectivity']={}
+    read_lib_file(file_names[0],amber_atoms,other_parameters['charge'], other_parameters['connectivity'])
 
     try:
         f_in = open('./parameters/'+file_names[1])
@@ -494,7 +510,7 @@ def amber_card_type_10B(f_in, other_parameters):
 def get_convolutions(dataset, pdb_atom_names,
                               atom_label=('set','string')[0],
                               perform_checks=True,
-                              v=2,
+                              v=4,
                               order=False,
                               return_type=['mask','idxs'][1],
                               absolute_torsion_period=True,
@@ -503,7 +519,8 @@ def get_convolutions(dataset, pdb_atom_names,
                               fix_charmm_residues=True,
                               fix_slice_method=False,
                               fix_h=False,
-                              alt_vdw = []
+                              alt_vdw = [],
+                              permitivity=1.0
                              ):
     '''
     ##INPUTS##
@@ -565,7 +582,15 @@ def get_convolutions(dataset, pdb_atom_names,
     if fix_charmm_residues:
         pdb_atom_names[pdb_atom_names[:,1]=='HSD',1]='HID'
         pdb_atom_names[pdb_atom_names[:,1]=='HSE',1]='HIE'
-        pdb_atom_names[pdb_atom_names[:,1]=='HIS',1]='HIE'
+        for i in np.unique(pdb_atom_names[:,2]):
+            res_mask = pdb_atom_names[:,2]==i
+            if (pdb_atom_names[res_mask, 1]=='HIS').all(): # if a HIS residue
+                if (pdb_atom_names[res_mask, 0]=='HD1').any() and (pdb_atom_names[res_mask, 0]=='HE2').any():
+                    pdb_atom_names[res_mask, 1]='HIP'
+                elif (pdb_atom_names[res_mask, 0]=='HD1').any():
+                    pdb_atom_names[res_mask, 1]='HID'
+                elif (pdb_atom_names[res_mask, 0]=='HE2').any():
+                    pdb_atom_names[res_mask, 1]='HIE'
     if fix_h:
         pdb_atom_names[np.logical_and(pdb_atom_names[:,0]=='HB1', pdb_atom_names[:,1]=='MET'),0]='HB3'
         pdb_atom_names[np.logical_and(pdb_atom_names[:,0]=='HG1', pdb_atom_names[:,1]=='MET'),0]='HG3'
@@ -618,9 +643,10 @@ def get_convolutions(dataset, pdb_atom_names,
         pdb_atom_names[np.logical_and(pdb_atom_names[:,0]=='HB1', pdb_atom_names[:,1]=='GLN'),0]='HB3'
         pdb_atom_names[np.logical_and(pdb_atom_names[:,0]=='HG1', pdb_atom_names[:,1]=='GLN'),0]='HG3'
         pdb_atom_names[np.logical_and(pdb_atom_names[:,0]=='HB1', pdb_atom_names[:,1]=='TRP'),0]='HB3'
-
-    atom_names = [[amber_atoms[res][atom],res] for atom, res in pdb_atom_names ]
-    atom_charges=[other_parameters['charge'][res][atom] for atom, res in atom_names]
+    #writes termini as H because we haven't loaded in termini parameters
+    atom_names = [[amber_atoms[res][atom],res, resid] if atom not in ['H2', 'H3'] else [amber_atoms[res]['H'], res, resid] for atom, res, resid in pdb_atom_names ]
+    #atom_names = [[amber_atoms[res][atom],res] for atom, res, resid in pdb_atom_names ]
+    atom_charges=[other_parameters['charge'][res][atom] for atom, res, resid in atom_names]
     if NB == 'matrix':
         equiv_t=other_parameters['equivalences']
         vdw_para = other_parameters['vdw_potential_well_depth']
@@ -630,8 +656,8 @@ def get_convolutions(dataset, pdb_atom_names,
             j = equiv_t[i]
             for k in j:
                 equiv[k]=i
-        atom_R = torch.tensor([vdw_para[equiv.get(i,i)][0] for i, j in atom_names]) #radius
-        atom_e = torch.tensor([vdw_para[equiv.get(i,i)][1] for i, j in atom_names]) #welldepth
+        atom_R = torch.tensor([vdw_para[equiv.get(atom,atom)][0] for atom, res, resid in atom_names]) #radius
+        atom_e = torch.tensor([vdw_para[equiv.get(atom,atom)][1] for atom, res, resid in atom_names]) #welldepth
 
     print('Determining bonds')
     version = v # method of selecting bonded atoms
@@ -648,7 +674,7 @@ def get_convolutions(dataset, pdb_atom_names,
                             +(cmat[u]-cmat[bond_idxs[-1]])+
                             "should be roughly between 0.42 and 0.57 (>0.25)" )# should be 0.42-0.57
             version+=1 #try version 2 instead
-        mid = cmat[bond_idxs[-1]]+((cmat[u]-cmat[bond_idxs[-1]])/2) #mid point 
+        mid = cmat[bond_idxs[-1]]+((cmat[u]-cmat[bond_idxs[-1]])/2) #mid point
         full_mask = (cmat<mid).astype('int8')
     if version == 2:
         full_mask = (cmat<(1.643+2.129)/2).astype('int8')
@@ -667,36 +693,65 @@ def get_convolutions(dataset, pdb_atom_names,
         max_bond_dist = max_bond_dist[np.where(np.triu(np.ones((N,N)),k=1))]
         full_mask = np.greater(max_bond_dist,cmat)
         bond_idxs = np.where(full_mask)[0] # for some reason returns tuple with one array
+    if version == 4:
+        #fix_hydrogens = [[atom, res, resid] for atom, res, resid in pdb_atom_names if atom in ['H2', 'H3']]
+        connectivity = other_parameters['connectivity']
+        bond_types = []
+        bond_idxs = []
+        tracker = [[]]*N
+        current_resid = -9999
+        current_atoms = []
+        for i1, (atom1, res, resid) in enumerate(atom_names):
+            if resid!= current_resid:
+                current_resid = resid
+                current_atoms = []
+            assert atom1 in connectivity[res]
+            for atom2, i2 in current_atoms:
+                if atom2 in connectivity[res][atom1] and atom1 in connectivity[res][atom2]:
+                    tracker[i1].append(i2)
+                    tracker[i2].append(i1)
+                    if atom_label=='string':
+                        bond_types.append(atom2+'_'+atom1)
+                        bond_idxs.append([i2,i1])
+                    elif atom_label=='set':
+                        if order:
+                            names = tuple(sorted((atom2, atom1)))
+                        else:
+                            names = tuple((atom2, atom1))
+                        bond_types.append(names)
+                        bond_idxs.append([i2,i1])
+            current_atoms.append([atom1,i1])
+    if version <4:
+        all_bond_idxs = np.sort(bond_idxs)
 
-    all_bond_idxs = np.sort(bond_idxs)
-
-    bond_types = []
-    bond_idxs = []
-    tracker = [[]] # this will keep track of some of the bonds to help work out the angles
-    atom1=0
-    atom2=1
-    counter = 0 #index of the distance N,N+1
-    for bond in all_bond_idxs:
-        if bond < counter+(N-atom1-1):
-            atom2 = atom1+bond-counter+1 # 0-0+1
-            tracker[-1].append(atom2) #
-        while bond > counter+(N-atom1-2):
-            counter+=(N-atom1-1)
-            atom1 +=1
-            tracker.append([])
+        bond_types = []
+        bond_idxs = []
+        tracker = [[]] # this will keep track of some of the bonds to help work out the angles
+        atom1=0
+        atom2=1
+        counter = 0 #index of the distance N,N+1
+        for bond in all_bond_idxs:
             if bond < counter+(N-atom1-1):
-                atom2 = atom1+bond-counter+1
-                tracker[-1].append(atom2)
-        if atom_label=='string': #string of atom labels, doesn't handle Proline alternate ordering
-            bond_types.append(atom_names[atom1][0]+'_'+atom_names[atom2][0])
-            bond_idxs.append([atom1, atom2])
-        elif atom_label=='set': #set of atom labels
-            if order:
-                names = tuple(sorted((atom_names[atom1][0], atom_names[atom2][0])))
-            else:
-                names = (atom_names[atom1][0], atom_names[atom2][0])
-            bond_types.append(names)
-            bond_idxs.append([atom1, atom2])
+                atom2 = atom1+bond-counter+1 # 0-0+1
+                tracker[-1].append(atom2) #
+            while bond > counter+(N-atom1-2):
+                counter+=(N-atom1-1)
+                atom1 +=1
+                tracker.append([])
+                if bond < counter+(N-atom1-1):
+                    atom2 = atom1+bond-counter+1
+                    tracker[-1].append(atom2)
+            if atom_label=='string': #string of atom labels, doesn't handle Proline alternate ordering
+                bond_types.append(atom_names[atom1][0]+'_'+atom_names[atom2][0])
+                bond_idxs.append([atom1, atom2])
+            elif atom_label=='set': #set of atom labels
+                if order:
+                    names = tuple(sorted((atom_names[atom1][0], atom_names[atom2][0])))
+                else:
+                    names = (atom_names[atom1][0], atom_names[atom2][0])
+                bond_types.append(names)
+                bond_idxs.append([atom1, atom2])
+
     while len(tracker)<N:
         tracker.append([]) #ensure so the next bit doesn't break by indexing N-1
 
@@ -712,9 +767,10 @@ def get_convolutions(dataset, pdb_atom_names,
 
     counter=0
     #add missing bonds (each bond counted twice after but atom3>atom1 prevents duplicates later )
-    for atom1, atom1_bonds in enumerate(deepcopy(tracker)): # for _, [] in enum [[]]
-        for atom2 in atom1_bonds:                           # for _ in []
-            tracker[atom2].append(atom1)
+    if version < 4:
+        for atom1, atom1_bonds in enumerate(deepcopy(tracker)): # for _, [] in enum [[]]
+            for atom2 in atom1_bonds:                           # for _ in []
+                tracker[atom2].append(atom1)
     # find every angle and add it
     for atom1, atom1_bonds in enumerate(tracker):
         for atom2 in atom1_bonds:
@@ -885,7 +941,7 @@ def get_convolutions(dataset, pdb_atom_names,
         vdw_R[torsion_idxs[:,(0,3)].T]=0.0
         vdw_e[torsion_idxs[:,(0,3)].T]=0.0
 
-        e_=1.0 #permitivity 
+        e_=permitivity #permitivity
         atom_charges=torch.tensor(atom_charges)
         q1q2=(atom_charges.view(1,-1)*atom_charges.view(-1,1)/e_).triu(diagonal=1) #Aij=bi*bj
         q1q2[bond_idxs.T]=0.0
@@ -917,7 +973,8 @@ def get_conv_pad_res(dataset, pdb_atom_names,
                               NB=('matrix',)[0],
                               fix_terminal=True,
                               fix_charmm_residues=True,
-                              correct_1_4=True
+                              correct_1_4=True,
+                              permitivity=1.0
                              ):
     '''
     ##INPUTS##
@@ -967,18 +1024,34 @@ def get_conv_pad_res(dataset, pdb_atom_names,
     atom_charges = padded_atom_charges
     print('Determining bonds')
 
-    cmat = torch.cdist(dataset, dataset) #[R*M,3 ]-> [R*M, R*M]
-    #1.643 was max bond distance in MurD test, 2.129 was the smallest nonbonded distance
-    #can't say what the best solution is but somewhere in the middle will probably be okay
-    all_bond_mask = (cmat<(1.643+2.1269)/2).triu(diagonal=1) # [R*M,R*M]
-    bond_idxs = all_bond_mask.nonzero() # [B x 2] 
-    #name_set = set(atom_names[:,0])
 
-    connectivity = [[] for i in range(N)] # this will keep track of some of the bonds to help work out the angles
-    for i,j in bond_idxs:
-        connectivity[i].append(j)
-        connectivity[j].append(i)
-    ##################### Angles/1-3 #####################
+    connect = other_parameters['connectivity']
+    connectivity = [[]]*N
+    current_resid = -9999
+    current_atoms = []
+    for i1, (atom1, res, resid) in enumerate(padded_atom_names):
+        if atom1 is None:
+            continue
+        if resid!= current_resid:
+            current_resid = resid
+            current_atoms = []
+        assert atom1 in connect[res]
+        for atom2, i2 in current_atoms:
+            if atom2 in connect[res][atom1] and atom1 in connect[res][atom2]:
+                connectivity[i1].append(i2)
+                connectivity[i2].append(i1)
+ #   cmat = torch.cdist(dataset, dataset) #[R*M,3 ]-> [R*M, R*M]
+ #   #1.643 was max bond distance in MurD test, 2.129 was the smallest nonbonded distance
+ #   #can't say what the best solution is but somewhere in the middle will probably be okay
+ #   all_bond_mask = (cmat<(1.643+2.1269)/2).triu(diagonal=1) # [R*M,R*M]
+ #   bond_idxs = all_bond_mask.nonzero() # [B x 2]
+ #   #name_set = set(atom_names[:,0])
+#
+#    connectivity = [[] for i in range(N)] # this will keep track of some of the bonds to help work out the angles
+#    for i,j in bond_idxs:
+#        connectivity[i].append(j)
+#        connectivity[j].append(i)
+#    ##################### Angles/1-3 #####################
     print('Determining angles')
 
     bond_idxs_ = []
@@ -1004,7 +1077,7 @@ def get_conv_pad_res(dataset, pdb_atom_names,
 
             for atom3 in connectivity[atom2]:
                 a3 = atom_names[atom3][0]
-                if atom3 > atom1: #each angle will only be counter once 
+                if atom3 > atom1: #each angle will only be counter once
                     angle_idxs.append([atom1,atom2,atom3])
                     for a in [(a1,a2,a3), (a3,a2,a1)]:
                         if a in angle_equil:
@@ -1070,9 +1143,9 @@ def get_conv_pad_res(dataset, pdb_atom_names,
 
     #j-i i->j
     #i-j j->i reverse
-    #k-j j->k 
+    #k-j j->k
     #j-k k->j reverse
-    #l-k k->l 
+    #l-k k->l
     #k-l l->k reverse
 
 
@@ -1108,8 +1181,8 @@ def get_conv_pad_res(dataset, pdb_atom_names,
 
         #partial charges are given as fragments of electron charge.
         #Can convert coulomb energy into kcal/mol by multiplying with 332.05.
-        #therofore multiply q by sqrt(332.05)=18.22 
-        e_=1.0 #permittivity 
+        #therofore multiply q by sqrt(332.05)=18.22
+        e_=permitivity #permittivity
         atom_charges=torch.tensor(atom_charges)
         q1q2=(atom_charges.view(1,-1)*atom_charges.view(-1,1)/e_).triu(diagonal=1) #Aij=bi*bj
         q1q2[list(bond_idxs.T)]=0.0

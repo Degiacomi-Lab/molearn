@@ -15,12 +15,13 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from copy import deepcopy
+from molearn import get_convolutions
 
 class Auto_potential():
     def __init__(self, frame, pdb_atom_names,
                 padded_residues=False,
                 method =('indexed', 'convolutional', 'roll')[2],
-                device=torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu'), fix_h=False,alt_vdw=[], NB='repulsive'):
+                device=torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu'), fix_h=False,alt_vdw=[], NB='repulsive',version=4):
 
         '''
         At instantiation will load amber parameters and create the necessary convolutions/indexs/rolls to calculate the energy of the molecule. Energy can be assessed with the
@@ -46,12 +47,12 @@ class Auto_potential():
         self.method = method
         if padded_residues == True:
             if method == 'indexed':
-                self._padded_indexed_init(frame, pdb_atom_names)
+                self._padded_indexed_init(frame, pdb_atom_names,version=version)
         else:
             if method == 'convolutional':
-                self._convolutional_init(frame, pdb_atom_names, fix_h=fix_h, alt_vdw=alt_vdw)
+                self._convolutional_init(frame, pdb_atom_names, fix_h=fix_h, alt_vdw=alt_vdw, version=version)
             elif method == 'roll':
-                self._roll_init(frame, pdb_atom_names, NB=NB, fix_h=fix_h,alt_vdw=alt_vdw)
+                self._roll_init(frame, pdb_atom_names, NB=NB, fix_h=fix_h,alt_vdw=alt_vdw, version=version)
 
     def get_loss(self, x):
         '''
@@ -69,13 +70,12 @@ class Auto_potential():
         if self.method == 'indexed':
             return self._padded_residues_loss(x)
 
-    def _roll_init(self, frame, pdb_atom_names, NB='full', fix_h=False,alt_vdw=[]):
-        from molearn import get_convolutions
+    def _roll_init(self, frame, pdb_atom_names, NB='full', fix_h=False,alt_vdw=[], version=4):
         (b_masks, b_equil, b_force, b_weights,
             a_masks, a_equil, a_force, a_weights,
             t_masks, t_para, t_weights,
             vdw_R, vdw_e, vdw_14R, vdw_14e,
-            q1q2, q1q2_14 )=get_convolutions(frame, pdb_atom_names, fix_slice_method=True, fix_h=fix_h,alt_vdw=alt_vdw)
+            q1q2, q1q2_14 )=get_convolutions(frame, pdb_atom_names, fix_slice_method=True, fix_h=fix_h,alt_vdw=alt_vdw,v=version)
 
         self.brdiff=[]
         self.br_equil=[]
@@ -135,13 +135,12 @@ class Auto_potential():
         elif NB == 'repulsive':
             self._nb_loss = self._cdist_nb
 
-    def _convolutional_init(self, frame, pdb_atom_names, NB='full', fix_h=False,alt_vdw=[]):
-        from molearn import get_convolutions
+    def _convolutional_init(self, frame, pdb_atom_names, NB='full', fix_h=False,alt_vdw=[], version=4):
         (b_masks, b_equil, b_force, b_weights,
          a_masks, a_equil, a_force, a_weights,
          t_masks, t_para, t_weights,
          vdw_R, vdw_e, vdw_14R, vdw_14e,
-         q1q2, q1q2_14 )=get_convolutions(frame, pdb_atom_names, fix_slice_method=False, fix_h=fix_h, alt_vdw=alt_vdw)
+         q1q2, q1q2_14 )=get_convolutions(frame, pdb_atom_names, fix_slice_method=False, fix_h=fix_h, alt_vdw=alt_vdw, v=version)
 
         self.b_equil  =torch.tensor(b_equil  ).to(self.device)
         self.b_force  =torch.tensor(b_force  ).to(self.device)
@@ -165,13 +164,13 @@ class Auto_potential():
         elif NB == 'repulsive':
             self._nb_loss = self._cdist_nb
 
-    def _padded_indexed_init(self, frame, pdb_atom_names, NB = 'full'):
+    def _padded_indexed_init(self, frame, pdb_atom_names, NB = 'full', version=2):
         from molearn import get_conv_pad_res
         (bond_idxs, bond_para,
              angle_idxs, angle_para, angle_mask, ij_jk,
              torsion_idxs, torsion_para, torsion_mask, ij_jk_kl,
              vdw_R, vdw_e,
-             q1q2,) = get_conv_pad_res(frame, pdb_atom_names)
+             q1q2,) = get_conv_pad_res(frame, pdb_atom_names)#,v=version) doesn't take version
 
         self.bond_idxs = bond_idxs.to(self.device)
         self.bond_para = bond_para.to(self.device)
