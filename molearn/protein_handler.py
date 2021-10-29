@@ -15,6 +15,7 @@ import torch
 import time
 from copy import deepcopy
 import biobox
+from IPython import embed
 
 def load_data(f_name='test.pdb' , atoms=["CA", "C", "N", "CB", "O"],
         restart = False,
@@ -228,8 +229,8 @@ def read_lib_file(file_name, amber_atoms, atom_charge, connectivity):
                     amber_atoms[res][contents[0][1:-1]] = contents[1][1:-1]
                     atom_charge[res][amber_name[1:-1]] = float(charge)
                     #indexs[res][amber_name[1:-1]] = int(index)
-                    indexs[res][int(index)] = amber_name[1:-1]
-                    connectivity[res][amber_name[1:-1]] = []
+                    indexs[res][int(index)] = pdb_name[1:-1]
+                    connectivity[res][pdb_name[1:-1]] = []
                 else:
                    raise Exception(('I was expecting something of the form'
                                        +'"XXX" but got %s instead' % res))
@@ -591,6 +592,8 @@ def get_convolutions(dataset, pdb_atom_names,
                     pdb_atom_names[res_mask, 1]='HID'
                 elif (pdb_atom_names[res_mask, 0]=='HE2').any():
                     pdb_atom_names[res_mask, 1]='HIE'
+        #if any HIS are remaining it doesn't matter which because the H is dealt with above
+        pdb_atom_names[pdb_atom_names[:,1]=='HIS',1]='HIE'
     if fix_h:
         pdb_atom_names[np.logical_and(pdb_atom_names[:,0]=='HB1', pdb_atom_names[:,1]=='MET'),0]='HB3'
         pdb_atom_names[np.logical_and(pdb_atom_names[:,0]=='HG1', pdb_atom_names[:,1]=='MET'),0]='HG3'
@@ -645,6 +648,8 @@ def get_convolutions(dataset, pdb_atom_names,
         pdb_atom_names[np.logical_and(pdb_atom_names[:,0]=='HB1', pdb_atom_names[:,1]=='TRP'),0]='HB3'
     #writes termini as H because we haven't loaded in termini parameters
     atom_names = [[amber_atoms[res][atom],res, resid] if atom not in ['H2', 'H3'] else [amber_atoms[res]['H'], res, resid] for atom, res, resid in pdb_atom_names ]
+    p_atom_names = [[atom,res, resid] if atom not in ['H2', 'H3'] else ['H', res, resid] for atom, res, resid in pdb_atom_names ]
+    
     #atom_names = [[amber_atoms[res][atom],res] for atom, res, resid in pdb_atom_names ]
     atom_charges=[other_parameters['charge'][res][atom] for atom, res, resid in atom_names]
     if NB == 'matrix':
@@ -662,7 +667,7 @@ def get_convolutions(dataset, pdb_atom_names,
     print('Determining bonds')
     version = v # method of selecting bonded atoms
     N = dataset.shape[1] #2145
-
+    
     cmat=(torch.nn.functional.pdist((dataset).permute(1,0))).cpu().numpy()
     if version == 1:
         bond_idxs=np.argpartition(cmat, (N-1,N))
@@ -698,28 +703,33 @@ def get_convolutions(dataset, pdb_atom_names,
         connectivity = other_parameters['connectivity']
         bond_types = []
         bond_idxs = []
-        tracker = [[]]*N
+        #tracker = [[]]*N doesn't work because of mutability
+        tracker = [[] for i in range(N)]
         current_resid = -9999
         current_atoms = []
-        for i1, (atom1, res, resid) in enumerate(atom_names):
-            if resid!= current_resid:
-                current_resid = resid
-                current_atoms = []
+        for i1, (atom1, res, resid) in enumerate(p_atom_names):
             assert atom1 in connectivity[res]
             for atom2, i2 in current_atoms:
-                if atom2 in connectivity[res][atom1] and atom1 in connectivity[res][atom2]:
-                    tracker[i1].append(i2)
-                    tracker[i2].append(i1)
-                    if atom_label=='string':
-                        bond_types.append(atom2+'_'+atom1)
-                        bond_idxs.append([i2,i1])
-                    elif atom_label=='set':
-                        if order:
-                            names = tuple(sorted((atom2, atom1)))
-                        else:
-                            names = tuple((atom2, atom1))
-                        bond_types.append(names)
-                        bond_idxs.append([i2,i1])
+                if not (atom2 in connectivity[res][atom1] and atom1 in connectivity[res][atom2]):
+                    if resid != current_resid and atom2 == 'C':
+                        current_resid = resid
+                        current_atoms = []
+                    else:
+                        continue
+                if atom1=='N' and atom2=='CA':
+                    continue
+                tracker[i1].append(i2)
+                tracker[i2].append(i1)
+                if atom_label=='string':
+                    bond_types.append(atom_names[i2][0]+'_'+atom_names[i1][0])
+                    bond_idxs.append([i2,i1])
+                elif atom_label=='set':
+                    if order:
+                        names = tuple(sorted((atom_names[i2][0], atom_names[i1][0])))
+                    else:
+                        names = tuple((atom_names[i2][0], atom_names[i1][0]))
+                    bond_types.append(names)
+                    bond_idxs.append([i2,i1])
             current_atoms.append([atom1,i1])
     if version <4:
         all_bond_idxs = np.sort(bond_idxs)
@@ -821,6 +831,7 @@ def get_convolutions(dataset, pdb_atom_names,
     bond_para= np.array([ [bond_equil[bond], bond_force[bond]] if bond in bond_equil
               else [bond_equil[(bond[1],bond[0])], bond_force[(bond[1], bond[0])]]
               for bond in bond_types])
+    embed(header='issue with angle')
     angle_para=np.array([ [angle_equil[angle], angle_force[angle]] if angle in angle_equil
               else [angle_equil[(angle[2],angle[1],angle[0])], angle_force[(angle[2], angle[1], angle[0])]]
               for angle in angle_types])
@@ -1026,7 +1037,8 @@ def get_conv_pad_res(dataset, pdb_atom_names,
 
 
     connect = other_parameters['connectivity']
-    connectivity = [[]]*N
+    #connectivity = [[]]*N # careful with mutability
+    connectivity = [[] for i in range(N)]
     current_resid = -9999
     current_atoms = []
     for i1, (atom1, res, resid) in enumerate(padded_atom_names):
