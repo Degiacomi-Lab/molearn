@@ -15,7 +15,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from copy import deepcopy
-from molearn import get_convolutions
+from .protein_handler import get_convolutions
 
 class Auto_potential():
     def __init__(self, frame, pdb_atom_names,
