@@ -709,26 +709,31 @@ def get_convolutions(dataset, pdb_atom_names,
         for i1, (atom1, res, resid) in enumerate(p_atom_names):
             assert atom1 in connectivity[res]
             for atom2, i2 in current_atoms:
-                if not (atom2 in connectivity[res][atom1] and atom1 in connectivity[res][atom2]):
-                    if resid != current_resid and atom2 == 'C':
-                        current_resid = resid
-                        current_atoms = []
-                    else:
+                if resid !=current_resid:# and atom2 == 'C':
+                    if atom2 != 'C':
                         continue
+                elif not (atom2 in connectivity[res][atom1] and atom1 in connectivity[res][atom2]):
+                    continue
+             #   if not (atom2 in connectivity[res][atom1] and atom1 in connectivity[res][atom2]):
+             #       if resid != current_resid and atom2 == 'C':
+             #           current_resid = resid
+             #           current_atoms = []
+             #       else:
+             #           continue
                 if atom1=='N' and atom2=='CA':
                     continue
                 tracker[i1].append(i2)
                 tracker[i2].append(i1)
-                if atom_label=='string':
-                    bond_types.append(atom_names[i2][0]+'_'+atom_names[i1][0])
-                    bond_idxs.append([i2,i1])
-                elif atom_label=='set':
+                if atom_label=='set':
                     if order:
                         names = tuple(sorted((atom_names[i2][0], atom_names[i1][0])))
                     else:
                         names = tuple((atom_names[i2][0], atom_names[i1][0]))
                     bond_types.append(names)
                     bond_idxs.append([i2,i1])
+            if resid !=current_resid:# and atom2 == 'C':
+                current_resid = resid
+                current_atoms = []
             current_atoms.append([atom1,i1])
     if version <4:
         all_bond_idxs = np.sort(bond_idxs)
