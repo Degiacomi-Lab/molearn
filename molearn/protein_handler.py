@@ -15,7 +15,6 @@ import torch
 import time
 from copy import deepcopy
 import biobox
-from IPython import embed
 
 def load_data(f_name='test.pdb' , atoms=["CA", "C", "N", "CB", "O"],
         restart = False,
@@ -831,7 +830,6 @@ def get_convolutions(dataset, pdb_atom_names,
     bond_para= np.array([ [bond_equil[bond], bond_force[bond]] if bond in bond_equil
               else [bond_equil[(bond[1],bond[0])], bond_force[(bond[1], bond[0])]]
               for bond in bond_types])
-    embed(header='issue with angle')
     angle_para=np.array([ [angle_equil[angle], angle_force[angle]] if angle in angle_equil
               else [angle_equil[(angle[2],angle[1],angle[0])], angle_force[(angle[2], angle[1], angle[0])]]
               for angle in angle_types])
