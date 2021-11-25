@@ -153,7 +153,7 @@ def load_data(f_name='test.pdb' , atoms=["CA", "C", "N", "CB", "O"],
         if rmsd_from_file:
             print('Getting rmsd from file: ', rmsd_from_file)
             if conformations:
-                rmsd_matrix = np.load(rmsd_from_file)[conformations, conformations]
+                rmsd_matrix = np.load(rmsd_from_file)[conformations][:, conformations]
             else:
                 rmsd_matrix = np.load(rmsd_from_file)
             subset = mol.get_subset(idxs,conformations)
