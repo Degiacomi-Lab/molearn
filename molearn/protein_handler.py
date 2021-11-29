@@ -15,6 +15,7 @@ import torch
 import time
 from copy import deepcopy
 import biobox
+import os
 
 def load_data(f_name='test.pdb' , atoms=["CA", "C", "N", "CB", "O"],
         restart = False,
@@ -23,11 +24,11 @@ def load_data(f_name='test.pdb' , atoms=["CA", "C", "N", "CB", "O"],
         padded_residues=False,
         get_name_resname=True,
         get_max_rmsd=True,
-        rmsd_from_file='',
+        rmsd_from_file='rmsd_matrix.npy',
         get_bb_mol=True,
         ignore_atoms=[],
         vdw=False,
-        device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu'),
+        device = torch.device('cpu'),
              ):
     '''
     This function will load and prepare data from a pdb file returning the data as a tuple of of the coordinates, dataset std, dataset mean.
@@ -98,6 +99,23 @@ def load_data(f_name='test.pdb' , atoms=["CA", "C", "N", "CB", "O"],
             conformations = np.random.permutation(mol.coordinates.shape[0])[:dataset_sample_size]
         np.save('dataset_conformations.npy',conformations)
     _, idxs = mol.atomselect("*", "*", atoms, get_index=True)
+    if get_max_rmsd:
+        if rmsd_from_file:
+            print('Getting rmsd from file: ', rmsd_from_file)
+            if os.path.isfile(rmsd_from_file):
+                rmsd_matrix = np.load(rmsd_from_file)
+            else:
+                print(f'rmsd_from_file: {rmsd_from_file} is not a valid filename or doesnt exist')
+                print('rmsd not found therefore I have to calculate it')
+                rmsd_matrix = mol.rmsd_distance_matrix()
+                print('rmsd calcs Done')
+                np.save('rmsd_matrix.npy', rmsd_matrix)
+        else:
+            print('calculating rmsd (use rmsd_from_file = \'rmsd_matrix.npy\' to not calculate this again')
+            rmsd_matrix = mol.rmsd_distance_matrix()
+            print('rmsd calcs Done')
+            np.save('rmsd_matrix.npy', rmsd_matrix)
+
     mol = mol.get_subset(idxs,conformations)
     print('Conformations: (also saved to dataset_conformations.npy)')
     print(conformations)
@@ -149,26 +167,14 @@ def load_data(f_name='test.pdb' , atoms=["CA", "C", "N", "CB", "O"],
     if get_bb_mol:
         to_return.append(mol)
     if get_max_rmsd:
-        _, idxs = mol.atomselect("*", "*", atoms, get_index=True)
-        if rmsd_from_file:
-            print('Getting rmsd from file: ', rmsd_from_file)
-            if conformations:
-                rmsd_matrix = np.load(rmsd_from_file)[conformations][:, conformations]
-            else:
-                rmsd_matrix = np.load(rmsd_from_file)
-            subset = mol.get_subset(idxs,conformations)
-        else:
-            conformations = np.random.permutation(mol.coordinates.shape[0])[:min(dataset_sample_size,1000)] #limit to 1000 structures otherwise it takes forever
-            subset = mol.get_subset(idxs,conformations)
-            print('Determine rmsd matrix')
-            rmsd_matrix = subset.rmsd_distance_matrix()
-            print('rmsd calcs Done')
-            np.save('rmsd_matrix.npy', rmsd_matrix)
+        #_, idxs = mol.atomselect("*", "*", atoms, get_index=True)
+        if conformations:
+            rmsd_matrix = rmsd_matrix[conformations][:, conformations]
         #BxB matrix
         #arg max returns index in a flattened array, np.unravel_index recreates index
         max_rmsd_index = np.unravel_index(rmsd_matrix.argmax(), rmsd_matrix.shape)
-        test0 = (subset.coordinates[max_rmsd_index[0]].copy()-meanval)/stdval
-        test1 = (subset.coordinates[max_rmsd_index[1]].copy()-meanval)/stdval
+        test0 = (mol.coordinates[max_rmsd_index[0]].copy()-meanval)/stdval
+        test1 = (mol.coordinates[max_rmsd_index[1]].copy()-meanval)/stdval
         to_return.append(torch.from_numpy(test0).to(device).permute(1,0))
         to_return.append(torch.from_numpy(test1).to(device).permute(1,0))
     if vdw:
