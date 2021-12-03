@@ -6,7 +6,6 @@ This software trains a generative neural network on an ensemble of molecular con
 The trained model can be used to generate new, plausible conformations repesentative of poorly sampled transition states.
 
 Included in this repository are the following:
-* A stripped down version of biobox, a software suite for loading, manipulating, and saving protein pdb files. The full version of biobox is currently unpublished. 
 * Torch functions for calculating the energy of a protein conformation
   * Documentation for this is in the **doc** folder.
   * Source code is in the **molearn** folder
@@ -16,14 +15,14 @@ Included in this repository are the following:
   * Loading and saving *.pdb* files with biobox
 * An example *.pdb* file in the **test** folder
 * The [Amber parameters](https://ambermd.org/AmberModels.php) released in the [AmberTools20 package](https://ambermd.org/AmberTools.php) published under a GNU General Public Licence. These are loaded in by the torch potential to calculate the energy of a protein conformation
+* A stripped down version of [Biobox](https://github.com/degiacom/biobox), a software suite for loading, manipulating, and saving protein PDB files.
 
 ## Requirements ##
 
-Molearn requires python 3.x and the following packages (and their associated packages):
+Molearn requires Python 3.x and the following packages (and their associated packages):
 * numpy
-* biobox
-  * pandas
 * PyTorch (1.7+)
+* [Biobox](https://github.com/degiacom/biobox)
 
 ## Installation ##
 
