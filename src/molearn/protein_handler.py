@@ -16,6 +16,7 @@ import time
 from copy import deepcopy
 import biobox
 import os
+import pkg_resources
 
 def load_data(f_name='test.pdb' , atoms=["CA", "C", "N", "CB", "O"],
         restart = False,
@@ -188,7 +189,8 @@ def load_data(f_name='test.pdb' , atoms=["CA", "C", "N", "CB", "O"],
 
 def read_lib_file(file_name, amber_atoms, atom_charge, connectivity):
     try:
-        f_in = open('./parameters/'+file_name)
+        f_location = pkg_resources.resource_filename('molearn', 'parameters')
+        f_in = open(f'{f_location}/{file_name}')
         print('File %s opened' % file_name)
     except Exception as ex:
         raise Exception('ERROR: file %s not found!' % file_name)
