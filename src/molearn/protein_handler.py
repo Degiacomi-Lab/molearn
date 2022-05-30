@@ -286,7 +286,8 @@ def get_amber_parameters(order=False, radians=True):
     read_lib_file(file_names[0],amber_atoms,other_parameters['charge'], other_parameters['connectivity'])
 
     try:
-        f_in = open('./parameters/'+file_names[1])
+        f_location = pkg_resources.resource_filename('molearn', 'parameters')
+        f_in = open(f'{f_location}/{file_names[1]}')
         print('File %s opened' % file_names[1])
     except Exception as ex:
         raise Exception('ERROR: file %s not found!' % file_names[1])
@@ -314,7 +315,8 @@ def get_amber_parameters(order=False, radians=True):
 
     #open frcmod file, should be identifcal format but missing any or all cards
     try:
-        f_in = open('./parameters/'+file_names[2])
+        f_location = pkg_resources.resource_filename('molearn', 'parameters')
+        f_in = open(f'{f_location}/{file_names[2]}')
         print('File %s opened' % file_names[2])
     except Exception as ex:
         raise Exception('ERROR: file %s not found!' % file_names[2])

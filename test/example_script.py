@@ -23,7 +23,7 @@ from molearn import Autoencoder
 
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
-floc = ["./test/MurD_test.pdb"] # test protein (contains only 16 conformations of the MurD protein)
+floc = ["MurD_test.pdb"] # test protein (contains only 16 conformations of the MurD protein)
 batch_size = 4 # if this is too small, gpu utilization goes down
 epoch = 0
 iter_per_epoch = 5 #use higher iter_per_epoch = 1000 for smoother plots (iter_per_epoch = smoothness  of statistics)
