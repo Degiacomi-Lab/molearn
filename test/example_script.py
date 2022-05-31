@@ -62,7 +62,7 @@ print("> Network parameters: ", len(torch.nn.utils.parameters_to_vector(network.
 optimiser = torch.optim.Adam(network.parameters(), lr=0.001, amsgrad=True)
 
 #training loop
-while (epoch<200):
+while (epoch<20):
     print("> epoch: ", epoch)
     for i in range(iter_per_epoch):
         # get two batches of training data
