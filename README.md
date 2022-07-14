@@ -29,7 +29,8 @@ molearn requires no installation. Simply clone the repository and make sure the 
 molearn can also be obtained through Anaconda: `conda install molearn -c conda-forge`
 
 ## Usage ##
-See the example script `example_script.py` and the documentation in the `doc` folder
+* The example script `example_script.py` and the documentation in the `doc` folder
+* Jupyter notebook tutorials are available [here](https://github.com/Degiacomi-Lab/molearn_notebook).
 
 ## Reference ##
 
