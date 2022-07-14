@@ -30,7 +30,7 @@ molearn can also be obtained through Anaconda: `conda install molearn -c conda-f
 
 ## Usage ##
 * The example script `example_script.py` and the documentation in the `doc` folder
-* Jupyter notebook tutorials are available [here](https://github.com/Degiacomi-Lab/molearn_notebook).
+* Jupyter notebook tutorials describing the usage of a trained neural network are available [here](https://github.com/Degiacomi-Lab/molearn_notebook).
 
 ## Reference ##
 
