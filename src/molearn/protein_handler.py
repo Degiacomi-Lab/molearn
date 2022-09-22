@@ -169,7 +169,7 @@ def load_data(f_name='test.pdb' , atoms=["CA", "C", "N", "CB", "O"],
         to_return.append(mol)
     if get_max_rmsd:
         #_, idxs = mol.atomselect("*", "*", atoms, get_index=True)
-        if conformations:
+        if len(conformations)>0:
             rmsd_matrix = rmsd_matrix[conformations][:, conformations]
         #BxB matrix
         #arg max returns index in a flattened array, np.unravel_index recreates index
