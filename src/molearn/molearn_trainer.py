@@ -44,6 +44,7 @@ class Molearn_Trainer():
             self.valid_dataloader = valid_dataloader
 
     def get_network(self, autoencoder_kwargs=None):
+        self._autoencoder_kwargs = autoencoder_kwargs
         self.autoencoder = Net(**autoencoder_kwargs).to(self.device)
 
     def get_optimiser(self, optimiser_kwargs=None):
@@ -104,7 +105,8 @@ class Molearn_Trainer():
         torch.save({'epoch':epoch,
                     'model_state_dict': self.autoencoder.state_dict(),
                     'optimizer_state_dict': self.optimiser.state_dict(),
-                    'loss': valid_loss},
+                    'loss': valid_loss,
+                    'network_kwargs': self._autoencoder_kwargs},
                 f'{checkpoint_folder}/last.ckpt')
 
         if self.best is None or self.best > valid_loss:
@@ -114,7 +116,6 @@ class Molearn_Trainer():
                 os.remove(self.best_name)
             self.best_name = filename
             self.best = valid_loss
-
 
 if __name__=='__main__':
     pass
