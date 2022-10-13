@@ -42,7 +42,7 @@ class PDBData:
     def prepare_dataset(self, ):
         if not hasattr(self, 'dataset'):
             assert hasattr(self, '_mol'), 'You need to call import_pdb before preparing the dataset'
-            self.dataset = self._mol.coordinates
+            self.dataset = self._mol.coordinates.copy()
         
         if not hasattr(self, 'std'):
             self.std = self.dataset.std()
@@ -85,7 +85,7 @@ class PDBData:
         else:
             self.train_dataset = torch.utils.data.TensorDataset(dataset.float())
             self.train_dataloader = torch.utils.data.DataLoader(self.train_dataset, batch_size=batch_size, pin_memory=pin_memory, shuffle=True)
-            return self.train_datajloader
+            return self.train_dataloader
 
     @property
     def atoms(self):
@@ -93,7 +93,7 @@ class PDBData:
     
     @property
     def mol(self):
-        return frame
+        return self.frame()
         
 
 

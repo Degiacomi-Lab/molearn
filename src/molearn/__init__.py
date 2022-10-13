@@ -16,5 +16,6 @@ __date__ = '$Date: 2021-01-01 $'
 from .loss_functions import Auto_potential
 from .protein_handler import *
 from .networks import *
-from .molearn_trainer import Molearn_Trainer
+from .molearn_trainer import Molearn_Trainer, Molearn_Physics_Trainer
 from .pdb_data import PDBData
+from .openmm_loss import openmm_energy

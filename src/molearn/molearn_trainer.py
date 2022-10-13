@@ -9,7 +9,9 @@ import csv
 #from IPython import embed
 import molearn
 from molearn.autoencoder import Autoencoder as Net
-
+from molearn.loss_functions import Auto_potential
+from molearn.pdb_data import PDBData
+import warnings
 
 class Molearn_Trainer():
     def __init__(self, device = None, log_filename = 'log_file.dat'):
@@ -21,12 +23,15 @@ class Molearn_Trainer():
         self.best = None
         self.best_name = None
         self.epoch = 0
+        self.extra_print_args = ''
+        self.extra_write_args = ''
 
     def get_dataset(self, filename, batch_size=16, atoms="*", validation_split=0.1, pin_memory=True, dataset_sample_size=-1):
         '''
         :param filename: location of the pdb
         :param atoms: "*" for all atoms, ["CA", "C", "N", "CB", "O"]
         '''
+        warnings.warn("deprecated class method", DeprecationWarning)
         dataset, self.mean, self.std, self.atom_names, self.mol, test0, test1 = molearn.load_data(filename, atoms="*", dataset_sample_size=dataset_sample_size,
                 device=torch.device('cpu'))
         print(f'Dataset.shape: {dataset.shape}')
@@ -42,6 +47,16 @@ class Molearn_Trainer():
             self.train_dataloader = train_dataloader
         if valid_dataloader is not None:
             self.valid_dataloader = valid_dataloader
+
+    def set_data(self, data, **kwargs):
+        if isinstance(data, PDBData):
+            self.set_dataloader(*data.get_dataloader(**kwargs))
+        else:
+            raise NotImplementedError('Have not implemented this method to use any data other than PDBData yet')
+        self.std = data.std
+        self.mean = data.mean
+        self.mol = data.mol
+        self._data = data
 
     def get_network(self, autoencoder_kwargs=None):
         self._autoencoder_kwargs = autoencoder_kwargs
@@ -66,8 +81,8 @@ class Molearn_Trainer():
                 if epoch%checkpoint_frequency==0:
                     self.checkpoint(epoch, valid_loss, checkpoint_folder)
                 time4 = time.time()
-                print(f'{epoch}\t{train_loss}\t{valid_loss}\t{time2-time1}\t{time3-time2}\t{time4-time3}\n')
-                fout.write(f'{epoch}\t{train_loss}\t{valid_loss}\t{time2-time1}\t{time3-time2}\t{time4-time3}\n')
+                print('  '.join([str(s) for s in [epoch, train_loss, valid_loss, time2-time1, time3-time2, time4-time3, self.extra_print_args]])+'\n')
+                fout.write('  '.join([str(s) for s in [epoch, train_loss, valid_loss, time2-time1, time3-time2, time4-time3, self.extra_write_args]])+'\n')
 
     def train_step(self,epoch):
         self.autoencoder.train()
@@ -116,6 +131,77 @@ class Molearn_Trainer():
                 os.remove(self.best_name)
             self.best_name = filename
             self.best = valid_loss
+
+class Molearn_Physics_Trainer(Molearn_Trainer):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def prepare_physics(self, physics_scaling_factor=0.1):
+        self.psf = physics_scaling_factor
+        self.physics_loss = Auto_potential(self._data.dataset[0]*self.std, pdb_atom_names = self._data.get_atominfo(), device = self.device, method = 'roll')
+
+    def train_step(self, epoch):
+        self.autoencoder.train()
+        average_loss = 0.0
+        average_mse = 0.0
+        average_bond = 0.0
+        average_angle = 0.0
+        average_torsion = 0.0
+        N = 0
+        for i, batch in enumerate(self.train_dataloader):
+            batch = batch[0].to(self.device)
+            n = len(batch)
+            self.optimiser.zero_grad()
+
+            latent = self.autoencoder.encode(batch)
+            output = self.autoencoder.decode(latent)[:,:,:batch.size(2)]
+            mse_loss = ((batch-output)**2).mean()
+            bond, angle, torsion =  self.physics_loss._roll_bond_angle_torsion_loss(output*self.std)
+            average_physics = (bond + angle + torsion)/n
+            with torch.no_grad():
+                scale = self.psf*mse_loss/average_physics
+            final_loss = mse_loss+scale*average_physics
+
+            final_loss.backward()
+            self.optimiser.step()
+            average_loss+=final_loss.item()*n
+            average_mse += mse_loss.item()*n
+            average_bond+=bond.item()
+            average_angle+=angle.item()
+            average_torsion+=torsion.item()
+            N+=n
+        self.extra_write_args =  '  '.join([str(s) for s in ['tm', average_mse/N, 'tb', average_bond/N, 'ta', average_angle/N, 'tt', average_torsion/N]])
+        return average_loss/N
+
+    def valid_step(self, epoch):
+        self.autoencoder.eval()
+        average_loss = 0.0
+        average_mse = 0.0
+        average_bond = 0.0
+        average_angle = 0.0
+        average_torsion = 0.0
+        N = 0
+        for batch in self.valid_dataloader:
+            batch = batch[0].to(self.device)
+            n = len(batch)
+
+            latent = self.autoencoder.encode(batch)
+            output = self.autoencoder.decode(latent)[:,:,:batch.size(2)]
+            mse_loss = ((batch-output)**2).mean()
+            bond, angle, torsion =  self.physics_loss._roll_bond_angle_torsion_loss(output*self.std)
+            average_physics = (bond + angle + torsion)/n
+            scale = self.psf*mse_loss/average_physics
+
+            final_loss = mse_loss+scale*average_physics
+            average_loss+=final_loss.item()*n
+            average_mse += mse_loss.item()*n
+            average_bond+=bond.item()
+            average_angle+=angle.item()
+            average_torsion+=torsion.item()
+            N+=n
+        self.extra_write_args += '  '.join([str(s) for s in ['vm', average_mse/N, 'vb', average_bond/N, 'va', average_angle/N, 'vt', average_torsion/N]])
+        return average_loss/N
+
 
 if __name__=='__main__':
     pass
