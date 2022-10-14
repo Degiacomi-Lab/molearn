@@ -9,6 +9,79 @@ from torchintegratorplugin import MyIntegrator
 import torch
 from math import ceil
 from IPython import embed
+import numpy as np
+
+
+from openmm.app.forcefield import _createResidueSignature
+from openmm.app.internal import compiled
+
+class ModifiedForceField(ForceField):
+    def __init__(self, *args, alternative_residue_names = None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if isinstance(alternative_residue_names, dict):
+            self._alternative_residue_names = alternative_residue_names
+        else:
+            self._alternative_residue_names = {'HIS':'HIE'}
+
+    def _getResidueTemplateMatches(self, res, bondedToAtom, templateSignatures=None, ignoreExternalBonds=False, ignoreExtraParticles=False):
+        """Return the templates that match a residue, or None if none are found.
+
+        Parameters
+        ----------
+        res : Topology.Residue
+            The residue for which template matches are to be retrieved.
+        bondedToAtom : list of set of int
+            bondedToAtom[i] is the set of atoms bonded to atom index i
+
+        Returns
+        -------
+        template : _TemplateData
+            The matching forcefield residue template, or None if no matches are found.
+        matches : list
+            a list specifying which atom of the template each atom of the residue
+            corresponds to, or None if it does not match the template
+
+        """
+        template = None
+        matches = None
+        for matcher in self._templateMatchers:
+            template = matcher(self, res, bondedToAtom, ignoreExternalBonds, ignoreExtraParticles)
+            if template is not None:
+                match = compiled.matchResidueToTemplate(res, template, bondedToAtom, ignoreExternalBonds, ignoreExtraParticles)
+                if match is None:
+                    raise ValueError('A custom template matcher returned a template for residue %d (%s), but it does not match the residue.' % (res.index, res.name))
+                return [template, match]
+        if templateSignatures is None:
+            templateSignatures = self._templateSignatures
+        signature = _createResidueSignature([atom.element for atom in res.atoms()])
+        if signature in templateSignatures:
+            allMatches = []
+            for t in templateSignatures[signature]:
+                match = compiled.matchResidueToTemplate(res, t, bondedToAtom, ignoreExternalBonds, ignoreExtraParticles)
+                if match is not None:
+                    allMatches.append((t, match))
+            if len(allMatches) == 1:
+                template = allMatches[0][0]
+                matches = allMatches[0][1]
+            elif len(allMatches) > 1:
+                for i, (t, m) in enumerate(allMatches):
+                    name = self._alternative_residue_names.get(res.name, res.name)
+                    if name==t.name.split('-')[0] or 'N'+name==t.name.split('-')[0]:
+                        template = t
+                        matches = m
+                        return [template, matches]
+                # We found multiple matches.  This is OK if and only if they assign identical types and parameters to all atoms.
+                t1, m1 = allMatches[0]
+
+                for t2, m2 in allMatches[1:]:
+                    if not t1.areParametersIdentical(t2, m1, m2):
+                        raise Exception('Multiple non-identical matching templates found for residue %d (%s): %s.' % (res.index+1, res.name, ', '.join(match[0].name for match in allMatches)))
+                template = allMatches[0][0]
+                matches = allMatches[0][1]
+        return [template, matches]
+
+
+
 
 class OpenmmPluginScore():
     '''
@@ -16,7 +89,7 @@ class OpenmmPluginScore():
     NB. The current torchintegratorplugin only supports float on GPU and double on CPU.
     '''
     
-    def __init__(self, mol=None, xml_file = ['amber14-all.xml', 'implicit/obc2.xml'], platform = 'CUDA', remove_NB=False):
+    def __init__(self, mol=None, xml_file = ['amber14-all.xml', 'implicit/obc2.xml'], platform = 'CUDA', remove_NB=False, alternative_residue_names = dict(HIS='HIE'), atoms=['CA', 'C', 'N', 'CB', 'O']):
         '''
         :param mol: (biobox.Molecule, default None) If pldataloader is not given, then a biobox object will be taken from this parameter. If neither are given then an error  will be thrown.
         :param data_dir: (string, default None) if pldataloader is not given then this will be used to find files such as 'variants.npy'
@@ -26,15 +99,18 @@ class OpenmmPluginScore():
         '''
         self.mol = mol
         if isinstance(xml_file,str):
-            self.forcefield = ForceField(xml_file)
+            self.forcefield = ModifiedForceField(xml_file, alternative_residue_names = alternative_residue_names)
         elif len(xml_file)>0:
-            self.forcefield = ForceField(*xml_file)
+            self.forcefield = ModifiedForceField(*xml_file, alternative_residue_names = alternative_residue_names)
         else:
             raise ValueError(f'xml_file: {xml_file} needs to be a str or a list of str')
         tmp_file = 'tmp.pdb'
-        
-        self.ignore_hydrogen()
+        self.atoms = atoms
 
+        if atoms == 'no_hydrogen':
+            self.ignore_hydrogen()
+        else:
+            self.atomselect(atoms)
         #save pdb and reload in modeller
         self.mol.write_pdb(tmp_file)
         self.pdb = PDBFile(tmp_file)
@@ -61,12 +137,13 @@ class OpenmmPluginScore():
         print(self.simulation.context.getState(getEnergy=True).getPotentialEnergy()._value)
     
     def ignore_hydrogen(self):
-        ignore = ['ASH', 'LYN', 'GLH', 'HID', 'HIP', 'CYM', ]
+        #ignore = ['ASH', 'LYN', 'GLH', 'HID', 'HIP', 'CYM', ]
+        ignore = []
         for name, template in self.forcefield._templates.items():
             if name in ignore:
                 continue
-            patchData = ForceField._PatchData(name+'_noh', 1)
-
+            patchData = ForceField._PatchData(name+'_remove_h', 1)
+            
             for atom in template.atoms:
                 if atom.element is elem.hydrogen:
                     if atom.name not in patchData.allAtomNames:
@@ -82,8 +159,32 @@ class OpenmmPluginScore():
                     a1 = ForceField._PatchAtomData(atom1.name)
                     a2 = ForceField._PatchAtomData(atom2.name)
                     patchData.deletedBonds.append((a1, a2))
-            self.forcefield.registerTemplatePatch(name, name+'_noh', 0)
+            self.forcefield.registerTemplatePatch(name, name+'_remove_h', 0)
             self.forcefield.registerPatch(patchData)
+
+    def atomselect(self, atoms):
+        for name, template in self.forcefield._templates.items():
+            patchData = ForceField._PatchData(name+'_leave_only_'+'_'.join(atoms), 1)
+
+            for atom in template.atoms:
+                if atom.name not in atoms:
+                    if atom.name not in patchData.allAtomNames:
+                        patchData.allAtomNames.add(atom.name)
+                        atomDescription = ForceField._PatchAtomData(atom.name)
+                        patchData.deletedAtoms.append(atomDescription)
+                    else:
+                        raise ValueError()
+
+            for bond in template.bonds:
+                atom1 = template.atoms[bond[0]]
+                atom2 = template.atoms[bond[1]]
+                if atom1.name not in atoms or atom2.name not in atoms:
+                    a1 = ForceField._PatchAtomData(atom1.name)
+                    a2 = ForceField._PatchAtomData(atom2.name)
+                    patchData.deletedBonds.append((a1, a2))
+            self.forcefield.registerTemplatePatch(name, name+'_leave_only_'+'_'.join(atoms), 0)
+            self.forcefield.registerPatch(patchData)
+
 
     def get_energy(self, pos_ptr, force_ptr, energy_ptr, n_particles, batch_size):
         '''
@@ -112,10 +213,21 @@ class openmm_energy_function(torch.autograd.Function):
     def forward(ctx, plugin, x):
         '''
         :param plugin: # OpenmmPluginScore instance
-        :param x: torch tensor, dtype = float, shape = [B, N, 3], device = Cuda
-        :returns: energy tensor, dtype = double, shape = [B], device CPU
+        :param x: torch tensor, dtype = float, shape = [B, N, 3], device = any
+        :returns: energy tensor, dtype = float, shape = [B], device  = any
         '''
-        force, energy = plugin.execute(x)
+        if x.device == torch.device('cpu'):
+            force = np.zeros(x.shape)
+            energy = np.zeros(x.shape[0])
+            for i,t in enumerate(x):
+                plugin.simulation.context.setPositions(t.numpy())
+                state = plugin.simulation.context.getState(getForces=True, getEnergy=True)
+                force[i] = state.getForces(asNumpy=True)
+                energy[i] = state.getPotentialEnergy()._value
+            force = torch.tensor(force).float()
+            energy = torch.tensor(energy).float()
+        else:
+            force, energy = plugin.execute(x)
         ctx.save_for_backward(force)
         energy = energy.float().to(x.device)
         return energy
