@@ -11,7 +11,9 @@ import molearn
 from molearn.autoencoder import Autoencoder as Net
 from molearn.loss_functions import Auto_potential
 from molearn.pdb_data import PDBData
+from molearn.openmm_loss import openmm_energy
 import warnings
+from decimal import Decimal
 
 class Molearn_Trainer():
     def __init__(self, device = None, log_filename = 'log_file.dat'):
@@ -58,8 +60,19 @@ class Molearn_Trainer():
         self.mol = data.mol
         self._data = data
 
-    def get_network(self, autoencoder_kwargs=None):
+    def get_network(self, autoencoder_kwargs=None, max_number_of_atoms=None):
         self._autoencoder_kwargs = autoencoder_kwargs
+        if isinstance(max_number_of_atoms, int):
+            n_atoms = max_number_of_atoms
+        else:
+            n_atoms = self.mol.coordinates.shape[1]
+
+        power = autoencoder_kwargs['depth']+2
+        init_n = (n_atoms//(2**power))+1
+        print(f'Given a number of atoms: {n_atoms}, init_n should be set to {init_n} '+
+              f'allowing a maximum of {init_n*(2**power)} atoms')
+        autoencoder_kwargs['init_n'] = init_n
+
         self.autoencoder = Net(**autoencoder_kwargs).to(self.device)
 
     def get_optimiser(self, optimiser_kwargs=None):
@@ -81,7 +94,7 @@ class Molearn_Trainer():
                 if epoch%checkpoint_frequency==0:
                     self.checkpoint(epoch, valid_loss, checkpoint_folder)
                 time4 = time.time()
-                print('  '.join([str(s) for s in [epoch, train_loss, valid_loss, time2-time1, time3-time2, time4-time3, self.extra_print_args]])+'\n')
+                print('  '.join(['%.2E'%Decimal(s) if isinstance(s ,float) else str(s)  for s in ['epoch',epoch, 'tl', train_loss, 'vl', valid_loss, 'train(s)',time2-time1,'valid(s)', time3-time2, 'check(s)', time4-time3, self.extra_print_args]])+'\n')
                 fout.write('  '.join([str(s) for s in [epoch, train_loss, valid_loss, time2-time1, time3-time2, time4-time3, self.extra_write_args]])+'\n')
 
     def train_step(self,epoch):
@@ -154,9 +167,14 @@ class Molearn_Physics_Trainer(Molearn_Trainer):
             self.optimiser.zero_grad()
 
             latent = self.autoencoder.encode(batch)
+            alpha = torch.rand(int(n//2), 1, 1).type_as(latent)
+            latent_interpolated = (1-alpha)*latent[:-1:2] + alpha*latent[1::2]
+
+            generated = self.autoencoder.decode(latent_interpolated)[:,:,:batch.size(2)]
+            bond, angle, torsion =  self.physics_loss._roll_bond_angle_torsion_loss(generated*self.std)
             output = self.autoencoder.decode(latent)[:,:,:batch.size(2)]
             mse_loss = ((batch-output)**2).mean()
-            bond, angle, torsion =  self.physics_loss._roll_bond_angle_torsion_loss(output*self.std)
+
             average_physics = (bond + angle + torsion)/n
             with torch.no_grad():
                 scale = self.psf*mse_loss/average_physics
@@ -186,9 +204,14 @@ class Molearn_Physics_Trainer(Molearn_Trainer):
             n = len(batch)
 
             latent = self.autoencoder.encode(batch)
+            alpha = torch.rand(int(n//2), 1, 1).type_as(latent)
+            latent_interpolated = (1-alpha)*latent[:-1:2] + alpha*latent[1::2]
+
+            generated = self.autoencoder.decode(latent_interpolated)[:,:,:batch.size(2)]
+            bond, angle, torsion =  self.physics_loss._roll_bond_angle_torsion_loss(generated*self.std)
             output = self.autoencoder.decode(latent)[:,:,:batch.size(2)]
             mse_loss = ((batch-output)**2).mean()
-            bond, angle, torsion =  self.physics_loss._roll_bond_angle_torsion_loss(output*self.std)
+
             average_physics = (bond + angle + torsion)/n
             scale = self.psf*mse_loss/average_physics
 
@@ -201,6 +224,87 @@ class Molearn_Physics_Trainer(Molearn_Trainer):
             N+=n
         self.extra_write_args += '  '.join([str(s) for s in ['vm', average_mse/N, 'vb', average_bond/N, 'va', average_angle/N, 'vt', average_torsion/N]])
         return average_loss/N
+
+class OpenMM_Physics_Trainer(Molearn_Trainer):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def prepare_physics(self, physics_scaling_factor=0.1, clamp_threshold = 10000, clamp=False):
+        self.psf = physics_scaling_factor
+        if clamp:
+            clamp_kwargs = dict(max=clamp_threshold, min = -clamp_threshold)
+        else:
+            clamp_kwargs = None
+        self.physics_loss = openmm_energy(self.mol, self.std, clamp=clamp_kwargs, platform = 'Cuda' if self.device is torch.device('cuda') else 'Reference', atoms = self._data.atoms)
+
+    def train_step(self, epoch):
+        self.autoencoder.train()
+        average_loss = 0.0
+        average_mse = 0.0
+        average_openmm_energy = 0.0
+        N = 0
+        for i, batch in enumerate(self.train_dataloader):
+            batch = batch[0].to(self.device)
+            n = len(batch)
+            self.optimiser.zero_grad()
+
+            latent = self.autoencoder.encode(batch)
+            alpha = torch.rand(int(n//2), 1, 1).type_as(latent)
+            latent_interpolated = (1-alpha)*latent[:-1:2] + alpha*latent[1::2]
+
+            generated = self.autoencoder.decode(latent_interpolated)[:,:,:batch.size(2)]
+            energy = self.physics_loss(generated)
+            output = self.autoencoder.decode(latent)[:,:,:batch.size(2)]
+            mse_loss = ((batch-output)**2).mean()
+            
+            average_physics = energy.mean()
+            print(f'{i} {average_physics.item()}, {mse_loss.item()}')
+            #from IPython import embed
+            #embed(header='openmm')
+            with torch.no_grad():
+                scale = self.psf*mse_loss/average_physics
+            final_loss = mse_loss+scale*average_physics
+
+            final_loss.backward()
+            self.optimiser.step()
+            
+            average_loss+=final_loss.item()*n
+            average_mse += mse_loss.item()*n
+            average_openmm_energy += average_physics.item()*n
+            N+=n
+        self.extra_write_args =  '  '.join([str(s) for s in ['tm', average_mse/N, 'to', average_openmm_energy/N]])
+        return average_loss/N
+
+    def valid_step(self, epoch):
+        self.autoencoder.eval()
+        average_loss = 0.0
+        average_mse = 0.0
+        average_openmm_energy = 0.0
+        N = 0
+        for batch in self.valid_dataloader:
+            batch = batch[0].to(self.device)
+            n = len(batch)
+
+            latent = self.autoencoder.encode(batch)
+            alpha = torch.rand(int(n//2), 1, 1).type_as(latent)
+            latent_interpolated = (1-alpha)*latent[:-1:2] + alpha*latent[1::2]
+            
+            generated = self.autoencoder.decode(latent_interpolated)[:,:,:batch.size(2)]
+            energy = self.physics_loss(generated)
+            output = self.autoencoder.decode(latent)[:,:,:batch.size(2)]
+            mse_loss = ((batch-output)**2).mean()
+
+            average_physics = energy.mean()
+            scale = self.psf*mse_loss/average_physics
+
+            final_loss = mse_loss+scale*average_physics
+            average_loss+=final_loss.item()*n
+            average_mse += mse_loss.item()*n
+            average_openmm_energy+=average_physics.item()*n
+            N+=n
+        self.extra_write_args += '  '.join([str(s) for s in ['vm', average_mse/N, 'vo', average_openmm_energy/N]])
+        return average_loss/N
+
 
 
 if __name__=='__main__':
