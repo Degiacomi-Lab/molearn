@@ -11,7 +11,6 @@ except ImportError:
     print('no plugin, wont be able to use openmm_loss')
 import torch
 from math import ceil
-from IPython import embed
 import numpy as np
 
 

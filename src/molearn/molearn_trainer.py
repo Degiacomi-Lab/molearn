@@ -13,10 +13,6 @@ from molearn.pdb_data import PDBData
 from molearn.openmm_loss import openmm_energy
 import warnings
 from decimal import Decimal
-try:
-    from IPython import embed
-except ImportError:
-    print('IPython not install but also not strictly needed')
 
 class TrainingFailure(Exception):
     pass
