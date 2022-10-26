@@ -11,8 +11,8 @@
 
 
 __author__ = "V. K. Ramaswamy, S. C. Musson, C. G. Willcocks, M. T. Degiacomi"
-__version__ = '1.0'
-__date__ = '$Date: 2021-01-01 $'
+__version__ = '1.1'
+__date__ = '$Date: 2022-10-26 $'
 from .loss_functions import Auto_potential
 from .protein_handler import *
 from .networks import *
