@@ -14,4 +14,4 @@ Scoring holds the classes for calculating DOPE and OPENMM energy
 __author__ = "S. C. Musson"
 __version__ = '1.0'
 
-from .openmm_thread import openmm_energy, OpenmmPluginScore
+from .openmm_thread import openmm_energy,openmm_energy_process, OpenmmPluginScore

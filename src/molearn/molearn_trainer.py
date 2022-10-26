@@ -6,7 +6,6 @@ import time
 import torch
 import biobox as bb
 import csv
-#from IPython import embed
 import molearn
 from molearn.autoencoder import Autoencoder as Net
 from molearn.loss_functions import Auto_potential
@@ -14,6 +13,13 @@ from molearn.pdb_data import PDBData
 from molearn.openmm_loss import openmm_energy
 import warnings
 from decimal import Decimal
+try:
+    from IPython import embed
+except ImportError:
+    print('IPython not install but also not strictly needed')
+
+class TrainingFailure(Exception):
+    pass
 
 class Molearn_Trainer():
     def __init__(self, device = None, log_filename = 'log_file.dat'):
@@ -79,23 +85,37 @@ class Molearn_Trainer():
         self.optimiser = torch.optim.SGD(self.autoencoder.parameters(), **optimiser_kwargs)
 
 
-    def run(self, max_epochs=1600, log_filename = 'log_file.dat', checkpoint_frequency=8, checkpoint_folder='checkpoints'):
+    def run(self, max_epochs=1600, log_filename = 'log_file.dat', checkpoint_frequency=8, checkpoint_folder='checkpoints', allow_n_failures=10):
         #Not safe, might overide your stuff
 
         with open(log_filename, 'a') as fout:
-            for epoch in range(self.epoch, max_epochs):
-                time1 = time.time()
-                self.epoch = epoch
-                train_loss = self.train_step(epoch)
-                time2 = time.time()
-                with torch.no_grad():
-                    valid_loss = self.valid_step(epoch)
-                time3 = time.time()
-                if epoch%checkpoint_frequency==0:
-                    self.checkpoint(epoch, valid_loss, checkpoint_folder)
-                time4 = time.time()
-                print('  '.join(['%.2E'%Decimal(s) if isinstance(s ,float) else str(s)  for s in ['epoch',epoch, 'tl', train_loss, 'vl', valid_loss, 'train(s)',time2-time1,'valid(s)', time3-time2, 'check(s)', time4-time3, self.extra_print_args]])+'\n')
-                fout.write('  '.join([str(s) for s in [epoch, train_loss, valid_loss, time2-time1, time3-time2, time4-time3, self.extra_write_args]])+'\n')
+            for attempt in range(allow_n_failures):
+                try:
+                    for epoch in range(self.epoch, max_epochs):
+                        time1 = time.time()
+                        self.epoch = epoch
+                        train_loss = self.train_step(epoch)
+                        time2 = time.time()
+                        with torch.no_grad():
+                            valid_loss = self.valid_step(epoch)
+                        time3 = time.time()
+                        if epoch%checkpoint_frequency==0:
+                            self.checkpoint(epoch, valid_loss, checkpoint_folder)
+                        time4 = time.time()
+                        print('  '.join(['%.2E'%Decimal(s) if isinstance(s ,float) else str(s)  for s in ['epoch',epoch, 'tl', train_loss, 'vl', valid_loss, 'train(s)',time2-time1,'valid(s)', time3-time2, 'check(s)', time4-time3, self.extra_print_args]])+'\n')
+                        fout.write('  '.join([str(s) for s in [epoch, train_loss, valid_loss, time2-time1, time3-time2, time4-time3, self.extra_write_args]])+'\n')
+                        if np.isnan(valid_loss) or np.isnan(train_loss):
+                            raise TrainingFailure('nan received, failing')
+                except TrainingFailure:
+                    failure_message = f'Training Failure due to Nan in attempt {attempt}, try again from best'
+                    print(failure_message)
+                    fout.write(failure_message)
+                    if hasattr(self, 'best'):
+                        self.load_checkpoint('best', checkpoint_folder)
+                        self.epoch+=1
+                else:
+                    break
+
 
     def train_step(self,epoch):
         self.autoencoder.train()
@@ -127,6 +147,11 @@ class Molearn_Trainer():
             N+=len(batch)
         return average_loss/N
 
+    def update_optimiser_hyperparameters(self, **kwargs):
+        for g in self.optimiser.param_groups:
+            for key, value in kwargs.items():
+                g[key] = value
+
     def checkpoint(self, epoch, valid_loss, checkpoint_folder):
         if not os.path.exists(checkpoint_folder):
             os.mkdir(checkpoint_folder)
@@ -134,7 +159,8 @@ class Molearn_Trainer():
                     'model_state_dict': self.autoencoder.state_dict(),
                     'optimizer_state_dict': self.optimiser.state_dict(),
                     'loss': valid_loss,
-                    'network_kwargs': self._autoencoder_kwargs},
+                    'network_kwargs': self._autoencoder_kwargs,
+                    'atoms': self._data.atoms},
                 f'{checkpoint_folder}/last.ckpt')
 
         if self.best is None or self.best > valid_loss:
@@ -144,6 +170,23 @@ class Molearn_Trainer():
                 os.remove(self.best_name)
             self.best_name = filename
             self.best = valid_loss
+
+    def load_checkpoint(self, checkpoint_name, checkpoint_folder):
+        if checkpoint_name=='best':
+            _name = self.best_name
+        elif checkpoint_name =='last':
+            _name = f'{checkpoint_folder}/last.ckpt'
+        else:
+            _name = f'{checkpoint_folder}/{checkpoint_name}'
+        checkpoint = torch.load(_name)
+        if not hasattr(self, 'autoencoder'):
+            self.get_network(autoencoder_kwargs=checkpoint['network_kwargs'])
+
+        self.autoencoder.load_state_dict(checkpoint['model_state_dict'])
+        self.optimiser.load_state_dict(checkpoint['optimizer_state_dict'])
+        epoch = checkpoint['epoch']
+        self.epoch = epoch
+
 
 class Molearn_Physics_Trainer(Molearn_Trainer):
     def __init__(self, *args, **kwargs):
@@ -229,13 +272,14 @@ class OpenMM_Physics_Trainer(Molearn_Trainer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def prepare_physics(self, physics_scaling_factor=0.1, clamp_threshold = 10000, clamp=False):
+    def prepare_physics(self, physics_scaling_factor=0.1, clamp_threshold = 10000, clamp=False, start_physics_at=0):
+        self.start_physics_at = start_physics_at
         self.psf = physics_scaling_factor
         if clamp:
             clamp_kwargs = dict(max=clamp_threshold, min = -clamp_threshold)
         else:
             clamp_kwargs = None
-        self.physics_loss = openmm_energy(self.mol, self.std, clamp=clamp_kwargs, platform = 'Cuda' if self.device is torch.device('cuda') else 'Reference', atoms = self._data.atoms)
+        self.physics_loss = openmm_energy(self.mol, self.std, clamp=clamp_kwargs, platform = 'CUDA' if self.device == torch.device('cuda') else 'Reference', atoms = self._data.atoms)
 
     def train_step(self, epoch):
         self.autoencoder.train()
@@ -256,18 +300,18 @@ class OpenMM_Physics_Trainer(Molearn_Trainer):
             energy = self.physics_loss(generated)
             output = self.autoencoder.decode(latent)[:,:,:batch.size(2)]
             mse_loss = ((batch-output)**2).mean()
-            
-            average_physics = energy.mean()
-            print(f'{i} {average_physics.item()}, {mse_loss.item()}')
-            #from IPython import embed
-            #embed(header='openmm')
+            energy[energy.isinf()]=0.0
+            average_physics = energy.nanmean()
             with torch.no_grad():
-                scale = self.psf*mse_loss/average_physics
-            final_loss = mse_loss+scale*average_physics
+                scale = (self.psf*mse_loss/average_physics) +1.0e-37
+            if epoch>=self.start_physics_at:
+                final_loss = mse_loss+scale*average_physics
+            else:
+                final_loss = mse_loss
 
             final_loss.backward()
             self.optimiser.step()
-            
+
             average_loss+=final_loss.item()*n
             average_mse += mse_loss.item()*n
             average_openmm_energy += average_physics.item()*n
@@ -288,7 +332,7 @@ class OpenMM_Physics_Trainer(Molearn_Trainer):
             latent = self.autoencoder.encode(batch)
             alpha = torch.rand(int(n//2), 1, 1).type_as(latent)
             latent_interpolated = (1-alpha)*latent[:-1:2] + alpha*latent[1::2]
-            
+
             generated = self.autoencoder.decode(latent_interpolated)[:,:,:batch.size(2)]
             energy = self.physics_loss(generated)
             output = self.autoencoder.decode(latent)[:,:,:batch.size(2)]
