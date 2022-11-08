@@ -80,6 +80,8 @@ class Molearn_Trainer():
     def get_optimiser(self, optimiser_kwargs=None):
         self.optimiser = torch.optim.SGD(self.autoencoder.parameters(), **optimiser_kwargs)
 
+    def get_adam_optimiser(self, optimiser_kwargs=None):
+        self.optimiser = torch.optim.Adam(self.autoencoder.parameters(), **optimiser_kwargs)
 
     def run(self, max_epochs=1600, log_filename = 'log_file.dat', checkpoint_frequency=8, checkpoint_folder='checkpoints', allow_n_failures=10):
         #Not safe, might overide your stuff
@@ -156,8 +158,10 @@ class Molearn_Trainer():
                     'optimizer_state_dict': self.optimiser.state_dict(),
                     'loss': valid_loss,
                     'network_kwargs': self._autoencoder_kwargs,
-                    'atoms': self._data.atoms},
-                f'{checkpoint_folder}/last.ckpt')
+                    'atoms': self._data.atoms,
+                    'std': self.std,
+                    'mean': self.mean},
+                   f'{checkpoint_folder}/last.ckpt')
 
         if self.best is None or self.best > valid_loss:
             filename = f'{checkpoint_folder}/checkpoint_epoch{epoch}_loss{valid_loss}.ckpt'
@@ -307,7 +311,6 @@ class OpenMM_Physics_Trainer(Molearn_Trainer):
 
             final_loss.backward()
             self.optimiser.step()
-
             average_loss+=final_loss.item()*n
             average_mse += mse_loss.item()*n
             average_openmm_energy += average_physics.item()*n
@@ -334,10 +337,14 @@ class OpenMM_Physics_Trainer(Molearn_Trainer):
             output = self.autoencoder.decode(latent)[:,:,:batch.size(2)]
             mse_loss = ((batch-output)**2).mean()
 
-            average_physics = energy.mean()
+            energy[energy.isinf()]=0.0
+            average_physics = energy.nanmean()
             scale = self.psf*mse_loss/average_physics
 
-            final_loss = mse_loss+scale*average_physics
+            if epoch>=self.start_physics_at:
+                final_loss = mse_loss+scale*average_physics
+            else:
+                final_loss = mse_loss
             average_loss+=final_loss.item()*n
             average_mse += mse_loss.item()*n
             average_openmm_energy+=average_physics.item()*n
