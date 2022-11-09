@@ -263,3 +263,8 @@ TSWLatexianTemp*
 # standalone packages
 *.sta
 
+# extra
+wop*
+mp*
+nop*
+
