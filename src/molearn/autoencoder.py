@@ -51,12 +51,12 @@ class FromLatentDimensions(nn.Module):
 
 class Encoder(nn.Module):
     def __init__(self, init_z=32, latent_z=2, depth=4, m=2.0, r=2, use_spectral_norm=False,use_group_norm=False, num_groups=8,
-                init_n=26):
+                init_n=26, starting_dimensions=3):
         super().__init__()
         sn = use_spectral_norm # rename for brevity
         # encoder block
         eb = nn.ModuleList()
-        eb.append(spectral_norm(nn.Conv1d(3, init_z, 4, 2, 1, bias=False)) if sn else nn.Conv1d(3, init_z, 4, 2, 1, bias=False))
+        eb.append(spectral_norm(nn.Conv1d(starting_dimensions, init_z, 4, 2, 1, bias=False)) if sn else nn.Conv1d(3, init_z, 4, 2, 1, bias=False))
         eb.append(nn.GroupNorm(num_groups, init_z) if use_group_norm else nn.BatchNorm1d(init_z))
         eb.append(nn.ReLU(inplace=True))
         for j in range(r):
@@ -82,7 +82,7 @@ class Encoder(nn.Module):
 class Decoder(nn.Module):
 
     def __init__(self, init_z=32, latent_z=2, depth=4, m=2.0, r=2, use_spectral_norm=False,use_group_norm=False, num_groups=8,
-                init_n=26):
+                init_n=26, last_dimensions=3):
         super().__init__()
         sn = use_spectral_norm # rename for brevity
         self.latent_z = latent_z
@@ -105,7 +105,7 @@ class Decoder(nn.Module):
         db.append(spectral_norm(nn.ConvTranspose1d(int(init_z), 3, 4, 2, 1)) if sn else \
                                 nn.ConvTranspose1d(int(init_z), 3, 4, 2, 1))
         for j in range(r):
-            db.append(ResidualBlock(3, sn=use_spectral_norm, gn=use_group_norm, num_groups=num_groups))
+            db.append(ResidualBlock(last_dimensions, sn=use_spectral_norm, gn=use_group_norm, num_groups=num_groups))
         self.model = nn.Sequential(*db)
 
     def forward(self, x):

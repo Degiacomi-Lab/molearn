@@ -520,7 +520,7 @@ def amber_card_type_10B(f_in, other_parameters):
 def get_convolutions(dataset, pdb_atom_names,
                               atom_label=('set','string')[0],
                               perform_checks=True,
-                              v=4,
+                              v=5,
                               order=False,
                               return_type=['mask','idxs'][1],
                               absolute_torsion_period=True,
@@ -744,6 +744,36 @@ def get_convolutions(dataset, pdb_atom_names,
             if resid !=current_resid:# and atom2 == 'C':
                 current_resid = resid
                 current_atoms = []
+            current_atoms.append([atom1,i1])
+    if version ==5:
+        connectivity = other_parameters['connectivity']
+        bond_types = []
+        bond_idxs = []
+        tracker = [[] for i in range(N)]
+        current_resid = -9999
+        current_atoms = []
+        previous_atoms = []
+        for i1, (atom1, res, resid) in enumerate(p_atom_names):
+            assert atom1 in connectivity[res]
+            if resid!=current_resid:
+                previous_atoms = deepcopy(current_atoms)
+                current_atoms = []
+                current_resid=resid
+            if atom1=='N':
+                for atom2, i2 in previous_atoms:
+                    if atom2=='C':
+                        tracker[i1].append(i2)
+                        tracker[i2].append(i1)
+                        bond_types.append(tuple((atom_names[i2][0], atom_names[i1][0])))
+                        bond_idxs.append([i2,i1])
+
+            for atom2, i2 in current_atoms:
+                if atom2 in connectivity[res][atom1] and atom1 in connectivity[res][atom2]:
+                    tracker[i1].append(i2)
+                    tracker[i2].append(i1)
+                    names = tuple((atom_names[i2][0], atom_names[i1][0]))
+                    bond_types.append(names)
+                    bond_idxs.append([i2,i1])
             current_atoms.append([atom1,i1])
     if version <4:
         all_bond_idxs = np.sort(bond_idxs)
