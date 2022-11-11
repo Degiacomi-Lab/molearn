@@ -127,10 +127,11 @@ class OpenmmPluginScore():
                                       openmm.NonbondedForce,
                                       openmm.CMMotionRemover)):
                     self.system.removeForce(idx)
-        self.integrator = MyIntegrator(300*kelvin, 1/picosecond, 0.002*picosecond)
+        #self.integrator = MyIntegrator(300*kelvin, 1/picosecond, 0.002*picosecond)
         #self.integrator = TorchExposedIntegrator()
         #self.integrator = openmm.LangevinMiddleIntegrator(300*kelvin, 1/picosecond, 0.002*picosecond)
-
+        from openmmtorch import VerletIntegrator
+        self.integrator = VerletIntegrator(0.002*picosecond)
 
         self.platform = Platform.getPlatformByName(platform)
         self.simulation = Simulation(self.pdb.topology, self.system, self.integrator, self.platform)

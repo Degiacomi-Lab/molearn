@@ -29,6 +29,7 @@ class Molearn_Trainer():
         self.epoch = 0
         self.extra_print_args = ''
         self.extra_write_args = ''
+        self.scheduler = None
 
     def get_dataset(self, filename, batch_size=16, atoms="*", validation_split=0.1, pin_memory=True, dataset_sample_size=-1):
         '''
@@ -62,6 +63,7 @@ class Molearn_Trainer():
         self.mol = data.mol
         self._data = data
 
+
     def get_network(self, autoencoder_kwargs=None, max_number_of_atoms=None):
         self._autoencoder_kwargs = autoencoder_kwargs
         if isinstance(max_number_of_atoms, int):
@@ -83,6 +85,9 @@ class Molearn_Trainer():
     def get_adam_optimiser(self, optimiser_kwargs=None):
         self.optimiser = torch.optim.Adam(self.autoencoder.parameters(), **optimiser_kwargs)
 
+    def set_reduceLROnPlateau(self, verbose=True):
+        self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimiser, mode='min', patience=16, verbose=verbose)
+
     def run(self, max_epochs=1600, log_filename = 'log_file.dat', checkpoint_frequency=8, checkpoint_folder='checkpoints', allow_n_failures=10):
         #Not safe, might overide your stuff
 
@@ -97,6 +102,8 @@ class Molearn_Trainer():
                         with torch.no_grad():
                             valid_loss = self.valid_step(epoch)
                         time3 = time.time()
+                        if self.scheduler is not None:
+                            self.scheduler.step(valid_loss)
                         if epoch%checkpoint_frequency==0:
                             self.checkpoint(epoch, valid_loss, checkpoint_folder)
                         time4 = time.time()
