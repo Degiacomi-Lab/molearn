@@ -2,12 +2,13 @@ import os
 import torch
 import torch.nn as nn
 from matplotlib import pyplot as plt
+from tqdm import tqdm
 from torch import optim
-import tqdm
+from utils1d import *
+from modules import UNet1d
 
 
-
-class Diffusion:
+class Diffusion1d:
     '''
     contains diffusion tools
     linear noise schedule here
@@ -40,8 +41,8 @@ class Diffusion:
         '''
         x_t = \sqrt{\hat \alpha_t}x_0 + sqrt{1-\hat \alpha_t}\epsilon
         '''
-        sqrt_alpha_hat = torch.sqrt(self.alpha_hat[t])[:, None, None, None]
-        sqrt_one_minus_alpha_hat = torch.sqrt(1 - self.alpha_hat[t])[:, None, None, None]
+        sqrt_alpha_hat = torch.sqrt(self.alpha_hat[t])[:, None, None]
+        sqrt_one_minus_alpha_hat = torch.sqrt(1 - self.alpha_hat[t])[:, None, None]
         Ɛ = torch.randn_like(x)
         return sqrt_alpha_hat * x + sqrt_one_minus_alpha_hat * Ɛ, Ɛ
 
@@ -73,13 +74,13 @@ class Diffusion:
         logging.info(f"Sampling {n} new images....")
         model.eval()
         with torch.no_grad():
-            x = torch.randn((n, 3, self.img_size, self.img_size)).to(self.device)
+            x = torch.randn((n, 3, self.img_size)).to(self.device)
             for i in tqdm(reversed(range(1, self.noise_steps)), position=0):
                 t = (torch.ones(n) * i).long().to(self.device)
                 predicted_noise = model(x, t)
-                alpha = self.alpha[t][:, None, None, None]
-                alpha_hat = self.alpha_hat[t][:, None, None, None]
-                beta = self.beta[t][:, None, None, None]
+                alpha = self.alpha[t][:, None, None]
+                alpha_hat = self.alpha_hat[t][:, None, None]
+                beta = self.beta[t][:, None, None]
                 if i > 1:
                     noise = torch.randn_like(x)
                 else:
@@ -87,10 +88,94 @@ class Diffusion:
                 x = 1 / torch.sqrt(alpha) * (x - ((1 - alpha) / (torch.sqrt(1 - alpha_hat))) * predicted_noise) + torch.sqrt(beta) * noise
         model.train()
         x = (x.clamp(-1, 1) + 1) / 2
-        x = (x * 255).type(torch.uint8) don't need to be scaled between 0 and 255
+        #x = (x * 255).type(torch.uint8) don't need to be scaled between 0 and 255
         return x
 
 
+
+def train(args):
+    setup_logging(args.run_name) # make folders
+    device = args.device
+
+    #dataloader = get_data(args)
+
+    data = args.data
+    train_data, valid_data = data.get_dataloader(batch_size=args.batch_size, validation_split=0.1, pin_memory=True)
+
+
+
+    model = UNet1d().to(device)
+    optimizer = optim.AdamW(model.parameters(), lr=args.lr)
+    mse = nn.MSELoss()
+    diffusion = Diffusion1d(img_size=args.image_size, device=device)
+    #logger = SummaryWriter(os.path.join("runs", args.run_name))
+    l = len(train_data)
+
+    for epoch in range(args.epochs):
+        #logging.info(f"Starting epoch {epoch}:")
+        print(f'Starting epoch {epoch}:')
+        #pbar = tqdm(dataloader)
+        total_train_loss = 0.0
+        model.train()
+        for i, images  in enumerate(train_data):
+            images = images[0].to(device)
+            #sample random timesteps
+            t = diffusion.sample_timesteps(images.shape[0]).to(device)
+            #noise images, and get that noise
+            x_t, noise = diffusion.noise_images(images, t)
+            #predict noise
+            predicted_noise = model(x_t, t)
+            #mse between actual noise and predicted noise
+            loss = mse(noise, predicted_noise)
+
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            total_train_loss+=loss.item()*images.shape[0]
+            #pbar.set_postfix(MSE=loss.item())
+
+        model.eval()
+        with torch.no_grad():
+            for i, images in enumerate(valid_data):
+                images = images[0].to(device)
+                t = diffusion.sample_timesteps(images.shape[0]).to(device)
+                x_t, noise = diffusion.noise_images(images, t)
+                predicted_noise = model(x_t, t)
+                loss = mse(noise, predicted_noise)
+                total_valid_loss+=loss.item()*images.shape[0]
+
+            sampled_images = diffusion.sample(model, n=10)
+
+            ndarr = sampled_images.permute(0, 2, 1).to('cpu').numpy()
+            np.save(os.path.join('results', args.run_name, f'{epoch}'), ndarr)
+        torch.save(model.state_dict(), os.path.join("models", args.run_name, f"ckpt.pt"))
+
+
+def launch():
+    import argparse
+    parser = argparse.ArgumentParser()
+    args = parser.parse_args()
+    args.run_name = "DDPM_Uncondtional_protein"
+
+    import sys
+    sys.path.insert(0, '/home2/wppj21/Workshop/molearn/src')
+    import molearn
+    data = molearn.PDBData()
+    data.import_pdb(args.dataset_path)
+    data.atomselect(atoms = ['CA', 'C', 'CB', 'O', 'N',])
+
+    args.data = data
+    args.epochs = 500
+    args.batch_size = 12
+    args.image_size = data._mol.coordinates.shape[1]
+    args.dataset_path = "/projects/cgw/proteins/molearn/MurD_closed_open.pdb"
+    args.device = "cuda"
+    args.lr = 3e-4
+    train(args)
+
+
+if __name__ == '__main__':
+    launch()
 
 
 
