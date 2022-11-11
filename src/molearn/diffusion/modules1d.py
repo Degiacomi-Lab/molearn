@@ -7,26 +7,26 @@ class UNet1d(nn.Module):
     def __init__(self, c_in=3, c_out=3, time_dim=256, device="cuda"):
         super().__init__()
         self.device = device
-        sel.time_dim = time_dim
+        self.time_dim = time_dim
         self.inc = DoubleConv1d(c_in, 64)
         self.down1 = Down1d(64, 128)
-        self.sa1 = SelfAttention1d(128, 32)
+        self.sa1 = SelfAttention1d(128, 32**2)
         self.down2 = Down1d(128, 256)
-        self.sa2 = SelfAttention1d(256, 16)
+        self.sa2 = SelfAttention1d(256, 16**2)
         self.down3 = Down1d(256, 256)
-        self.sa3 = SelfAttention1d(256, 8)
+        self.sa3 = SelfAttention1d(256, 8**2)
 
         self.bot1 = DoubleConv1d(256, 512)
         self.bot2 = DoubleConv1d(512, 512)
         self.bot3 = DoubleConv1d(512, 256)
 
         self.up1 = Up1d(512, 128)
-        self.sa4 = SelfAttention1d(128, 16)
+        self.sa4 = SelfAttention1d(128, 16**2)
         self.up2 = Up1d(256, 64)
-        self.sa5 = SelfAttention1d(64, 32)
+        self.sa5 = SelfAttention1d(64, 32**2)
         self.up3 = Up1d(128, 64)
-        self.sa6 = SelfAttention1d(64, 64)
-        self.outc = nn.Conv2d(64, c_out, kernel_size=1)
+        self.sa6 = SelfAttention1d(64, 64**2)
+        self.outc = nn.Conv1d(64, c_out, kernel_size=1)
 
     def pos_encoding(self, t, channels):
         '''
@@ -46,10 +46,12 @@ class UNet1d(nn.Module):
         :param x: noised images
         :param t: time step
         '''
+        t
         t = t.unsqueeze(-1).type(torch.float)
         t = self.pos_encoding(t, self.time_dim)
-
-        x1 = self.inc(x)
+        N = x.shape[2]    
+        x1 = torch.nn.functional.pad(x, (0,4096-N))
+        x1 = self.inc(x1)
         x2 = self.down1(x1, t)
         x2 = self.sa1(x2)
         x3 = self.down2(x2, t)
@@ -66,7 +68,8 @@ class UNet1d(nn.Module):
         x = self.up2(x, x2, t)
         x = self.sa5(x)
         x = self.up3(x, x1, t)
-        x = self.sa6(x)
+        x = self.sa6(x)[:,:,:N]
+    
         output = self.outc(x)
         return output
 
@@ -126,7 +129,7 @@ class Down1d(nn.Module):
     def __init__(self, in_channels, out_channels, emb_dim=256):
         super().__init__()
         self.maxpool_conv = nn.Sequential(
-            nn.MaxPool1d(2),
+            nn.MaxPool1d(4),
             DoubleConv1d(in_channels, in_channels, residual=True),
             DoubleConv1d(in_channels, out_channels),
         )
@@ -152,7 +155,7 @@ class Up1d(nn.Module):
     def __init__(self, in_channels, out_channels, emb_dim=256):
         super().__init__()
 
-        self.up = nn.Upsample(scale_factor=2, mode="bilinear", align_corners=True)
+        self.up = nn.Upsample(scale_factor=4, mode="linear", align_corners=True)
         self.conv = nn.Sequential(
             DoubleConv1d(in_channels, in_channels, residual=True),
             DoubleConv1d(in_channels, out_channels, in_channels // 2),

@@ -4,8 +4,8 @@ import torch.nn as nn
 from matplotlib import pyplot as plt
 from tqdm import tqdm
 from torch import optim
-from utils1d import *
-from modules import UNet1d
+from utils import *
+from modules1d import UNet1d
 
 
 class Diffusion1d:
@@ -71,7 +71,7 @@ class Diffusion1d:
                 x_(t-1) = 1/sqrt(alpha_t) \left( x_t - (1-alpha_t)/(sqrt(1 - alphahat_t) * epsilon_0(x_t, t))\right) + sigma_t*z
 
         '''
-        logging.info(f"Sampling {n} new images....")
+        #logging.info(f"Sampling {n} new images....")
         model.eval()
         with torch.no_grad():
             x = torch.randn((n, 3, self.img_size)).to(self.device)
@@ -104,7 +104,7 @@ def train(args):
 
 
 
-    model = UNet1d().to(device)
+    model = UNet1d(device=device).to(device)
     optimizer = optim.AdamW(model.parameters(), lr=args.lr)
     mse = nn.MSELoss()
     diffusion = Diffusion1d(img_size=args.image_size, device=device)
@@ -117,7 +117,8 @@ def train(args):
         #pbar = tqdm(dataloader)
         total_train_loss = 0.0
         model.train()
-        for i, images  in enumerate(train_data):
+        pbar = tqdm(train_data)
+        for i, images  in enumerate(pbar):
             images = images[0].to(device)
             #sample random timesteps
             t = diffusion.sample_timesteps(images.shape[0]).to(device)
@@ -132,11 +133,13 @@ def train(args):
             loss.backward()
             optimizer.step()
             total_train_loss+=loss.item()*images.shape[0]
-            #pbar.set_postfix(MSE=loss.item())
+            pbar.set_postfix(MSE=loss.item())
 
         model.eval()
         with torch.no_grad():
-            for i, images in enumerate(valid_data):
+            vbar = tqdm(valid_data)
+            total_valid_loss = 0.0
+            for i, images in enumerate(vbar):
                 images = images[0].to(device)
                 t = diffusion.sample_timesteps(images.shape[0]).to(device)
                 x_t, noise = diffusion.noise_images(images, t)
@@ -145,9 +148,12 @@ def train(args):
                 total_valid_loss+=loss.item()*images.shape[0]
 
             sampled_images = diffusion.sample(model, n=10)
-
-            ndarr = sampled_images.permute(0, 2, 1).to('cpu').numpy()
-            np.save(os.path.join('results', args.run_name, f'{epoch}'), ndarr)
+            if epoch%50==0:
+                ndarr = sampled_images.permute(0, 2, 1).to('cpu').numpy()
+                np.save(os.path.join('results', args.run_name, f'{epoch}'), ndarr)
+        valid_loss = total_valid_loss/len(valid_data)
+        train_loss = total_train_loss/l
+        print(f'valid loss: {valid_loss}, train loss: {train_loss}')
         torch.save(model.state_dict(), os.path.join("models", args.run_name, f"ckpt.pt"))
 
 
@@ -156,9 +162,11 @@ def launch():
     parser = argparse.ArgumentParser()
     args = parser.parse_args()
     args.run_name = "DDPM_Uncondtional_protein"
+    args.dataset_path = "/home/wppj21/Workshop/proteins/MurD-Degiacomi/MurD_closed_open.pdb"
 
     import sys
-    sys.path.insert(0, '/home2/wppj21/Workshop/molearn/src')
+    #sys.path.insert(0, '/home2/wppj21/Workshop/molearn/src')
+    sys.path.insert(0, '/home/wppj21/Workshop/molearn/src')
     import molearn
     data = molearn.PDBData()
     data.import_pdb(args.dataset_path)
@@ -168,8 +176,8 @@ def launch():
     args.epochs = 500
     args.batch_size = 12
     args.image_size = data._mol.coordinates.shape[1]
-    args.dataset_path = "/projects/cgw/proteins/molearn/MurD_closed_open.pdb"
-    args.device = "cuda"
+    #args.dataset_path = "/projects/cgw/proteins/molearn/MurD_closed_open.pdb"
+    args.device = "cpu"
     args.lr = 3e-4
     train(args)
 
