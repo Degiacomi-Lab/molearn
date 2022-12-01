@@ -1,5 +1,6 @@
 import sys
 import os
+import glob
 import shutil
 import numpy as np
 import time
@@ -112,12 +113,17 @@ class Molearn_Trainer():
                         if np.isnan(valid_loss) or np.isnan(train_loss):
                             raise TrainingFailure('nan received, failing')
                 except TrainingFailure:
-                    failure_message = f'Training Failure due to Nan in attempt {attempt}, try again from best'
+                    if attempt==(allow_n_failures-1):
+                        failure_message = f'Training Failure due to Nan in attempt {attempt}, end now/n'
+                        print(failure_message)
+                        fout.write(failure_message)
+                        raise TrainingFailure('nan received, failing')
+                    failure_message = f'Training Failure due to Nan in attempt {attempt}, try again from best/n'
                     print(failure_message)
                     fout.write(failure_message)
                     if hasattr(self, 'best'):
                         self.load_checkpoint('best', checkpoint_folder)
-                        self.epoch+=1
+                        #self.epoch+=1
                 else:
                     break
 
@@ -152,6 +158,39 @@ class Molearn_Trainer():
             N+=len(batch)
         return average_loss/N
 
+    def learning_rate_sweep(self, max_lr=100, min_lr=1e-5, number_of_iterations=1000, checkpoint_folder='checkpoint_sweep'):
+        self.autoencoder.train()
+        def cycle(iterable):
+            while True:
+                for i in iterable:
+                    yield i
+        init_loss = 0.0
+        values = []
+        data = iter(cycle(self.train_dataloader))
+        for i in range(number_of_iterations):
+            lr = min_lr*((max_lr/min_lr)**(i/number_of_iterations))
+            self.update_optimiser_hyperparameters(lr=lr)
+            batch = next(data)[0].to(self.device).float()
+
+            self.optimiser.zero_grad()
+            latent = self.autoencoder.encode(batch)
+            output = self.autoencoder.decode(latent)[:,:,:batch.size(2)]
+            mse_loss = ((batch-output)**2).mean()
+            #print(f'{i} lr {lr} loss {mse_loss.item()}')
+
+            mse_loss.backward()
+            self.optimiser.step()
+            values.append((lr,mse_loss.item()))
+            if i ==0:
+                self.checkpoint(self.epoch, mse_loss.item(), checkpoint_folder)
+                init_loss = mse_loss.item()
+            if mse_loss.item()>10*init_loss:
+                break
+        self.load_checkpoint('last', checkpoint_folder)
+        values = np.array(values)
+        print('min value ', values[values[:,1].argmin()])
+        return values
+
     def update_optimiser_hyperparameters(self, **kwargs):
         for g in self.optimiser.param_groups:
             for key, value in kwargs.items():
@@ -180,7 +219,13 @@ class Molearn_Trainer():
 
     def load_checkpoint(self, checkpoint_name, checkpoint_folder):
         if checkpoint_name=='best':
-            _name = self.best_name
+            if self.best_name is not None:
+                _name = self.best_name
+            else:
+                ckpts = glob.glob(checkpoint_folder+'/checkpoint_epoch*')
+                indexs = [x.rfind('loss') for x in ckpts]
+                losses = [float(x[y+4:-5]) for x,y in zip(ckpts, indexs)]
+                _name = ckpts[np.argmin(losses)]
         elif checkpoint_name =='last':
             _name = f'{checkpoint_folder}/last.ckpt'
         else:
@@ -192,7 +237,7 @@ class Molearn_Trainer():
         self.autoencoder.load_state_dict(checkpoint['model_state_dict'])
         self.optimiser.load_state_dict(checkpoint['optimizer_state_dict'])
         epoch = checkpoint['epoch']
-        self.epoch = epoch
+        self.epoch = epoch+1
 
 
 class Molearn_Physics_Trainer(Molearn_Trainer):

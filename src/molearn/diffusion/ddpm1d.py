@@ -2,10 +2,11 @@ import os
 import torch
 import torch.nn as nn
 from matplotlib import pyplot as plt
-from tqdm import tqdm
+#from tqdm import tqdm
 from torch import optim
 from utils import *
 from modules1d import UNet1d
+import numpy as np
 
 
 class Diffusion1d:
@@ -75,7 +76,7 @@ class Diffusion1d:
         model.eval()
         with torch.no_grad():
             x = torch.randn((n, 3, self.img_size)).to(self.device)
-            for i in tqdm(reversed(range(1, self.noise_steps)), position=0):
+            for i in reversed(range(1, self.noise_steps)):
                 t = (torch.ones(n) * i).long().to(self.device)
                 predicted_noise = model(x, t)
                 alpha = self.alpha[t][:, None, None]
@@ -87,7 +88,7 @@ class Diffusion1d:
                     noise = torch.zeros_like(x)
                 x = 1 / torch.sqrt(alpha) * (x - ((1 - alpha) / (torch.sqrt(1 - alpha_hat))) * predicted_noise) + torch.sqrt(beta) * noise
         model.train()
-        x = (x.clamp(-1, 1) + 1) / 2
+        #x = (x.clamp(-1, 1) + 1) / 2
         #x = (x * 255).type(torch.uint8) don't need to be scaled between 0 and 255
         return x
 
@@ -117,7 +118,7 @@ def train(args):
         #pbar = tqdm(dataloader)
         total_train_loss = 0.0
         model.train()
-        pbar = tqdm(train_data)
+        pbar = train_data#tqdm(train_data)
         for i, images  in enumerate(pbar):
             images = images[0].to(device)
             #sample random timesteps
@@ -133,11 +134,11 @@ def train(args):
             loss.backward()
             optimizer.step()
             total_train_loss+=loss.item()*images.shape[0]
-            pbar.set_postfix(MSE=loss.item())
+            #pbar.set_postfix(MSE=loss.item())
 
         model.eval()
         with torch.no_grad():
-            vbar = tqdm(valid_data)
+            vbar = valid_data#tqdm(valid_data)
             total_valid_loss = 0.0
             for i, images in enumerate(vbar):
                 images = images[0].to(device)
@@ -148,9 +149,9 @@ def train(args):
                 total_valid_loss+=loss.item()*images.shape[0]
 
             sampled_images = diffusion.sample(model, n=10)
-            if epoch%50==0:
-                ndarr = sampled_images.permute(0, 2, 1).to('cpu').numpy()
-                np.save(os.path.join('results', args.run_name, f'{epoch}'), ndarr)
+            if (epoch+1)%50==0:
+                ndarr = (sampled_images*data.std).permute(0, 2, 1).to('cpu').numpy()
+                np.save(os.path.join('results', args.run_name, f'{epoch+1}'), ndarr)
         valid_loss = total_valid_loss/len(valid_data)
         train_loss = total_train_loss/l
         print(f'valid loss: {valid_loss}, train loss: {train_loss}')
@@ -161,12 +162,13 @@ def launch():
     import argparse
     parser = argparse.ArgumentParser()
     args = parser.parse_args()
-    args.run_name = "DDPM_Uncondtional_protein"
-    args.dataset_path = "/home/wppj21/Workshop/proteins/MurD-Degiacomi/MurD_closed_open.pdb"
+    args.run_name = "DDPM_Uncondtional_protein_no_crop"
+    #args.dataset_path = "/home/wppj21/Workshop/proteins/MurD-Degiacomi/MurD_closed_open.pdb"
+    args.dataset_path = '/projects/cgw/proteins/molearn/MurD_closed_open.pdb'
 
     import sys
-    #sys.path.insert(0, '/home2/wppj21/Workshop/molearn/src')
-    sys.path.insert(0, '/home/wppj21/Workshop/molearn/src')
+    sys.path.insert(0, '/home2/wppj21/Workshop/molearn/src')
+    #sys.path.insert(0, '/home/wppj21/Workshop/molearn/src')
     import molearn
     data = molearn.PDBData()
     data.import_pdb(args.dataset_path)
@@ -177,7 +179,7 @@ def launch():
     args.batch_size = 12
     args.image_size = data._mol.coordinates.shape[1]
     #args.dataset_path = "/projects/cgw/proteins/molearn/MurD_closed_open.pdb"
-    args.device = "cpu"
+    args.device = "cuda"
     args.lr = 3e-4
     train(args)
 
