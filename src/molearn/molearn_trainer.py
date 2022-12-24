@@ -235,6 +235,8 @@ class Molearn_Trainer():
             self.get_network(autoencoder_kwargs=checkpoint['network_kwargs'])
 
         self.autoencoder.load_state_dict(checkpoint['model_state_dict'])
+        if not hasattr(self, 'optimiser'):
+            self.get_optimiser(dict(lr=1e-20, momentum=0.9, weight_decay=0.0001))
         self.optimiser.load_state_dict(checkpoint['optimizer_state_dict'])
         epoch = checkpoint['epoch']
         self.epoch = epoch+1

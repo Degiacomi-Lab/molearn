@@ -27,11 +27,10 @@ class Test_openmm_plugin(unittest.TestCase):
         _d = data.dataset.to(device).float()
         #d = next(iter(dataloader))[0].to(device).float()
         para = mymodule(_d.clone())
-        openmmscore = molearn.openmm_energy(data.mol, data.std, clamp=None, platform = 'Reference') #xml_file = ['modified_amber_protein.xml',])
+        openmmscore = molearn.openmm_energy(data.mol, data.std, clamp=None, platform = 'CUDA') #xml_file = ['modified_amber_protein.xml',])
         opt = torch.optim.SGD(para.parameters(), lr=0.0001)
         scores = []
-        exit()
-        for i in range(100):
+        for i in range(1000):
             opt.zero_grad()
             d = torch.zeros_like(_d)
             x = para(d)

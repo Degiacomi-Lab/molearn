@@ -267,4 +267,9 @@ TSWLatexianTemp*
 wop*
 mp*
 nop*
-
+examples*
+*__pycache__
+ERROR*
+LOG*
+*.swp
+*.swo

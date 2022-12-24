@@ -71,13 +71,16 @@ class PDBData:
         M.properties['center'] = M.get_center()
         return deepcopy(M)
 
-    def get_dataloader(self, batch_size, validation_split=0.1, pin_memory=True, dataset_sample_size=-1):
+    def get_dataloader(self, batch_size, validation_split=0.1, pin_memory=True, dataset_sample_size=-1, manual_seed=None):
         if not hasattr(self, 'dataset'):
             self.prepare_dataset()
         valid_size = int(len(self.dataset)*validation_split)
         train_size = len(self.dataset) - valid_size
         dataset = torch.utils.data.TensorDataset(self.dataset.float())
-        self.train_dataset, self.valid_dataset = torch.utils.data.random_split(dataset, [train_size, valid_size])
+        if manual_seed is not None:
+            self.train_dataset, self.valid_dataset = torch.utils.data.random_split(dataset, [train_size, valid_size], generator=torch.Generator().manual_seed(manual_seed))
+        else:
+            self.train_dataset, self.valid_dataset = torch.utils.data.random_split(dataset, [train_size, valid_size])
         self.train_dataloader = torch.utils.data.DataLoader(self.train_dataset, batch_size=batch_size, pin_memory=pin_memory, shuffle=True)
         self.valid_dataloader = torch.utils.data.DataLoader(self.valid_dataset, batch_size=batch_size, pin_memory=pin_memory)
         return self.train_dataloader, self.valid_dataloader
