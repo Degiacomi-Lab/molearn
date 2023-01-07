@@ -14,6 +14,7 @@ from molearn.pdb_data import PDBData
 from molearn.openmm_loss import openmm_energy
 import warnings
 from decimal import Decimal
+import json
 
 class TrainingFailure(Exception):
     pass
@@ -28,9 +29,9 @@ class Molearn_Trainer():
         self.best = None
         self.best_name = None
         self.epoch = 0
-        self.extra_print_args = ''
-        self.extra_write_args = ''
         self.scheduler = None
+        self.verbose = True
+        self.log_filename = 'default_log_filename.json'
 
     def get_dataset(self, filename, batch_size=16, atoms="*", validation_split=0.1, pin_memory=True, dataset_sample_size=-1):
         '''
@@ -88,75 +89,114 @@ class Molearn_Trainer():
 
     def set_reduceLROnPlateau(self, verbose=True):
         self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimiser, mode='min', patience=16, verbose=verbose)
+        def override_step(self, logs):
+            self.scheduler.step(logs['valid_loss'])
+        self.scheduler_step = override_step
 
-    def run(self, max_epochs=1600, log_filename = 'log_file.dat', checkpoint_frequency=8, checkpoint_folder='checkpoints', allow_n_failures=10):
-        #Not safe, might overide your stuff
+    def scheduler_step(self, logs):
+        self.scheduler.step()
 
-        with open(log_filename, 'a') as fout:
-            for attempt in range(allow_n_failures):
-                try:
-                    for epoch in range(self.epoch, max_epochs):
-                        time1 = time.time()
-                        self.epoch = epoch
-                        train_loss = self.train_step(epoch)
-                        time2 = time.time()
-                        with torch.no_grad():
-                            valid_loss = self.valid_step(epoch)
-                        time3 = time.time()
-                        if self.scheduler is not None:
-                            self.scheduler.step(valid_loss)
-                        if epoch%checkpoint_frequency==0:
-                            self.checkpoint(epoch, valid_loss, checkpoint_folder)
-                        time4 = time.time()
-                        print('  '.join(['%.2E'%Decimal(s) if isinstance(s ,float) else str(s)  for s in ['epoch',epoch, 'tl', train_loss, 'vl', valid_loss, 'train(s)',time2-time1,'valid(s)', time3-time2, 'check(s)', time4-time3, self.extra_print_args]])+'\n')
-                        fout.write('  '.join([str(s) for s in [epoch, train_loss, valid_loss, time2-time1, time3-time2, time4-time3, self.extra_write_args]])+'\n')
-                        if np.isnan(valid_loss) or np.isnan(train_loss):
-                            raise TrainingFailure('nan received, failing')
-                except TrainingFailure:
-                    if attempt==(allow_n_failures-1):
-                        failure_message = f'Training Failure due to Nan in attempt {attempt}, end now/n'
-                        print(failure_message)
-                        fout.write(failure_message)
+    def log(self, log_dict, verbose=None):
+        dump = json.dumps(log_dict)
+        if verbose or self.verbose:
+            print(dump)
+        with open(self.log_filename, 'a') as f:
+            f.write(dump+'\n')
+
+
+    def run(self, max_epochs=1600, log_filename = None, checkpoint_frequency=8, checkpoint_folder='checkpoints', allow_n_failures=10, verbose=None):
+        if log_filename is not None:
+            self.log_filename = log_filename
+        if verbose is not None:
+            self.verbose = verbose
+
+        for attempt in range(allow_n_failures):
+            try:
+                for epoch in range(self.epoch, max_epochs):
+                    self.epoch = epoch
+                    time1 = time.time()
+                    train_logs = self.train_epoch(epoch)
+                    time2 = time.time()
+                    with torch.no_grad():
+                        valid_logs = self.valid_epoch(epoch)
+                    time3 = time.time()
+                    if self.scheduler is not None:
+                        self.scheduler_step(valid_logs)
+                    if epoch%checkpoint_frequency==0:
+                        self.checkpoint(epoch, valid_logs['valid_loss'], checkpoint_folder)
+                    time4 = time.time()
+                    logs = {'epoch':epoch, **train_logs, **valid_logs,
+                            'train_seconds':time2-time1,
+                            'valid_seconds':time3-time2,
+                            'checkpoint_seconds': time4-time3,
+                            'total_seconds':time4-time1}
+                    self.log(logs)
+                    if np.isnan(logs['valid_loss']) or np.isnan(logs['train_loss']):
                         raise TrainingFailure('nan received, failing')
-                    failure_message = f'Training Failure due to Nan in attempt {attempt}, try again from best/n'
-                    print(failure_message)
-                    fout.write(failure_message)
-                    if hasattr(self, 'best'):
-                        self.load_checkpoint('best', checkpoint_folder)
-                        #self.epoch+=1
-                else:
-                    break
+            except TrainingFailure:
+                if attempt==(allow_n_failures-1):
+                    failure_message = f'Training Failure due to Nan in attempt {attempt}, end now/n'
+                    self.log({'Failure':failure_message})
+                    raise TrainingFailure('nan received, failing')
+                failure_message = f'Training Failure due to Nan in attempt {attempt}, try again from best/n'
+                self.log({'Failure':failure_message})
+                if hasattr(self, 'best'):
+                    self.load_checkpoint('best', checkpoint_folder)
+            else:
+                break
 
 
-    def train_step(self,epoch):
+    def train_epoch(self,epoch):
         self.autoencoder.train()
-        average_loss = 0.0
         N = 0
+        results = {}
         for i, batch in enumerate(self.train_dataloader):
             batch = batch[0].to(self.device)
             self.optimiser.zero_grad()
-            latent = self.autoencoder.encode(batch)
-            output = self.autoencoder.decode(latent)[:,:,:batch.size(2)]
-            mse_loss = ((batch-output)**2).mean()
-
-            mse_loss.backward()
+            train_result = self.train_step(batch)
+            train_result['loss'].backward()
             self.optimiser.step()
-            average_loss+=mse_loss.item()*len(batch)
+            if i == 0:
+                results = {key:value.item() for key, value in train_result.items()}
+            else:
+                for key in train_result.keys():
+                    results[key] += train_result[key].item()
             N+=len(batch)
-        return average_loss/N
+        return {f'train_{key}': results[key]/N for key in results.keys()}
 
-    def valid_step(self,epoch):
+    def train_step(self, batch):
+        results = self.common_step(batch)
+        results['loss'] = results['mse_loss']
+        return results
+
+    def common_step(self, batch):
+        self._internal = {}
+        encoded = self.autoencoder.encode(batch)
+        self._internal['encoded'] = encoded
+        decoded = self.autoencoder.decode(encoded)[:,:,:batch.size(2)]
+        self._internal['decoded'] = decoded
+        return dict(mse_loss = ((batch-decoded)**2).mean(dim=[1,2]).sum())
+
+
+    def valid_epoch(self,epoch):
         self.autoencoder.eval()
-        average_loss = 0.0
         N = 0
-        for batch in self.valid_dataloader:
+        results = {}
+        for i, batch in enumerate(self.valid_dataloader):
             batch = batch[0].to(self.device)
-            latent = self.autoencoder.encode(batch)
-            output = self.autoencoder.decode(latent)[:,:,:batch.size(2)]
-            mse_loss = ((batch-output)**2).mean()
-            average_loss+=mse_loss.item()*len(batch)
+            valid_result = self.valid_step(batch)
+            if i == 0:
+                results = {key:value.item() for key, value in valid_result.items()}
+            else:
+                for key in valid_result.keys():
+                    results[key] += valid_result[key].item()
             N+=len(batch)
-        return average_loss/N
+        return {f'valid_{key}': results[key]/N for key in results.keys()}
+
+    def valid_step(self, batch):
+        results = self.common_step(batch)
+        results['loss'] = results['mse_loss']
+        return results
 
     def learning_rate_sweep(self, max_lr=100, min_lr=1e-5, number_of_iterations=1000, checkpoint_folder='checkpoint_sweep'):
         self.autoencoder.train()
@@ -173,20 +213,13 @@ class Molearn_Trainer():
             batch = next(data)[0].to(self.device).float()
 
             self.optimiser.zero_grad()
-            latent = self.autoencoder.encode(batch)
-            output = self.autoencoder.decode(latent)[:,:,:batch.size(2)]
-            mse_loss = ((batch-output)**2).mean()
-            #print(f'{i} lr {lr} loss {mse_loss.item()}')
-
-            mse_loss.backward()
+            result = self.train_step(batch)
+            result['loss']/=len(batch)
+            result['loss'].backward()
             self.optimiser.step()
-            values.append((lr,mse_loss.item()))
-            if i ==0:
-                self.checkpoint(self.epoch, mse_loss.item(), checkpoint_folder)
-                init_loss = mse_loss.item()
-            if mse_loss.item()>10*init_loss:
+            values.append((lr,result['loss'].item()))
+            if result['loss'].item()>10*init_loss:
                 break
-        self.load_checkpoint('last', checkpoint_folder)
         values = np.array(values)
         print('min value ', values[values[:,1].argmin()])
         return values
