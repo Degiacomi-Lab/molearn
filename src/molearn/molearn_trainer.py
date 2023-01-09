@@ -171,10 +171,10 @@ class Molearn_Trainer():
             train_result['loss'].backward()
             self.optimiser.step()
             if i == 0:
-                results = {key:value.item() for key, value in train_result.items()}
+                results = {key:value.item()*len(batch) for key, value in train_result.items()}
             else:
                 for key in train_result.keys():
-                    results[key] += train_result[key].item()
+                    results[key] += train_result[key].item()*len(batch)
             N+=len(batch)
         return {f'train_{key}': results[key]/N for key in results.keys()}
 
@@ -189,7 +189,7 @@ class Molearn_Trainer():
         self._internal['encoded'] = encoded
         decoded = self.autoencoder.decode(encoded)[:,:,:batch.size(2)]
         self._internal['decoded'] = decoded
-        return dict(mse_loss = ((batch-decoded)**2).mean(dim=[1,2]).sum())
+        return dict(mse_loss = ((batch-decoded)**2).mean())
 
 
     def valid_epoch(self,epoch):
@@ -200,10 +200,10 @@ class Molearn_Trainer():
             batch = batch[0].to(self.device)
             valid_result = self.valid_step(batch)
             if i == 0:
-                results = {key:value.item() for key, value in valid_result.items()}
+                results = {key:value.item()*len(batch) for key, value in valid_result.items()}
             else:
                 for key in valid_result.keys():
-                    results[key] += valid_result[key].item()
+                    results[key] += valid_result[key].item()*len(batch)
             N+=len(batch)
         return {f'valid_{key}': results[key]/N for key in results.keys()}
 
@@ -228,7 +228,7 @@ class Molearn_Trainer():
 
             self.optimiser.zero_grad()
             result = self.train_step(batch)
-            result['loss']/=len(batch)
+            #result['loss']/=len(batch)
             result['loss'].backward()
             self.optimiser.step()
             values.append((lr,result['loss'].item()))
@@ -304,6 +304,10 @@ class Molearn_Physics_Trainer(Molearn_Trainer):
         latent_interpolated = (1-alpha)*latent[:-1:2] + alpha*latent[1::2]
         generated = self.autoencoder.decode(latent_interpolated)[:,:,:batch.size(2)]
         bond, angle, torsion =  self.physics_loss._roll_bond_angle_torsion_loss(generated*self.std)
+        n = len(generated)
+        bond/=n
+        angle/=n
+        torsion/=n
         total_physics = torch.nansum(torch.tensor([bond ,angle ,torsion]))
         return {'physics_loss':total_physics, 'bond_energy':bond, 'angle_energy':angle, 'torsion_energy':torsion}
 
@@ -346,7 +350,7 @@ class OpenMM_Physics_Trainer(Molearn_Trainer):
         generated = self.autoencoder.decode(latent_interpolated)[:,:,:batch.size(2)]
         energy = self.physics_loss(generated)
         #energy[energy.isinf()]=0.0
-        energy = energy.nansum()
+        energy = energy.nanmean()
         return {'physics_loss':energy if not energy.isinf() else torch.tensor(0.0)}
 
     def train_step(self, batch):
