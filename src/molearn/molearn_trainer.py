@@ -218,6 +218,8 @@ class Molearn_Trainer():
             result['loss'].backward()
             self.optimiser.step()
             values.append((lr,result['loss'].item()))
+            if i==0:
+                init_loss = result['loss'].item()
             if result['loss'].item()>10*init_loss:
                 break
         values = np.array(values)
@@ -283,77 +285,31 @@ class Molearn_Physics_Trainer(Molearn_Trainer):
         self.psf = physics_scaling_factor
         self.physics_loss = Auto_potential(self._data.dataset[0]*self.std, pdb_atom_names = self._data.get_atominfo(), device = self.device, method = 'roll')
 
-    def train_step(self, epoch):
-        self.autoencoder.train()
-        average_loss = 0.0
-        average_mse = 0.0
-        average_bond = 0.0
-        average_angle = 0.0
-        average_torsion = 0.0
-        N = 0
-        for i, batch in enumerate(self.train_dataloader):
-            batch = batch[0].to(self.device)
-            n = len(batch)
-            self.optimiser.zero_grad()
+    def common_physics_step(self, batch, latent, mse_loss):
+        alpha = torch.rand(int(len(batch)//2), 1, 1).type_as(latent)
+        latent_interpolated = (1-alpha)*latent[:-1:2] + alpha*latent[1::2]
+        generated = self.autoencoder.decode(latent_interpolated)[:,:,:batch.size(2)]
+        bond, angle, torsion =  self.physics_loss._roll_bond_angle_torsion_loss(generated*self.std)
+        total_physics = torch.nansum(torch.tensor([bond ,angle ,torsion]))
+        return {'physics_loss':total_physics, 'bond_energy':bond, 'angle_energy':angle, 'torsion_energy':torsion}
 
-            latent = self.autoencoder.encode(batch)
-            alpha = torch.rand(int(n//2), 1, 1).type_as(latent)
-            latent_interpolated = (1-alpha)*latent[:-1:2] + alpha*latent[1::2]
 
-            generated = self.autoencoder.decode(latent_interpolated)[:,:,:batch.size(2)]
-            bond, angle, torsion =  self.physics_loss._roll_bond_angle_torsion_loss(generated*self.std)
-            output = self.autoencoder.decode(latent)[:,:,:batch.size(2)]
-            mse_loss = ((batch-output)**2).mean()
+    def train_step(self, batch):
+        results = self.common_step(batch)
+        results.update(self.common_physics_step(batch, self._internal['encoded'], results['mse_loss']))
+        with torch.no_grad():
+            scale = self.psf*results['mse_loss']/results['physics_loss']
+        final_loss = results['mse_loss']+scale*results['physics_loss']
+        results['loss'] = final_loss
+        return results
 
-            average_physics = (bond + angle + torsion)/n
-            with torch.no_grad():
-                scale = self.psf*mse_loss/average_physics
-            final_loss = mse_loss+scale*average_physics
-
-            final_loss.backward()
-            self.optimiser.step()
-            average_loss+=final_loss.item()*n
-            average_mse += mse_loss.item()*n
-            average_bond+=bond.item()
-            average_angle+=angle.item()
-            average_torsion+=torsion.item()
-            N+=n
-        self.extra_write_args =  '  '.join([str(s) for s in ['tm', average_mse/N, 'tb', average_bond/N, 'ta', average_angle/N, 'tt', average_torsion/N]])
-        return average_loss/N
-
-    def valid_step(self, epoch):
-        self.autoencoder.eval()
-        average_loss = 0.0
-        average_mse = 0.0
-        average_bond = 0.0
-        average_angle = 0.0
-        average_torsion = 0.0
-        N = 0
-        for batch in self.valid_dataloader:
-            batch = batch[0].to(self.device)
-            n = len(batch)
-
-            latent = self.autoencoder.encode(batch)
-            alpha = torch.rand(int(n//2), 1, 1).type_as(latent)
-            latent_interpolated = (1-alpha)*latent[:-1:2] + alpha*latent[1::2]
-
-            generated = self.autoencoder.decode(latent_interpolated)[:,:,:batch.size(2)]
-            bond, angle, torsion =  self.physics_loss._roll_bond_angle_torsion_loss(generated*self.std)
-            output = self.autoencoder.decode(latent)[:,:,:batch.size(2)]
-            mse_loss = ((batch-output)**2).mean()
-
-            average_physics = (bond + angle + torsion)/n
-            scale = self.psf*mse_loss/average_physics
-
-            final_loss = mse_loss+scale*average_physics
-            average_loss+=final_loss.item()*n
-            average_mse += mse_loss.item()*n
-            average_bond+=bond.item()
-            average_angle+=angle.item()
-            average_torsion+=torsion.item()
-            N+=n
-        self.extra_write_args += '  '.join([str(s) for s in ['vm', average_mse/N, 'vb', average_bond/N, 'va', average_angle/N, 'vt', average_torsion/N]])
-        return average_loss/N
+    def valid_step(self, batch):
+        results = self.common_step(batch)
+        results.update(self.common_physics_step(batch, self._internal['encoded'], results['mse_loss']))
+        scale = self.psf*results['mse_loss']/results['physics_loss']
+        final_loss = results['mse_loss']+scale*results['physics_loss']
+        results['loss'] = final_loss
+        return results
 
 class OpenMM_Physics_Trainer(Molearn_Trainer):
     def __init__(self, *args, **kwargs):
@@ -368,76 +324,34 @@ class OpenMM_Physics_Trainer(Molearn_Trainer):
             clamp_kwargs = None
         self.physics_loss = openmm_energy(self.mol, self.std, clamp=clamp_kwargs, platform = 'CUDA' if self.device == torch.device('cuda') else 'Reference', atoms = self._data.atoms)
 
-    def train_step(self, epoch):
-        self.autoencoder.train()
-        average_loss = 0.0
-        average_mse = 0.0
-        average_openmm_energy = 0.0
-        N = 0
-        for i, batch in enumerate(self.train_dataloader):
-            batch = batch[0].to(self.device)
-            n = len(batch)
-            self.optimiser.zero_grad()
 
-            latent = self.autoencoder.encode(batch)
-            alpha = torch.rand(int(n//2), 1, 1).type_as(latent)
-            latent_interpolated = (1-alpha)*latent[:-1:2] + alpha*latent[1::2]
+    def common_physics_step(self, batch, latent):
+        alpha = torch.rand(int(len(batch)//2), 1, 1).type_as(latent)
+        latent_interpolated = (1-alpha)*latent[:-1:2] + alpha*latent[1::2]
 
-            generated = self.autoencoder.decode(latent_interpolated)[:,:,:batch.size(2)]
-            energy = self.physics_loss(generated)
-            output = self.autoencoder.decode(latent)[:,:,:batch.size(2)]
-            mse_loss = ((batch-output)**2).mean()
-            energy[energy.isinf()]=0.0
-            average_physics = energy.nanmean()
-            with torch.no_grad():
-                scale = (self.psf*mse_loss/average_physics) +1.0e-37
-            if epoch>=self.start_physics_at:
-                final_loss = mse_loss+scale*average_physics
-            else:
-                final_loss = mse_loss
+        generated = self.autoencoder.decode(latent_interpolated)[:,:,:batch.size(2)]
+        energy = self.physics_loss(generated)
+        #energy[energy.isinf()]=0.0
+        energy = energy.nansum()
+        return {'physics_loss':energy if not energy.isinf() else torch.tensor(0.0)}
 
-            final_loss.backward()
-            self.optimiser.step()
-            average_loss+=final_loss.item()*n
-            average_mse += mse_loss.item()*n
-            average_openmm_energy += average_physics.item()*n
-            N+=n
-        self.extra_write_args =  '  '.join([str(s) for s in ['tm', average_mse/N, 'to', average_openmm_energy/N]])
-        return average_loss/N
+    def train_step(self, batch):
+        results = self.common_step(batch)
+        results.update(self.common_physics_step(batch, self._internal['encoded']))
+        with torch.no_grad():
+            scale = (self.psf*results['mse_loss'])/(results['physics_loss'] +1e-5)
+        final_loss = results['mse_loss']+scale*results['physics_loss']
+        results['loss'] = final_loss
+        return results
 
-    def valid_step(self, epoch):
-        self.autoencoder.eval()
-        average_loss = 0.0
-        average_mse = 0.0
-        average_openmm_energy = 0.0
-        N = 0
-        for batch in self.valid_dataloader:
-            batch = batch[0].to(self.device)
-            n = len(batch)
+    def valid_step(self, batch):
+        results = self.common_step(batch)
+        results.update(self.common_physics_step(batch, self._internal['encoded']))
+        scale = (self.psf*results['mse_loss'])/(results['physics_loss'] +1e-5)
+        final_loss = results['mse_loss']+scale*results['physics_loss']
+        results['loss'] = final_loss
+        return results
 
-            latent = self.autoencoder.encode(batch)
-            alpha = torch.rand(int(n//2), 1, 1).type_as(latent)
-            latent_interpolated = (1-alpha)*latent[:-1:2] + alpha*latent[1::2]
-
-            generated = self.autoencoder.decode(latent_interpolated)[:,:,:batch.size(2)]
-            energy = self.physics_loss(generated)
-            output = self.autoencoder.decode(latent)[:,:,:batch.size(2)]
-            mse_loss = ((batch-output)**2).mean()
-
-            energy[energy.isinf()]=0.0
-            average_physics = energy.nanmean()
-            scale = self.psf*mse_loss/average_physics
-
-            if epoch>=self.start_physics_at:
-                final_loss = mse_loss+scale*average_physics
-            else:
-                final_loss = mse_loss
-            average_loss+=final_loss.item()*n
-            average_mse += mse_loss.item()*n
-            average_openmm_energy+=average_physics.item()*n
-            N+=n
-        self.extra_write_args += '  '.join([str(s) for s in ['vm', average_mse/N, 'vo', average_openmm_energy/N]])
-        return average_loss/N
 
 
 
