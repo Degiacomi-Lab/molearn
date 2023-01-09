@@ -33,6 +33,20 @@ class Molearn_Trainer():
         self.verbose = True
         self.log_filename = 'default_log_filename.json'
 
+
+    def get_network_summary(self,):
+        def get_parameters(trainable_only, model):
+            return sum(p.numel() for p in model.parameters() if (p.requires_grad and trainable_only))
+
+        return dict(
+            encoder_trainable = get_parameters(True, self.autoencoder.encoder),
+            encoder_total = get_parameters(False, self.autoencoder.encoder),
+            decoder_trainable = get_parameters(True, self.autoencoder.decoder),
+            decoder_total = get_parameters(False, self.autoencoder.decoder),
+            autoencoder_trainable = get_parameters(True, self.autoencoder),
+            autoencoder_total = get_parameters(False, self.autoencoder),
+                      )
+
     def get_dataset(self, filename, batch_size=16, atoms="*", validation_split=0.1, pin_memory=True, dataset_sample_size=-1):
         '''
         :param filename: location of the pdb
