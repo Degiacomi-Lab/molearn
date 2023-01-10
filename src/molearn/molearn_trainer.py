@@ -108,7 +108,12 @@ class Molearn_Trainer():
         self.scheduler_step = override_step
 
     def scheduler_step(self, logs):
-        self.scheduler.step()
+        try:
+            self.scheduler.step()
+        except ValueError as e:
+            print(e)
+
+
 
     def log(self, log_dict, verbose=None):
         dump = json.dumps(log_dict)
@@ -237,7 +242,7 @@ class Molearn_Trainer():
             if result['loss'].item()>10*init_loss:
                 break
         values = np.array(values)
-        print('min value ', values[values[:,1].argmin()])
+        print('min value ', values[np.nanargmin(values[:,1])])
         return values
 
     def update_optimiser_hyperparameters(self, **kwargs):
@@ -290,6 +295,28 @@ class Molearn_Trainer():
         epoch = checkpoint['epoch']
         self.epoch = epoch+1
 
+
+class Molearn_Constrained(Molearn_Trainer):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def train_step(self, batch):
+        results = self.common_step(batch)
+        latent = self._internal['encoded']
+        std = latent.std(dim=0)
+        results['std0'] = std[0].item()
+        results['std1'] = std[1].item()
+        results['loss'] = results['mse_loss']-std[std<0.1].sum()
+        return results
+
+    def valid_step(self, batch):
+        results = self.common_step(batch)
+        latent = self._internal['encoded']
+        std = latent.std(dim=0)
+        results['std0'] = std[0].item()
+        results['std1'] = std[1].item()
+        results['loss'] = results['mse_loss']-std[std<0.01].sum()
+        return results
 
 class Molearn_Physics_Trainer(Molearn_Trainer):
     def __init__(self, *args, **kwargs):
