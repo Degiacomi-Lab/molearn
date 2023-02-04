@@ -14,7 +14,7 @@ import torch.nn.utils.spectral_norm as spectral_norm
 
 
 
-class ResidualBlock(nn.Module):
+class _SingleResidualBlock(nn.Module):
     def __init__(self, f, sn=False, gn=False, num_groups=8, bias=False):
         super().__init__()
         conv_block = [
@@ -27,12 +27,42 @@ class ResidualBlock(nn.Module):
     def forward(self, x):
         return x + self.conv_block(x)
 
+class _ResidualBlock(nn.Module):
+    def __init__(self, f, hidden_channels=None, sn=False, gn=False, num_groups=8, bias=False):
+        if hidden_channels == None:
+            f2 = f
+        else:
+            f2 = hidden_channels
+        super().__init__()
+        conv_block = [
+                      spectral_norm(nn.Conv1d(f,f2, 3, stride=1, padding=1, bias=bias)) if sn else \
+                                    nn.Conv1d(f,f2, 3, stride=1, padding=1, bias=bias),
+                      nn.GroupNorm(num_groups,f2) if gn else nn.BatchNorm1d(f2),
+                      nn.ReLU(inplace=True),
+                      spectral_norm(nn.Conv1d(f2,f, 3, stride=1, padding=1, bias=bias)) if sn else \
+                                    nn.Conv1d(f,f, 3, stride=1, padding=1, bias=bias),
+                      nn.GroupNorm(num_groups,f) if gn else nn.BatchNorm1d(f),
+                      nn.ReLU(inplace=True)]
+        self.conv_block = nn.Sequential(*conv_block)
+    def forward(self, x):
+        return x + self.conv_block(x)
+
+
+class _BottleneckResidualBlock(nn.Module):
+    def __init__(self, f,):
+        pass
+
+Residual_Block_Modules = {'SingleResidualBlock':_SingleResidualBlock,
+                          'ResidualBlock':_ResidualBlock,
+                          'BottleneckResidualBlock': _BottleneckResidualBlock
+                         }
 class ToLatentDimensions(nn.Module):
     def __init__(self, latent_size=2):
         super().__init__()
+        self.latent_size = latent_size
 
     def forward(self, x):
-        z = torch.nn.functional.adaptive_avg_pool2d(x, output_size=(2,1))
+        z = torch.nn.functional.adaptive_avg_pool2d(x, output_size=(self.latent_size,1))
         z = torch.sigmoid(z)
         return  z
 
@@ -51,8 +81,10 @@ class FromLatentDimensions(nn.Module):
 
 class Encoder(nn.Module):
     def __init__(self, init_z=32, latent_z=2, depth=4, m=2.0, r=2, use_spectral_norm=False,use_group_norm=False, num_groups=8,
-                init_n=26, bias=False, starting_dimensions=3):
+                init_n=26, bias=False, starting_dimensions=3,residual_block='SingleResidualBlock'):
         super().__init__()
+        ResidualBlock  = Residual_Block_Modules[residual_block]
+
         sn = use_spectral_norm # rename for brevity
         # encoder block
         eb = nn.ModuleList()
@@ -82,8 +114,9 @@ class Encoder(nn.Module):
 class Decoder(nn.Module):
 
     def __init__(self, init_z=32, latent_z=2, depth=4, m=2.0, r=2, use_spectral_norm=False,use_group_norm=False, num_groups=8,
-                init_n=26, bias=False, last_dimensions=3):
+                init_n=26, bias=False, last_dimensions=3, residual_block='SingleResidualBlock'):
         super().__init__()
+        ResidualBlock  = Residual_Block_Modules[residual_block]
         sn = use_spectral_norm # rename for brevity
         self.latent_z = latent_z
         # decoder block
@@ -115,10 +148,10 @@ class Decoder(nn.Module):
 
 class Autoencoder(nn.Module):
     def __init__(self, init_z=32, latent_z=2, depth=4, m=2.0, r=2, use_spectral_norm=False,use_group_norm=False, num_groups=8,
-                init_n=26, bias=False):
+                init_n=26, bias=False, **kwargs):
         super().__init__()
-        self.encoder = Encoder(init_z, latent_z, depth, m, r, use_spectral_norm, use_group_norm, num_groups, init_n,bias=bias)
-        self.decoder = Decoder(init_z, latent_z, depth, m, r, use_spectral_norm, use_group_norm, num_groups, init_n,bias=bias)
+        self.encoder = Encoder(init_z, latent_z, depth, m, r, use_spectral_norm, use_group_norm, num_groups, init_n,bias=bias, **kwargs)
+        self.decoder = Decoder(init_z, latent_z, depth, m, r, use_spectral_norm, use_group_norm, num_groups, init_n,bias=bias, **kwargs)
 
     def forward(self, x):
         return self.decoder(self.encoder(x))[:,:,:x.shape[2]]

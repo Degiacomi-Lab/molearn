@@ -32,7 +32,7 @@ class Molearn_Trainer():
         self.scheduler = None
         self.verbose = True
         self.log_filename = 'default_log_filename.json'
-
+        self.scheduler_key = None
 
     def get_network_summary(self,):
         def get_parameters(trainable_only, model):
@@ -80,7 +80,7 @@ class Molearn_Trainer():
         self._data = data
 
 
-    def get_network(self, autoencoder_kwargs=None, max_number_of_atoms=None):
+    def get_network(self, autoencoder_kwargs=None, max_number_of_atoms=None, network = None):
         self._autoencoder_kwargs = autoencoder_kwargs
         if isinstance(max_number_of_atoms, int):
             n_atoms = max_number_of_atoms
@@ -92,8 +92,8 @@ class Molearn_Trainer():
         print(f'Given a number of atoms: {n_atoms}, init_n should be set to {init_n} '+
               f'allowing a maximum of {init_n*(2**power)} atoms')
         autoencoder_kwargs['init_n'] = init_n
-
-        self.autoencoder = Net(**autoencoder_kwargs).to(self.device)
+        net = network if network is not None else Net
+        self.autoencoder = net(**autoencoder_kwargs).to(self.device)
 
     def get_optimiser(self, optimiser_kwargs=None):
         self.optimiser = torch.optim.SGD(self.autoencoder.parameters(), **optimiser_kwargs)
@@ -101,15 +101,16 @@ class Molearn_Trainer():
     def get_adam_optimiser(self, optimiser_kwargs=None):
         self.optimiser = torch.optim.Adam(self.autoencoder.parameters(), **optimiser_kwargs)
 
-    def set_reduceLROnPlateau(self, verbose=True):
-        self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimiser, mode='min', patience=16, verbose=verbose)
-        def override_step(self, logs):
-            self.scheduler.step(logs['valid_loss'])
-        self.scheduler_step = override_step
+    def set_reduceLROnPlateau(self, verbose=True,patience = 16):
+        self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimiser, mode='min', patience=patience, verbose=verbose)
+        #def override_step(self, logs):
+        #    self.scheduler.step(logs['valid_loss'])
+        #self.scheduler_step = override_step
+        self.scheduler_key = 'valid_loss'
 
     def scheduler_step(self, logs):
         try:
-            self.scheduler.step()
+            self.scheduler.step(logs.get(self.scheduler_key, None))
         except ValueError as e:
             print(e)
 
@@ -141,8 +142,9 @@ class Molearn_Trainer():
                     time3 = time.time()
                     if self.scheduler is not None:
                         self.scheduler_step(valid_logs)
+                        train_logs['lr']= self.scheduler.get_last_lr()
                     if epoch%checkpoint_frequency==0:
-                        self.checkpoint(epoch, valid_logs['valid_loss'], checkpoint_folder)
+                        self.checkpoint(epoch, valid_logs, checkpoint_folder)
                     time4 = time.time()
                     logs = {'epoch':epoch, **train_logs, **valid_logs,
                             'train_seconds':time2-time1,
@@ -217,7 +219,7 @@ class Molearn_Trainer():
         results['loss'] = results['mse_loss']
         return results
 
-    def learning_rate_sweep(self, max_lr=100, min_lr=1e-5, number_of_iterations=1000, checkpoint_folder='checkpoint_sweep'):
+    def learning_rate_sweep(self, max_lr=100, min_lr=1e-5, number_of_iterations=1000, checkpoint_folder='checkpoint_sweep',train_on='mse_loss', save=['loss', 'mse_loss']):
         self.autoencoder.train()
         def cycle(iterable):
             while True:
@@ -234,13 +236,14 @@ class Molearn_Trainer():
             self.optimiser.zero_grad()
             result = self.train_step(batch)
             #result['loss']/=len(batch)
-            result['loss'].backward()
+            result[train_on].backward()
             self.optimiser.step()
-            values.append((lr,result['loss'].item()))
+            values.append((lr,)+tuple((result[name].item() for name in save)))
+            #print(i,lr, result['loss'].item())
             if i==0:
-                init_loss = result['loss'].item()
-            if result['loss'].item()>10*init_loss:
-                break
+                init_loss = result[train_on].item()
+            #if result[train_on].item()>1e6*init_loss:
+            #    break
         values = np.array(values)
         print('min value ', values[np.nanargmin(values[:,1])])
         return values
@@ -250,7 +253,8 @@ class Molearn_Trainer():
             for key, value in kwargs.items():
                 g[key] = value
 
-    def checkpoint(self, epoch, valid_loss, checkpoint_folder):
+    def checkpoint(self, epoch, valid_logs, checkpoint_folder, loss_key='valid_loss'):
+        valid_loss = valid_logs[loss_key]
         if not os.path.exists(checkpoint_folder):
             os.mkdir(checkpoint_folder)
         torch.save({'epoch':epoch,
@@ -269,6 +273,7 @@ class Molearn_Trainer():
             if self.best is not None:
                 os.remove(self.best_name)
             self.best_name = filename
+            self.best_epoch = epoch
             self.best = valid_loss
 
     def load_checkpoint(self, checkpoint_name, checkpoint_folder):
@@ -290,7 +295,7 @@ class Molearn_Trainer():
 
         self.autoencoder.load_state_dict(checkpoint['model_state_dict'])
         if not hasattr(self, 'optimiser'):
-            self.get_optimiser(dict(lr=1e-20, momentum=0.9, weight_decay=0.0001))
+            self.get_optimiser(dict(lr=1e-20, momentum=0.9))
         self.optimiser.load_state_dict(checkpoint['optimizer_state_dict'])
         epoch = checkpoint['epoch']
         self.epoch = epoch+1
@@ -376,9 +381,10 @@ class OpenMM_Physics_Trainer(Molearn_Trainer):
 
         generated = self.autoencoder.decode(latent_interpolated)[:,:,:batch.size(2)]
         energy = self.physics_loss(generated)
-        #energy[energy.isinf()]=0.0
+        energy[energy.isinf()]=1e35
+        energy = torch.clamp(energy, max=1e34)
         energy = energy.nanmean()
-        return {'physics_loss':energy if not energy.isinf() else torch.tensor(0.0)}
+        return {'physics_loss':energy}#a if not energy.isinf() else torch.tensor(0.0)}
 
     def train_step(self, batch):
         results = self.common_step(batch)
