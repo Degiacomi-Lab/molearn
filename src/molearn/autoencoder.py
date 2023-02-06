@@ -148,10 +148,10 @@ class Decoder(nn.Module):
 
 class Autoencoder(nn.Module):
     def __init__(self, init_z=32, latent_z=2, depth=4, m=2.0, r=2, use_spectral_norm=False,use_group_norm=False, num_groups=8,
-                init_n=26, bias=False, **kwargs):
+                init_n=26, bias=False):
         super().__init__()
-        self.encoder = Encoder(init_z, latent_z, depth, m, r, use_spectral_norm, use_group_norm, num_groups, init_n,bias=bias, **kwargs)
-        self.decoder = Decoder(init_z, latent_z, depth, m, r, use_spectral_norm, use_group_norm, num_groups, init_n,bias=bias, **kwargs)
+        self.encoder = Encoder(init_z, latent_z, depth, m, r, use_spectral_norm, use_group_norm, num_groups, init_n,bias=bias)
+        self.decoder = Decoder(init_z, latent_z, depth, m, r, use_spectral_norm, use_group_norm, num_groups, init_n,bias=bias)
 
     def forward(self, x):
         return self.decoder(self.encoder(x))[:,:,:x.shape[2]]

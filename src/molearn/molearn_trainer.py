@@ -93,6 +93,7 @@ class Molearn_Trainer():
               f'allowing a maximum of {init_n*(2**power)} atoms')
         autoencoder_kwargs['init_n'] = init_n
         net = network if network is not None else Net
+        print('Network type' , type(net))
         self.autoencoder = net(**autoencoder_kwargs).to(self.device)
 
     def get_optimiser(self, optimiser_kwargs=None):
