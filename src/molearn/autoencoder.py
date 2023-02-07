@@ -148,10 +148,10 @@ class Decoder(nn.Module):
 
 class Autoencoder(nn.Module):
     def __init__(self, init_z=32, latent_z=2, depth=4, m=2.0, r=2, use_spectral_norm=False,use_group_norm=False, num_groups=8,
-                init_n=26, bias=False):
+                init_n=26, bias=False, residual_block = 'SingleResidualBlock'):
         super().__init__()
-        self.encoder = Encoder(init_z, latent_z, depth, m, r, use_spectral_norm, use_group_norm, num_groups, init_n,bias=bias)
-        self.decoder = Decoder(init_z, latent_z, depth, m, r, use_spectral_norm, use_group_norm, num_groups, init_n,bias=bias)
+        self.encoder = Encoder(init_z, latent_z, depth, m, r, use_spectral_norm, use_group_norm, num_groups, init_n,bias=bias,residual_block=residual_block)
+        self.decoder = Decoder(init_z, latent_z, depth, m, r, use_spectral_norm, use_group_norm, num_groups, init_n,bias=bias, residual_block=residual_block)
 
     def forward(self, x):
         return self.decoder(self.encoder(x))[:,:,:x.shape[2]]
@@ -175,4 +175,42 @@ class NewAutoencoder(nn.Module):
     def decode(self, x):
         return self.decoder(x)
 
+
+class ToDimension(nn.Module):
+    def __init__(self, in_dimension, out_dimension, n_hidden=1, hidden_width=128, bias=False, **kwargs):
+        super().__init__()
+        modulelist = nn.ModuleList()
+        modulelist.append(spectral_norm(nn.Linear(in_dimension, hidden_width, bias=bias)))
+        modulelist.append(nn.BatchNorm1d(hidden_width))
+        modulelist.append(nn.ReLU())
+        for i in range(n_hidden):
+            modulelist.append(spectral_norm(nn.Linear(hidden_width, hidden_width, bias=bias)))
+            modulelist.append(nn.BatchNorm1d(hidden_width))
+            modulelist.append(nn.ReLU())
+        modulelist.append(spectral_norm(nn.Linear(hidden_width, out_dimension)))
+        modulelist.append(nn.BatchNorm1d(out_dimension))
+
+        #modulelist.append(self.sigmoid(output))
+        self.model = nn.Sequential(*modulelist)
+
+    def forward(self, x):
+        x = x.view(x.size(0), -1)
+        x = self.model(x)
+        x = x.view(x.size(0),-1,1)
+        return x
+
+
+
+class AutoencoderFullyConnectedTo2D(molearn.autoencoder.Autoencoder):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        #out shape is [B, N, 1]
+        self.to2d = ToDimension(in_dimension = kwargs['latent_z'], out_dimension=2, **kwargs)
+        self.from2d = ToDimension(in_dimension=2, out_dimension=kwargs['latent_z'], **kwargs)
+
+    def encode2d(self,x):
+        return self.to2d(x)
+
+    def decode2d(self, x):
+        return self.from2d(x)
 
