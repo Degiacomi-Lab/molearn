@@ -201,7 +201,7 @@ class ToDimension(nn.Module):
 
 
 
-class AutoencoderFullyConnectedTo2D(molearn.autoencoder.Autoencoder):
+class AutoencoderFullyConnectedTo2D(Autoencoder):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         #out shape is [B, N, 1]
