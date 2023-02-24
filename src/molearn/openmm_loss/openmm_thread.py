@@ -68,7 +68,17 @@ class ModifiedForceField(ForceField):
             elif len(allMatches) > 1:
                 for i, (t, m) in enumerate(allMatches):
                     name = self._alternative_residue_names.get(res.name, res.name)
-                    if name==t.name.split('-')[0] or 'N'+name==t.name.split('-')[0]:
+                    if name==t.name.split('-')[0]:
+                        template = t
+                        matches = m
+                        return [template, matches]
+                    elif 'N'+name==t.name.split('-')[0]:
+                        print(f'{str(res)}, {res.index}, is a being set as a N terminal residue')
+                        template = t
+                        matches = m
+                        return [template, matches]
+                    elif 'C'+name==t.name.split('-')[0]:
+                        print(f'{str(res)} is a being set as a C terminal residue')
                         template = t
                         matches = m
                         return [template, matches]
@@ -306,83 +316,4 @@ class openmm_energy(torch.nn.Module):
         _x = (x*self.std).permute(0,2,1).contiguous()
         energy = openmm_clamped_energy_function.apply(self.openmmplugin, _x, self.clamp)
         return energy
-
-class openmm_energy_process(torch.nn.Module):
-    def __init__(self, mol, std, clamp = None, **kwargs):
-        super().__init__()
-        import multiprocessing as mp
-        mp.set_start_method('spawn')
-        from multiprocessing import Pool, get_context
-        ctx = get_context('spawn')
-        self.pool = Pool(initializer=set_global_score, initargs=(OpenmmPluginScore, dict(mol=mol, **kwargs)), processes=1)
-        self.std = std/10
-        self.clamp = clamp
-        if self.clamp is not None:
-            fail_here
-            self.forward = self._clamp_forward
-        else:
-            self.forward = self._forward
-
-    def _forward(self, x):
-        '''
-        :param x: torch tensor dtype=torch.float, device=CUDA, shape B, 3, N 
-        :returns: torch energy tensor dtype should be float and on same device as x
-        '''
-        _x = (x*self.std).permute(0,2,1).contiguous()
-        energy = alt_openmm_energy_function.apply(self.pool, _x)
-        return energy
-
-    def _clamp_forward(self, x):
-        '''
-        :param x: torch tensor dtype=torch.float, device=CUDA, shape B, 3, N 
-        :returns: torch energy tensor dtype should be float and on same device as x
-        '''
-        _x = (x*self.std).permute(0,2,1).contiguous()
-        energy = openmm_clamped_energy_function.apply(self.openmmplugin, _x, self.clamp)
-        return energy
-
-def set_global_score(score, kwargs):
-    global worker_score
-    worker_score = score(**kwargs)
-
-def process_score(args):
-    worker_score.get_energy(*args)
-    return
-
-class alt_openmm_energy_function(torch.autograd.Function):
-
-    @staticmethod
-    def forward(ctx, pool, x):
-        '''
-        :param plugin: # OpenmmPluginScore instance
-        :param x: torch tensor, dtype = float, shape = [B, N, 3], device = any
-        :returns: energy tensor, dtype = float, shape = [B], device  = any
-        '''
-        if x.device == torch.device('cpu'):
-            fail_here
-            force = np.zeros(x.shape)
-            energy = np.zeros(x.shape[0])
-            for i,t in enumerate(x):
-                plugin.simulation.context.setPositions(t.numpy())
-                state = plugin.simulation.context.getState(getForces=True, getEnergy=True)
-                force[i] = state.getForces(asNumpy=True)
-                energy[i] = state.getPotentialEnergy()._value
-            force = torch.tensor(force).float()
-            energy = torch.tensor(energy).float()
-        else:
-            force = torch.zeros_like(x)
-            energy = torch.zeros(x.shape[0], device = torch.device('cpu'), dtype=torch.double)
-            result = pool.apply_async(process_score, ((x.data_ptr(), force.data_ptr(), energy.data_ptr(), x.shape[1], x.shape[0]),))
-            result.get()
-        embed(header='test')
-        ctx.save_for_backward(force)
-        energy = energy.float().to(x.device)
-        return energy
-
-    @staticmethod
-    def backward(ctx, grad_output):
-        force = ctx.saved_tensors[0] # force shape [B, N, 3]
-        #embed(header='23 openmm_loss_function')
-        return None, -force*grad_output.view(-1,1,1)
-
 

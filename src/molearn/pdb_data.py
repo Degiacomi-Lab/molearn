@@ -14,8 +14,26 @@ class PDBData:
         self._mol.import_pdb(filename)
         if not hasattr(self, 'filename'):
             self.filename = []
-        self.filename.append(filename) 
+        self.filename.append(filename)
 
+    def fix_terminal(self):
+        ot1 = np.where(self._mol.data['name']=='OT1')[0]
+        ot2 = np.where(self._mol.data['name']=='OT2')[0]
+        oxt = np.where(self._mol.data['name']=='OXT')[0]
+        resids = []
+        if len(ot1)!=0 and len(ot2)!=0:
+            self._mol.data.loc[ot1,'name']='O'
+        if len(ot1)!=0:
+            for i in ot1:
+                resids.append((self._mol.data['resid'][i], self._mol.data['resname'][i]))
+        if len(oxt)!=0:
+            for i in oxt:
+                resids.append((self._mol.data['resid'][i], self._mol.data['resname'][i]))
+
+        #for resid, resname in resids:
+            #resname = self._mol.data['resname'][resid]
+            #if len(resname)==3:
+            #    self._mol.data.loc[self._mol.data.resid.eq(resid), 'resname']=f'C{resname}'
     def atomselect(self, atoms, ignore_atoms=[]):
         if atoms == "*":
             _atoms = list(np.unique(self._mol.data["name"].values))
