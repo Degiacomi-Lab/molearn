@@ -53,6 +53,7 @@ class Molearn_Trainer():
         :param atoms: "*" for all atoms, ["CA", "C", "N", "CB", "O"]
         '''
         warnings.warn("deprecated class method", DeprecationWarning)
+        raise Exception('deprecated')
         dataset, self.mean, self.std, self.atom_names, self.mol, test0, test1 = molearn.load_data(filename, atoms="*", dataset_sample_size=dataset_sample_size,
                 device=torch.device('cpu'))
         print(f'Dataset.shape: {dataset.shape}')
@@ -144,7 +145,9 @@ class Molearn_Trainer():
                     if self.scheduler is not None:
                         self.scheduler_step(valid_logs)
                         train_logs['lr']= self.scheduler.get_last_lr()
-                    if epoch%checkpoint_frequency==0:
+                    if self.best is None or self.best > valid_logs['valid_loss']:
+                        self.checkpoint(epoch, valid_logs, checkpoint_folder)
+                    elif epoch%checkpoint_frequency==0:
                         self.checkpoint(epoch, valid_logs, checkpoint_folder)
                     time4 = time.time()
                     logs = {'epoch':epoch, **train_logs, **valid_logs,
@@ -277,7 +280,7 @@ class Molearn_Trainer():
             self.best_epoch = epoch
             self.best = valid_loss
 
-    def load_checkpoint(self, checkpoint_name, checkpoint_folder):
+    def load_checkpoint(self, checkpoint_name, checkpoint_folder, load_optimiser=True):
         if checkpoint_name=='best':
             if self.best_name is not None:
                 _name = self.best_name
@@ -295,9 +298,10 @@ class Molearn_Trainer():
             self.get_network(autoencoder_kwargs=checkpoint['network_kwargs'])
 
         self.autoencoder.load_state_dict(checkpoint['model_state_dict'])
-        if not hasattr(self, 'optimiser'):
-            self.get_optimiser(dict(lr=1e-20, momentum=0.9))
-        self.optimiser.load_state_dict(checkpoint['optimizer_state_dict'])
+        if load_optimiser:
+            if not hasattr(self, 'optimiser'):
+                self.get_optimiser(dict(lr=1e-20, momentum=0.9))
+            self.optimiser.load_state_dict(checkpoint['optimizer_state_dict'])
         epoch = checkpoint['epoch']
         self.epoch = epoch+1
 
@@ -366,14 +370,14 @@ class OpenMM_Physics_Trainer(Molearn_Trainer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def prepare_physics(self, physics_scaling_factor=0.1, clamp_threshold = 10000, clamp=False, start_physics_at=0):
+    def prepare_physics(self, physics_scaling_factor=0.1, clamp_threshold = 10000, clamp=False, start_physics_at=0, **kwargs):
         self.start_physics_at = start_physics_at
         self.psf = physics_scaling_factor
         if clamp:
             clamp_kwargs = dict(max=clamp_threshold, min = -clamp_threshold)
         else:
             clamp_kwargs = None
-        self.physics_loss = openmm_energy(self.mol, self.std, clamp=clamp_kwargs, platform = 'CUDA' if self.device == torch.device('cuda') else 'Reference', atoms = self._data.atoms)
+        self.physics_loss = openmm_energy(self.mol, self.std, clamp=clamp_kwargs, platform = 'CUDA' if self.device == torch.device('cuda') else 'Reference', atoms = self._data.atoms, **kwargs)
 
 
     def common_physics_step(self, batch, latent):
