@@ -6,14 +6,9 @@ This software trains a generative neural network on an ensemble of molecular con
 The trained model can be used to generate new, plausible conformations repesentative of poorly sampled transition states.
 
 Included in this repository are the following:
-* Torch functions for calculating the energy of a protein conformation
-  * Documentation for this is in the `doc` folder.
-  * Source code is in the `molearn` folder
-* `example_script.py` detailing:
-  * An example of how to prepare and use the above code
-  * A convolutional autoencoder
-  * Loading and saving *.pdb* files with biobox
-* An example *.pdb* file in the **test** folder
+* Source code is in the `molearn` folder
+* Documentation for this is in the `doc` folder.
+* Example launching scripts in the `examples` folder
 * The [Amber parameters](https://ambermd.org/AmberModels.php) released in the [AmberTools20 package](https://ambermd.org/AmberTools.php) published under a GNU General Public Licence. These are loaded in by the Torch potential to calculate the energy of a protein conformation.
 
 ## Requirements ##
@@ -21,7 +16,13 @@ Included in this repository are the following:
 Molearn requires Python 3.x and the following packages (and their associated packages):
 * numpy
 * PyTorch (1.7+)
+* [OpenMM](https://openmm.org/documentation)
+* [Modeller](https://salilab.org/modeller/)
 * [Biobox](https://github.com/Degiacomi-Lab/biobox)
+
+Optional packages are:
+* [geomloss](https://www.kernel-operations.io/geomloss/), for calculation of sinkhorn distances during training
+* [cctbx](https://cctbx.github.io/), for calculation of Ramachandran scores during analysis
 
 ## Installation ##
 
@@ -29,7 +30,7 @@ molearn requires no installation. Simply clone the repository and make sure the 
 molearn can also be obtained through Anaconda: `conda install molearn -c conda-forge`
 
 ## Usage ##
-* The example script `example_script.py` and the documentation in the `doc` folder
+* See example scripts in the `examples` and documentation in the `doc` folder.
 * Jupyter notebook tutorials describing the usage of a trained neural network are available [here](https://github.com/Degiacomi-Lab/molearn_notebook).
 
 ## Reference ##
