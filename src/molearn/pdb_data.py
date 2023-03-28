@@ -2,7 +2,7 @@ import numpy as np
 import torch
 from copy import deepcopy
 import biobox as bb
-import os
+#import os
 
 class PDBData:
     def __init__(self):

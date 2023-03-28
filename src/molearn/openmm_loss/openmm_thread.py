@@ -1,18 +1,20 @@
-import os
-from openmm.unit import kelvin, picosecond
+#import os
+#from openmm.unit import kelvin, picosecond
 from openmm import Platform
-from openmm.app import ForceField, PDBFile, Simulation, OBC2
+from openmm.app import ForceField, PDBFile, Simulation #, OBC2
 from openmm.app import element as elem
 import openmm
+
 try:
     from torchexposedintegratorplugin import TorchExposedIntegrator
     #from torchintegratorplugin import MyIntegrator
-except ImportError:
-    print('no plugin, wont be able to use openmm_loss')
+except ImportError as e:
+    import warnings
+    warnings.warn(f'{e}. Will not be able to use openmm_loss.')
+    
 import torch
-from math import ceil
 import numpy as np
-
+#from math import ceil
 
 from openmm.app.forcefield import _createResidueSignature
 from openmm.app.internal import compiled
