@@ -92,16 +92,16 @@ class ModifiedForceField(ForceField):
                 matches = allMatches[0][1]
         return [template, matches]
 
-
-
-
 class OpenmmPluginScore():
     '''
     This will use the new Openmm Plugin to calculate forces and energy. The intention is that this will be fast enough to be able to calculate forces and energy during training.
     NB. The current torchintegratorplugin only supports float on GPU and double on CPU.
     '''
     
-    def __init__(self, mol=None, xml_file = ['amber14-all.xml', 'implicit/obc2.xml'], platform = 'CUDA', remove_NB=False, alternative_residue_names = dict(HIS='HIE'), atoms=['CA', 'C', 'N', 'CB', 'O']):
+    def __init__(self, mol=None, xml_file = ['amber14-all.xml', 'implicit/obc2.xml'], platform = 'CUDA', remove_NB=False, alternative_residue_names = dict(HIS='HIE'), atoms=['CA', 'C', 'N',
+                                                                                                                                                                              'CB',
+                                                                                                                                                                              'O'],
+                soft=False):
         '''
         :param mol: (biobox.Molecule, default None) If pldataloader is not given, then a biobox object will be taken from this parameter. If neither are given then an error  will be thrown.
         :param data_dir: (string, default None) if pldataloader is not given then this will be used to find files such as 'variants.npy'
@@ -110,39 +110,42 @@ class OpenmmPluginScore():
         :param remove_NB: (bool, default False) remove NonbondedForce, CustomGBForce, CMMotionRemover
         '''
         self.mol = mol
-        if isinstance(xml_file,str):
-            self.forcefield = ModifiedForceField(xml_file, alternative_residue_names = alternative_residue_names)
-        elif len(xml_file)>0:
-            self.forcefield = ModifiedForceField(*xml_file, alternative_residue_names = alternative_residue_names)
-        else:
-            raise ValueError(f'xml_file: {xml_file} needs to be a str or a list of str')
         tmp_file = 'tmp.pdb'
         self.atoms = atoms
-
-        if atoms == 'no_hydrogen':
-            self.ignore_hydrogen()
-        else:
-            self.atomselect(atoms)
-        #save pdb and reload in modeller
         self.mol.write_pdb(tmp_file)
         self.pdb = PDBFile(tmp_file)
-        templates, unique_unmatched_residues = self.forcefield.generateTemplatesForUnmatchedResidues(self.pdb.topology)
-        self.system = self.forcefield.createSystem(self.pdb.topology)
-        if remove_NB:
-            forces = self.system.getForces()
-            for idx in reversed(range(len(forces))):
-                force = forces[idx]
-                if isinstance(force, (#openmm.PeriodicTorsionForce,
-                                      openmm.CustomGBForce,
-                                      openmm.NonbondedForce,
-                                      openmm.CMMotionRemover)):
-                    self.system.removeForce(idx)
-        #self.integrator = MyIntegrator(300*kelvin, 1/picosecond, 0.002*picosecond)
+        if soft:
+            print('attempting soft forcefield')
+            from pdbfixer import PDBFixer
+            f = PDBFixer(tmp_file)
+            self.forcefield = f._createForceField(self.pdb.topology, False)
+            self.system = self.forcefield.createSystem(self.pdb.topology)
+        else:
+            if isinstance(xml_file,str):
+                self.forcefield = ModifiedForceField(xml_file, alternative_residue_names = alternative_residue_names)
+            elif len(xml_file)>0:
+                self.forcefield = ModifiedForceField(*xml_file, alternative_residue_names = alternative_residue_names)
+            else:
+                raise ValueError(f'xml_file: {xml_file} needs to be a str or a list of str')
+
+            if atoms == 'no_hydrogen':
+                self.ignore_hydrogen()
+            else:
+                self.atomselect(atoms)
+            #save pdb and reload in modeller
+            templates, unique_unmatched_residues = self.forcefield.generateTemplatesForUnmatchedResidues(self.pdb.topology)
+            self.system = self.forcefield.createSystem(self.pdb.topology)
+            if remove_NB:
+                forces = self.system.getForces()
+                for idx in reversed(range(len(forces))):
+                    force = forces[idx]
+                    if isinstance(force, (#openmm.PeriodicTorsionForce,
+                                          openmm.CustomGBForce,
+                                          openmm.NonbondedForce,
+                                          openmm.CMMotionRemover)):
+                        self.system.removeForce(idx)
+
         self.integrator = TorchExposedIntegrator()
-        #self.integrator = openmm.LangevinMiddleIntegrator(300*kelvin, 1/picosecond, 0.002*picosecond)
-        #from openmmtorch import VerletIntegrator
-        #self.integrator = VerletIntegrator(0.002*picosecond)
-        
         self.platform = Platform.getPlatformByName(platform)
         self.simulation = Simulation(self.pdb.topology, self.system, self.integrator, self.platform)
         if platform == 'CUDA':
@@ -211,6 +214,7 @@ class OpenmmPluginScore():
         :param batch_size: int
         '''
         assert n_particles == self.n_particles
+        torch.cuda.synchronize()
         self.integrator.torchMultiStructureE(pos_ptr, force_ptr, energy_ptr, n_particles, batch_size)
         return True
 
@@ -222,6 +226,52 @@ class OpenmmPluginScore():
         energy = torch.zeros(x.shape[0], device = torch.device('cpu'), dtype=torch.double)
         self.get_energy(x.data_ptr(), force.data_ptr(), energy.data_ptr(), x.shape[1], x.shape[0])
         return force, energy
+
+
+class OpenmmTorchEnergyMinimizer(OpenmmPluginScore):
+    def minimize(self, x, maxIterations=10, threshold=10000):
+        minimized_x = torch.empty_like(x)
+        for i,s in enumerate(x.unsqueeze(1)):
+            h = 0.01
+            force, energy = self.execute(s)
+            abs_max = 1/(force.abs().max())
+            for j in range(maxIterations):
+                new_s = s - force*abs_max*h
+                new_force, new_energy = self.execute(new_s)
+                if new_energy<energy:
+                    s, energy, force = new_s, new_energy, new_force
+                    if energy<threshold:
+                        break
+                    h*=1.2
+
+                else:
+                    h*=0.2
+            minimized_x[i]=s
+        return minimized_x
+
+
+
+class OpenMMPluginScoreSoftForceField(OpenmmPluginScore):
+    def __init__(self, mol=None, platform='CUDA', atoms=['CA','C','N','CB','O',]):
+        self.mol = mol
+        tmp_file = 'tmp.pdb'
+        self.atoms = atoms
+        self.mol.write_pdb(tmp_file)
+        self.pdb = PDBFile(tmp_file)
+        from pdbfixer import PDBFixer
+        f = PDBFixer(tmp_file)
+        self.forcefield = f._createForceField(self.pdb.topology)
+        self.system = self.forcefield.createSystem(self.pdb.topology)
+        self.integrator = TorchExposedIntegrator()
+        self.platform = Platform.getPlatformByName(platform)
+        self.simulation = Simulation(self.pdb.topology, self.system, self.integrator, self.platform)
+        if platform == 'CUDA':
+            self.platform.setPropertyValue(self.simulation.context, 'Precision', 'single')
+        self.n_particles = self.simulation.context.getSystem().getNumParticles()
+        self.simulation.context.setPositions(self.pdb.positions)
+        self.get_score = self.get_energy
+        print(self.simulation.context.getState(getEnergy=True).getPotentialEnergy()._value)
+
 
 class openmm_energy_function(torch.autograd.Function):
 
