@@ -126,16 +126,19 @@ class Molearn_Trainer():
             f.write(dump+'\n')
 
 
-    def run(self, max_epochs=1600, log_filename = None, checkpoint_frequency=8, checkpoint_folder='checkpoints', allow_n_failures=10, verbose=None):
+    def run(self, max_epochs=1600, log_filename = None, log_folder=None, checkpoint_frequency=8, checkpoint_folder='checkpoints', allow_n_failures=10, verbose=None):
         if log_filename is not None:
             self.log_filename = log_filename
+            if log_folder is not None:
+                if not os.path.exists(log_folder):
+                    os.mkdir(log_folder)
+                self.log_filename = log_folder+'/'+self.log_filename
         if verbose is not None:
             self.verbose = verbose
 
         for attempt in range(allow_n_failures):
             try:
                 for epoch in range(self.epoch, max_epochs):
-                    self.epoch = epoch
                     time1 = time.time()
                     train_logs = self.train_epoch(epoch)
                     time2 = time.time()
@@ -158,6 +161,7 @@ class Molearn_Trainer():
                     self.log(logs)
                     if np.isnan(logs['valid_loss']) or np.isnan(logs['train_loss']):
                         raise TrainingFailure('nan received, failing')
+                    self.epoch+= 1
             except TrainingFailure:
                 if attempt==(allow_n_failures-1):
                     failure_message = f'Training Failure due to Nan in attempt {attempt}, end now/n'
@@ -285,7 +289,7 @@ class Molearn_Trainer():
             if self.best_name is not None:
                 _name = self.best_name
             else:
-                ckpts = glob.glob(checkpoint_folder+'/checkpoint_epoch*')
+                ckpts = glob.glob(checkpoint_folder+'/checkpoint_*')
                 indexs = [x.rfind('loss') for x in ckpts]
                 losses = [float(x[y+4:-5]) for x,y in zip(ckpts, indexs)]
                 _name = ckpts[np.argmin(losses)]
@@ -385,10 +389,12 @@ class OpenMM_Physics_Trainer(Molearn_Trainer):
         latent_interpolated = (1-alpha)*latent[:-1:2] + alpha*latent[1::2]
 
         generated = self.autoencoder.decode(latent_interpolated)[:,:,:batch.size(2)]
+        self._internal['generated'] = generated
         energy = self.physics_loss(generated)
         energy[energy.isinf()]=1e35
         energy = torch.clamp(energy, max=1e34)
         energy = energy.nanmean()
+
         return {'physics_loss':energy}#a if not energy.isinf() else torch.tensor(0.0)}
 
     def train_step(self, batch):
