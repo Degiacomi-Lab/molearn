@@ -13,16 +13,6 @@
 __author__ = "V. K. Ramaswamy, S. C. Musson, C. G. Willcocks, M. T. Degiacomi"
 __version__ = '1.1'
 __date__ = '$Date: 2022-10-26 $'
-from .loss_functions import Auto_potential
-from .protein_handler import *
-from .networks import *
-from .molearn_trainer import Molearn_Trainer, Molearn_Physics_Trainer, OpenMM_Physics_Trainer, Molearn_Constrained
-from .pdb_data import PDBData
-from .openmm_loss import openmm_energy
 
-try:
-    from .sinkhorn_trainer import Sinkhorn_Trainer
-except Exception as e:
-    import warnings
-    warnings.warn(f"{e}. Will not be able to use sinkhorn_trainer.")
-    
+from .analyser import MolearnAnalysis, as_numpy
+from .GUI import MolearnGUI
