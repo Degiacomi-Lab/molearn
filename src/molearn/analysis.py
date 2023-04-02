@@ -524,6 +524,7 @@ class MolearnGUI(object):
         self.mymol.load_new(gen)
         view = nv.show_mdanalysis(self.mymol)
         view.add_representation("spacefill")
+        #view.add_representation("cartoon")
         display.display(view)
 
         self.button_pdb.disabled = False
@@ -924,7 +925,7 @@ class MolearnGUI(object):
         self.latent.update_layout(xaxis_title="latent vector 1", yaxis_title="latent vector 2",
                          autosize=True, width=400, height=350, margin=dict(l=75, r=0, t=25, b=0))
         self.latent.update_xaxes(showspikes=False)
-        self.latent.update_yaxes(showspikes=False)       
+        self.latent.update_yaxes(showspikes=False)
 
         if len(sc)>0:
             self.range_slider.value = (np.min(sc), np.max(sc))
@@ -945,8 +946,11 @@ class MolearnGUI(object):
                               layout=Layout(flex='1 1 2', width='auto', border="solid"))
 
         self.block1 = widgets.VBox([self.latent], layout=Layout(flex='1 1 auto', width='auto'))
-        self.latent.data[0].on_click(self.on_click)
-
+        
+        # make all items displayed clickable
+        for item in self.latent.data:
+            item.on_click(self.on_click)
+        
         self.block2 = widgets.VBox([self.protein], layout=Layout(flex='1 5 auto', width='auto'))
 
         self.scene = widgets.HBox([self.block0, self.block1, self.block2])
