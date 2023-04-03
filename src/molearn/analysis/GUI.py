@@ -1,6 +1,19 @@
 import time
 import pickle
 from IPython import display
+# Copyright (c) 2021 Venkata K. Ramaswamy, Samuel C. Musson, Chris G. Willcocks, Matteo T. Degiacomi
+#
+# Molearn is free software ;
+# you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation ;
+# either version 2 of the License, or (at your option) any later version.
+# molearn is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY ;
+# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the GNU General Public License for more details.
+# You should have received a copy of the GNU General Public License along with molearn ;
+# if not, write to the Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
+#
+# Author: Matteo Degiacomi
+
 import numpy as np
 
 import MDAnalysis as mda
@@ -16,6 +29,7 @@ import nglview as nv
 
 
 from .analyser import as_numpy, MolearnAnalysis
+from .path import oversample, get_path
 
 
 class MolearnGUI(object):
@@ -32,19 +46,19 @@ class MolearnGUI(object):
         self.run()
 
         
-    def oversample(self, crd, pts=10):
-        '''
-        add extra equally spaced points between a list of points ("pts" per interval)
-        ''' 
-        pts += 1
-        steps = np.linspace(1./pts, 1, pts)
-        pts = [crd[0,0]]
-        for i in range(1, len(crd[0])):
-            for j in steps:
-                newpt = crd[0, i-1] + (crd[0, i]-crd[0, i-1])*j
-                pts.append(newpt)
-
-        return np.array([pts])
+    #def oversample(self, crd, pts=10):
+    #    '''
+    #    add extra equally spaced points between a list of points ("pts" per interval)
+    #    ''' 
+    #    pts += 1
+    #    steps = np.linspace(1./pts, 1, pts)
+    #    pts = [crd[0,0]]
+    #    for i in range(1, len(crd[0])):
+    #        for j in steps:
+    #            newpt = crd[0, i-1] + (crd[0, i]-crd[0, i-1])*j
+    #            pts.append(newpt)
+    #
+    #    return np.array([pts])
 
         
     def on_click(self, trace, points, selector):
@@ -84,7 +98,7 @@ class MolearnGUI(object):
         try:
             crd = np.array(mybox.split()).astype(float)
             crd = crd.reshape((1, int(len(crd)/2), 2))       
-            crd = self.oversample(crd, pts=int(samplebox))
+            crd = oversample(crd, pts=int(samplebox))
         except Exception:
             self.button_pdb.disabled = True
             return 
@@ -264,7 +278,7 @@ class MolearnGUI(object):
 
         crd = np.array(self.mybox.value.split()).astype(float)
         crd = crd.reshape((1, int(len(crd)/2), 2))       
-        crd = self.oversample(crd, pts=int(self.samplebox.value))
+        crd = oversample(crd, pts=int(self.samplebox.value))
 
         gen = self.MA.generate(crd)
         self.mymol.load_new(gen)

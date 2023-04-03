@@ -16,3 +16,4 @@ __date__ = '$Date: 2022-10-26 $'
 
 from .analyser import MolearnAnalysis, as_numpy
 from .GUI import MolearnGUI
+from .path import oversample, get_path
