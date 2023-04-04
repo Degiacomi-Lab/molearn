@@ -39,42 +39,54 @@ class PriorityQueue(object):
 
     def get(self):
         '''
-        pop top priority element from queue
+        returns pop top priority element from queue
         '''
         return heapq.heappop(self.elements)[1]
 
     
 def _heuristic(pt1, pt2):
     '''
-    return a penalty associated with the distance between points.
+    : returns penalty associated with the distance between points.
     '''
-    # TODO: would be nice to alter the heuristic with an estimation of local
-    # space warping sum of the local warping for each pixel represented by
-    # drift score get pixels on line-of-sight using the Bresenham algorithm
+    # TODO: could alter the heuristic with an estimation of local space
+    # warping, by summing local warpings along the line-of-sight identified
+    # via using the Bresenham algorithm
     return np.sum(np.dot(pt2-pt1, pt2-pt1))
     
     
-def _neighbors(idx, graphshape, flattened=True):
+def _neighbors(idx, gridshape, flattened=True):
+    '''
+    return coordinates of gridpoints adjacent to a given point in a grid
+    : param idx : index of point in a grid. Can be either a flattened index or a 2D coordinate.
+    : param gridshape : tuple defining grid shape
+    : flattened : if False, return 2D coordinates, flattened index otherwise (default) 
+    '''
 
+    try:
+        if type(idx) != int:
+            idx = np.unravel_index(idx, gridshape)
+        elif len(idx) != 2:
+            raise Exception("Expecting 2D coordinates")
+    except:
+        raise Exception("idx should be either integer or an iterable")
+
+    # generate neighbour list
     n = []
-    p = np.unravel_index(idx, graphshape)
+    for x in range(idx[0]-1, idx[0]+2, 1):
+        for y in range(idx[1]-1, idx[1]+2, 1):
 
-    # generate neighbour list in a way Sam does not like
-    for x in range(p[0]-1, p[0]+2, 1):
-        for y in range(p[1]-1, p[1]+2, 1):
-
-            if x==p[0] and y==p[1]:
+            if x==idx[0] and y==idx[1]:
                 continue
 
             # apply boundary conditions
-            if x>=graphshape[0] or y>=graphshape[1]:
+            if x>=gridshape[0] or y>=gridshape[1]:
                 continue
 
             if x<0 or y<0:
                 continue
 
             if flattened:
-                n.append(np.ravel_multi_index(np.array([x, y]), graphshape))
+                n.append(np.ravel_multi_index(np.array([x, y]), gridshape))
             else:
                 n.append([x, y])
 
@@ -82,13 +94,16 @@ def _neighbors(idx, graphshape, flattened=True):
 
     
 def _cost(pt, graph):
+    '''
+    evaluate cost of moving onto a grid cell
+    '''
+    # separate function for clarity, and in case in the future we want to alter this
     return graph[pt]
     
     
 def _astar(start_2d, goal_2d, graph):
     '''
     A* algorithm, find path connecting two points in the graph.
-
     :param start : starting point
     :param goal : end point
     :param graph : 2D landscape
@@ -132,6 +147,7 @@ def _astar(start_2d, goal_2d, graph):
 
 def get_path(idx_start, idx_end, landscape, xvals, yvals):
     '''
+    Find shortest path between two points on a weighted grid
     : param idx_start : index on a 2D grid, as start point for a path
     : param idx_end : index on a 2D grid, as end point for a path
     : param landscape : 2D grid
@@ -165,7 +181,10 @@ def get_path(idx_start, idx_end, landscape, xvals, yvals):
 
 def oversample(crd, pts=10):
     '''
-    add extra equally spaced points between a list of points ("pts" per interval)
+    Add extra equally spaced points between a list of points
+    : param crd : Nx2 numpy array
+    : param pts : int number of extra points to add in each interval
+    : returns Mx2 numpy array, with M>=N.
     ''' 
     pts += 1
     steps = np.linspace(1./pts, 1, pts)
