@@ -1,12 +1,14 @@
-import sys
-import os
 import numpy as np
+from copy import deepcopy
+from multiprocessing import Pool, Event, get_context
+from scipy.spatial.distance import cdist
+
 from iotbx.data_manager import DataManager
 from mmtbx.validation.ramalyze import ramalyze
 from scitbx.array_family import flex
-from multiprocessing import Pool, Event, get_context
-from scipy.spatial.distance import cdist
-from copy import deepcopy
+
+from ..utils import cpu_count
+
 
 class Ramachandran_Score():
     def __init__(self, mol, threshold=1e-3):
@@ -62,11 +64,20 @@ def process_ramachandran(coords, kwargs):
     return worker_ramachandran_score.get_score(coords,**kwargs)
 
 class Parallel_Ramachandran_Score():
-    def __init__(self, mol):
+    
+    def __init__(self, mol, nproc=-1):
+        
+        # set a number of processes as user desires, capped on number of CPUs
+        if nproc > 0:
+            nproc = min(nproc, cpu_count())
+        else:
+            nproc = cpu_count()
+        
         self.mol = deepcopy(mol)
         score = Ramachandran_Score
         ctx = get_context('spawn')
-        self.pool = ctx.Pool(initializer=set_global_score,
+        
+        self.pool = ctx.Pool(processes=nproc, initializer=set_global_score,
                          initargs=(score, dict(mol=mol)),
                          )
         self.process_function = process_ramachandran

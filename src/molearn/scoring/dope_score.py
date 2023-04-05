@@ -1,6 +1,8 @@
-import sys, os, glob
 import numpy as np
 from copy import deepcopy
+
+from ..utils import ShutUp, cpu_count
+
 import modeller
 from modeller import *
 from modeller.scripts import complete_pdb
@@ -8,22 +10,6 @@ from modeller.optimizers import ConjugateGradients
 
 from multiprocessing import Pool, Event, get_context
 
-def as_numpy(tensor):
-    if isinstance(tensor, torch.Tensor):
-        return tensor.data.cpu().numpy()
-    elif isinstance(tensor, np.ndarray):
-        return tensor
-    else:
-        return np.array(tensor)
-
-class ShutUp(object):
-    def __enter__(self):
-        self._stdout = sys.stdout
-        sys.stdout = open(os.devnull, 'w')
-
-    def __exit__(self, *args):
-        sys.stdout.close()
-        sys.stdout =  self._stdout
     
 class DOPE_Score:
 
@@ -39,7 +25,7 @@ class DOPE_Score:
         alternate_residue_names = dict(CSS=('CYX',))
         atoms = ' '.join(list(_mol.data['name'].unique()))
         _mol.write_pdb('tmp.pdb', conformations=[0])
-        log.level(0,0,0,0,0)
+        log.level(0, 0, 0, 0, 0)
         env = environ()
         env.libs.topology.read(file='$(LIB)/top_heav.lib')
         env.libs.parameters.read(file='$(LIB)/par.lib')
@@ -85,6 +71,7 @@ class DOPE_Score:
             return dope_unrefined
         except:
             return 1e10, 1e10 if refine else 1e10
+        
     def get_all_dope(self, coords, refine=False):
         # expect coords to be shape [B, N, 3] use .cpu().numpy().copy() before passing here and make sure it is scaled correctly
         dope_scores_unrefined = []
@@ -118,11 +105,18 @@ def process_dope(coords, kwargs):
     return worker_dope_score.get_dope(coords,**kwargs)
 
 class Parallel_DOPE_Score():
-    def __init__(self, mol, **kwargs):
+    def __init__(self, mol, nproc=-1, **kwargs):
+        
+        # set a number of processes as user desires, capped on number of CPUs
+        if nproc > 0:
+            nproc = min(nproc, cpu_count())
+        else:
+            nproc = cpu_count()
+            
         self.mol = deepcopy(mol)
         score = DOPE_Score
         ctx = get_context('spawn')
-        self.pool = ctx.Pool(initializer=set_global_score,
+        self.pool = ctx.Pool(processes=nproc, initializer=set_global_score,
                          initargs=(score, dict(mol=mol)),
                          **kwargs,
                          )
@@ -131,7 +125,7 @@ class Parallel_DOPE_Score():
     def __reduce__(self):
         return (self.__class__, (self.mol,))
 
-    def get_score(self, coords,**kwargs):
+    def get_score(self, coords, **kwargs):
         '''
         :param coords: # shape (1, N, 3) numpy array
         '''
