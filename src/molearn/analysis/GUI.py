@@ -1,6 +1,3 @@
-import time
-import pickle
-from IPython import display
 # Copyright (c) 2021 Venkata K. Ramaswamy, Samuel C. Musson, Chris G. Willcocks, Matteo T. Degiacomi
 #
 # Molearn is free software ;
@@ -14,8 +11,11 @@ from IPython import display
 #
 # Author: Matteo Degiacomi
 
-import numpy as np
+import time
+import pickle
+from IPython import display
 
+import numpy as np
 import MDAnalysis as mda
 
 import warnings
@@ -27,9 +27,9 @@ from tkinter import Tk, filedialog
 import plotly.graph_objects as go
 import nglview as nv
 
-
-from .analyser import as_numpy, MolearnAnalysis
-from .path import oversample, get_path
+from ..utils import as_numpy
+from .analyser import MolearnAnalysis
+from .path import oversample, get_path_aggregate
 
 
 class MolearnGUI(object):
@@ -42,25 +42,31 @@ class MolearnGUI(object):
             self.MA = MA
 
         self.waypoints = [] # collection of all saved waypoints
+        self.samples = [] # collection of all calculated sampling points
         
         self.run()
 
+     
+    def update_trails(self):
         
-    #def oversample(self, crd, pts=10):
-    #    '''
-    #    add extra equally spaced points between a list of points ("pts" per interval)
-    #    ''' 
-    #    pts += 1
-    #    steps = np.linspace(1./pts, 1, pts)
-    #    pts = [crd[0,0]]
-    #    for i in range(1, len(crd[0])):
-    #        for j in steps:
-    #            newpt = crd[0, i-1] + (crd[0, i]-crd[0, i-1])*j
-    #            pts.append(newpt)
-    #
-    #    return np.array([pts])
+        try:
+            crd = self.get_samples(self.mybox.value, int(self.samplebox.value), self.drop_path.value)
+            self.samples = crd.copy()
+        except:
+            self.button_pdb.disabled = False
+            return
 
+        # update latent space plot
+        if self.samples == []:
+            self.latent.data[3].x = self.waypoints[:, 0]
+            self.latent.data[3].y = self.waypoints[:, 1]
+        else:
+            self.latent.data[3].x = self.samples[:, 0]
+            self.latent.data[3].y = self.samples[:, 1]
         
+        self.latent.update()
+
+    
     def on_click(self, trace, points, selector):
         '''
         control display of training set
@@ -76,33 +82,68 @@ class MolearnGUI(object):
         else:
             self.waypoints = np.concatenate((self.waypoints, pt))
 
-        # update latent space plot
-        self.latent.data[3].x = self.waypoints[:, 0]
-        self.latent.data[3].y = self.waypoints[:, 1]
-        self.latent.update()
-
         # update textbox (triggering update of 3D representation)
         try:
-            pt = np.array([self.latent.data[3].x, self.latent.data[3].y]).T.flatten().round(decimals=4).astype(str)
+            pt = self.waypoints.flatten().round(decimals=4).astype(str)
+            #pt = np.array([self.latent.data[3].x, self.latent.data[3].y]).T.flatten().round(decimals=4).astype(str)
             self.mybox.value = " ".join(pt)
         except:
             return
+
+        self.update_trails()    
         
 
-    def interact_3D(self, mybox, samplebox):
+    def get_samples(self, mybox, samplebox, path):
+
+        if path == "A*":
+            use_path = True
+        else:
+            use_path = False
+
+        try:
+            crd = np.array(mybox.split()).astype(float)
+            crd = crd.reshape((int(len(crd)/2), 2))
+        except Exception:
+           raise Exception("Cannot define sampling points")
+           return
+    
+        if use_path:
+            # connect points via A*
+            try:
+                landscape = self.latent.data[0].z
+                crd = get_path_aggregate(crd, landscape.T, self.MA.xvals, self.MA.yvals)
+            except Exception as e:
+               raise Exception(f"Cannot define sampling points: path finding failed. {e})")
+               return
+                                         
+        else:
+            # connect points via straight line
+            try:  
+                crd = oversample(crd, pts=int(samplebox))
+            except Exception as e:
+                raise Exception(f"Cannot define sampling points: oversample failed. {e}")
+                return
+
+        return crd
+
+        
+    def interact_3D(self, mybox, samplebox, path):
         '''
         generate and display proteins according to latent space trail
         ''' 
 
-        # get latent space path
         try:
-            crd = np.array(mybox.split()).astype(float)
-            crd = crd.reshape((1, int(len(crd)/2), 2))       
-            crd = oversample(crd, pts=int(samplebox))
-        except Exception:
+            crd = self.get_samples(mybox, samplebox, path)
+            self.samples = crd.copy()
+            crd = crd.reshape((1, len(crd), 2))
+        except:
             self.button_pdb.disabled = True
-            return 
+            return
 
+        if crd.shape[1] == 0:
+            self.button_pdb.disabled = True
+            return
+        
         # generate structures along path
         t = time.time()
         gen = self.MA.generate(crd)
@@ -171,7 +212,7 @@ class MolearnGUI(object):
             except:
                 return
             
-            self.block0.children[2].readout_format = 'd'
+            self.block0.children[2].readout_format = '.1f'
 
         elif change.new == "ramachandran_allowed":
             try:
@@ -179,7 +220,7 @@ class MolearnGUI(object):
             except:
                 return
             
-            self.block0.children[2].readout_format = 'd'
+            self.block0.children[2].readout_format = '.1f'
             
         elif change.new == "ramachandran_outliers":
             try:
@@ -187,7 +228,7 @@ class MolearnGUI(object):
             except:
                 return
             
-            self.block0.children[2].readout_format = 'd'
+            self.block0.children[2].readout_format = '.1f'
             
         elif "custom" in change.new:
             mykey = change.new.split(":")[1]
@@ -196,7 +237,10 @@ class MolearnGUI(object):
             except Exception:
                 return      
             
-            self.block0.children[2].readout_format = 'd'
+            if np.abs(np.max(data) - np.min(data)) < 100:
+                self.block0.children[2].readout_format = '.1f'
+            else:         
+                self.block0.children[2].readout_format = 'd'
                  
         self.latent.data[0].z = data
         
@@ -213,8 +257,20 @@ class MolearnGUI(object):
             self.block0.children[2].min = np.min(data)
                 
         self.block0.children[2].value = (np.min(data), np.max(data))
+        
+        self.update_trails()
+
+
+    def drop_path_event(self, change):
+        '''
+        control way paths are looked for
+        '''
+        if change.new == "A*":
+            self.block0.children[5].disabled = True
+        else:
+            self.block0.children[5].disabled = False
             
-        self.latent.update()
+        self.update_trails()
 
 
     def check_training_event(self, change):
@@ -244,13 +300,14 @@ class MolearnGUI(object):
         self.latent.update()
 
 
-    def mybox_event(self, change):
+
+    def trail_update_event(self, change):
         '''
-        control manual update of waypoints
+        update trails (waypoints and way they are connected)
         '''
 
         try:
-            crd = np.array(change.new.split()).astype(float)
+            crd = np.array(self.mybox.value.split()).astype(float)
             crd = crd.reshape((int(len(crd)/2), 2))
         except:
             self.button_pdb.disabled = False
@@ -258,9 +315,7 @@ class MolearnGUI(object):
 
         self.waypoints = crd.copy()
 
-        self.latent.data[3].x = self.waypoints[:, 0]
-        self.latent.data[3].y = self.waypoints[:, 1]
-        self.latent.update()
+        self.update_trails()
 
 
     def button_pdb_event(self, check):
@@ -276,9 +331,12 @@ class MolearnGUI(object):
         if fname == "":
             return
 
-        crd = np.array(self.mybox.value.split()).astype(float)
-        crd = crd.reshape((1, int(len(crd)/2), 2))       
-        crd = oversample(crd, pts=int(self.samplebox.value))
+        crd = self.get_samples(self.mybox.value, self.samplebox.value, self.drop_path.value)
+        self.samples = crd.copy()
+        crd = crd.reshape((1, len(crd), 2))
+        
+        if crd.shape[1] == 0:
+            return
 
         gen = self.MA.generate(crd)
         self.mymol.load_new(gen)
@@ -318,9 +376,11 @@ class MolearnGUI(object):
         if fname == "":
             return
 
-        self.MA, self.waypoints = pickle.load( open( fname, "rb" ) )
-
-        self.run()
+        try:
+            self.MA, self.waypoints = pickle.load( open( fname, "rb" ) )
+            self.run()
+        except Exception as e:
+            raise Exception(f"Cannot load state file. {e}")
 
     #####################################################
 
@@ -369,6 +429,16 @@ class MolearnGUI(object):
         
         self.drop_background.observe(self.drop_background_event, names='value')
 
+        # dropdown menu describing pathfinding method
+        self.drop_path = widgets.Dropdown(
+            options=["Euclidean", "A*"],
+            value="Euclidean",
+            description='Path:',
+            layout=Layout(flex='1 1 0%', width='auto'))
+
+        self.drop_path.observe(self.drop_path_event, names='value')
+
+
         # training set visualisation menu
         self.check_training = widgets.Checkbox(
             value=False,
@@ -392,11 +462,15 @@ class MolearnGUI(object):
                                  description='crds:',
                                  disabled=False, layout=Layout(flex='1 1 0%', width='auto'))
 
-        self.mybox.observe(self.mybox_event, names='value')
+        self.mybox.observe(self.trail_update_event, names='value')
 
+        # text box holding number of sampling points
         self.samplebox = widgets.Text(value='10',
                                  description='sampling:',
                                  disabled=False, layout=Layout(flex='1 1 0%', width='auto'))
+
+        self.samplebox.observe(self.trail_update_event, names='value')
+
 
         # button to save PDB file
         self.button_pdb = widgets.Button(
@@ -490,7 +564,6 @@ class MolearnGUI(object):
                    showlegend=False, opacity=0.9, mode="markers",
                    marker=dict(color=color, size=5), name="training", visible=False)
         else:
-            print("no data available")
             plot2 = go.Scatter(x=[], y=[])
             self.check_training.disabled = True
             
@@ -506,8 +579,8 @@ class MolearnGUI(object):
       
         # path
         plot4 = go.Scatter(x=np.array([]), y=np.array([]),
-                   showlegend=False, opacity=0.9,
-                   marker=dict(color='red', size=7))
+                   showlegend=False, opacity=0.9, mode = 'lines+markers',
+                   marker=dict(color='red', size=4))
 
         self.latent = go.FigureWidget([plot1, plot2, plot3, plot4])
         self.latent.update_layout(xaxis_title="latent vector 1", yaxis_title="latent vector 2",
@@ -522,14 +595,14 @@ class MolearnGUI(object):
             self.range_slider.step = (np.max(sc)-np.min(sc))/100.0
             self.range_slider.disabled = False
 
-        # 3D protein representation (triggered by update of textbox)
-        self.protein = widgets.interactive_output(self.interact_3D, {'mybox': self.mybox, 'samplebox': self.samplebox})
+        # 3D protein representation (triggered by update of textbox, sampling box, or pathfinding method)
+        self.protein = widgets.interactive_output(self.interact_3D, {'mybox': self.mybox, 'samplebox': self.samplebox, 'path': self.drop_path})
 
         
         ### WIDGETS ARRANGEMENT ###
         
         self.block0 = widgets.VBox([self.check_training, self.check_test, self.range_slider,
-                                    self.drop_background, self.samplebox, self.mybox,
+                                    self.drop_background, self.drop_path, self.samplebox, self.mybox,
                                     self.button_pdb, self.button_save_state, self.button_load_state],
                               layout=Layout(flex='1 1 2', width='auto', border="solid"))
 
@@ -545,7 +618,6 @@ class MolearnGUI(object):
         self.scene.layout.align_items = 'center'
 
         if len(self.waypoints) > 0:
-            print(self.waypoints, type(self.waypoints))
             self.mybox.value = " ".join(self.waypoints.flatten().astype(str))
 
         display.clear_output(wait=True)

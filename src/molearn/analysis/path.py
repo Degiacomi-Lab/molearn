@@ -1,17 +1,3 @@
-# Copyright (c) 2021 Venkata K. Ramaswamy, Samuel C. Musson, Chris G. Willcocks, Matteo T. Degiacomi
-#
-# Molearn is free software ;
-# you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation ;
-# either version 2 of the License, or (at your option) any later version.
-# molearn is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY ;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License along with molearn ;
-# if not, write to the Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
-#
-# Author: Matteo Degiacomi
-
-
 import heapq
 import numpy as np
 
@@ -44,14 +30,22 @@ class PriorityQueue(object):
         return heapq.heappop(self.elements)[1]
 
     
-def _heuristic(pt1, pt2):
+def _heuristic(pt1, pt2, graph, euclidean=True):
     '''
     : returns penalty associated with the distance between points.
     '''
-    # TODO: could alter the heuristic with an estimation of local space
-    # warping, by summing local warpings along the line-of-sight identified
-    # via using the Bresenham algorithm
-    return np.sum(np.dot(pt2-pt1, pt2-pt1))
+
+    if not euclidean:
+        pts = oversample(np.array([pt1, pt2]), 1000).round().astype(int)
+        pts2 = np.vstack({tuple(e) for e in pts})
+        h = 0
+        for p in pts2:
+            h += graph[p[0], p[1]]
+
+    else:
+        h = np.sum(np.dot(pt2-pt1, pt2-pt1))
+    
+    return h
     
     
 def _neighbors(idx, gridshape, flattened=True):
@@ -101,15 +95,17 @@ def _cost(pt, graph):
     return graph[pt]
     
     
-def _astar(start_2d, goal_2d, graph):
+def _astar(start_2d, goal_2d, in_graph, euclidean=True):
     '''
-    A* algorithm, find path connecting two points in the graph.
+    A* algorithm, find path connecting two points in a landscape.
     :param start : starting point
     :param goal : end point
-    :param graph : 2D landscape
+    :param in_graph : 2D landscape
     :returns connectivity dictionary, total path cost (same type as graph)
     '''
     
+    graph = in_graph.copy()
+    graph -= np.min(graph) 
     graphshape = graph.shape
 
     start = np.ravel_multi_index(start_2d, graphshape)
@@ -130,22 +126,21 @@ def _astar(start_2d, goal_2d, graph):
 
         for thenext in _neighbors(current, graphshape, True):
 
-            #current_2d = np.unravel_index(current, graphshape)
-            thenext_2d = np.unravel_index(thenext, graphshape)
-            
+            thenext_2d = np.unravel_index(thenext, graphshape)            
             new_cost = cost_so_far[current] + _cost(thenext_2d, graph)
 
-            if thenext not in cost_so_far or new_cost < cost_so_far[thenext]:
+            if (thenext not in cost_so_far) or (new_cost < cost_so_far[thenext]):
                 cost_so_far[thenext] = new_cost
-                               
-                priority = new_cost + _heuristic(goal_2d, thenext_2d)
+                                
+                h = _heuristic(goal_2d, thenext_2d, graph, euclidean)
+                priority = new_cost + h
                 frontier.put(thenext, priority)
                 came_from[thenext] = current
 
     return came_from, cost_so_far
 
 
-def get_path(idx_start, idx_end, landscape, xvals, yvals):
+def get_path(idx_start, idx_end, landscape, xvals, yvals, smooth=3):
     '''
     Find shortest path between two points on a weighted grid
     : param idx_start : index on a 2D grid, as start point for a path
@@ -153,8 +148,12 @@ def get_path(idx_start, idx_end, landscape, xvals, yvals):
     : param landscape : 2D grid
     : param xvals : x-axis values, to yield actual coordinates
     : param yvals : y-axis values, to yield actual coordinates
+    : param smooth : size of kernel for running average (must be >=1, default 3)
     : returns array of 2D coordinates each with an associated value on lanscape
     '''
+
+    if type(smooth) != int or smooth<1:
+        raise Exception("Smooth parameter should be an integer number >=1")
 
     # get raw A* data
     mypath, mycost = _astar(idx_start, idx_end, landscape) 
@@ -176,7 +175,64 @@ def get_path(idx_start, idx_end, landscape, xvals, yvals):
         
         cnt += 1
 
-    return np.array(coords), np.array(score)
+    if smooth == 1:
+        return np.array(coords)[::-1], np.array(score)[::-1]
+    
+    else:
+    
+        traj = np.array(coords)[::-1]    
+        x_ave = np.convolve(traj[:, 0], np.ones(smooth), 'valid') / smooth
+        y_ave = np.convolve(traj[:, 1], np.ones(smooth), 'valid') / smooth
+        traj_smooth = np.array([x_ave, y_ave]).T
+        
+        traj_smooth = np.concatenate((np.array([traj[0]]), traj_smooth, np.array([traj[-1]])))
+        return traj_smooth, np.array(score)[::-1]
+
+
+
+def _get_point_index(crd, xvals, yvals):
+    '''
+    Extract index (of 2D surface) closest to a given real value coordinate
+    : param crd : coordinate
+    : param xvals : x-axis of surface
+    : param yvals : y-axis of surface
+    : returns 1D array with x,y coordinates
+    '''
+
+    my_x = np.argmin(np.abs(xvals - crd[0]))
+    my_y = np.argmin(np.abs(yvals - crd[1]))
+    return np.array([my_x, my_y])
+
+
+def get_path_aggregate(crd, landscape, xvals, yvals, input_is_index=False):
+    '''
+    Create a chain of shortest paths via give waypoints
+    : param crd : waypoints coordinates (Nx2 array)
+    : param landscape : 2D grid
+    : param xvals : x-axis values, to yield actual coordinates
+    : param yvals : y-axis values, to yield actual coordinates
+    : param input_is_index: if False (default), assume crd contains actual coordinates, graph indexing otherwise
+    : returns array of 2D coordinates each with an associated value on lanscape
+    '''
+    
+    if len(crd)<2:
+        return crd
+    
+    crd2 = []
+    for i in range(1, len(crd)):
+
+        if not input_is_index:
+            idx_start = _get_point_index(crd[i-1], xvals, yvals)
+            idx_end = _get_point_index(crd[i], xvals, yvals)      
+        else:
+            idx_start = crd[i-1]
+            idx_end = crd[i]
+        
+        crdtmp = get_path(idx_start, idx_end, landscape, xvals, yvals)[0]
+        crd2.extend(list(crdtmp))
+        
+    crd = np.array(crd2)
+    return crd
 
 
 def oversample(crd, pts=10):
@@ -188,10 +244,10 @@ def oversample(crd, pts=10):
     ''' 
     pts += 1
     steps = np.linspace(1./pts, 1, pts)
-    pts = [crd[0,0]]
-    for i in range(1, len(crd[0])):
+    pts = [crd[0]]
+    for i in range(1, crd.shape[0]):
         for j in steps:
-            newpt = crd[0, i-1] + (crd[0, i]-crd[0, i-1])*j
+            newpt = crd[i-1] + (crd[i]-crd[i-1])*j
             pts.append(newpt)
 
-    return np.array([pts])
+    return np.array(pts)
