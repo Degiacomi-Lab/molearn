@@ -47,22 +47,6 @@ class Molearn_Trainer():
             autoencoder_total = get_parameters(False, self.autoencoder),
                       )
 
-    def get_dataset(self, filename, batch_size=16, atoms="*", validation_split=0.1, pin_memory=True, dataset_sample_size=-1):
-        '''
-        :param filename: location of the pdb
-        :param atoms: "*" for all atoms, ["CA", "C", "N", "CB", "O"]
-        '''
-        warnings.warn("deprecated class method", DeprecationWarning)
-        raise Exception('deprecated')
-        dataset, self.mean, self.std, self.atom_names, self.mol, test0, test1 = molearn.load_data(filename, atoms="*", dataset_sample_size=dataset_sample_size,
-                device=torch.device('cpu'))
-        print(f'Dataset.shape: {dataset.shape}')
-        valid_size = int(len(dataset)*validation_split)
-        train_size = len(dataset) - valid_size
-        dataset = torch.utils.data.TensorDataset(dataset.float())
-        train_dataset, valid_dataset = torch.utils.data.random_split(dataset, [train_size, valid_size])
-        self.train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True, pin_memory=pin_memory)
-        self.valid_dataloader = torch.utils.data.DataLoader(valid_dataset, batch_size=batch_size, pin_memory=True)
 
     def set_dataloader(self, train_dataloader=None, valid_dataloader=None):
         if train_dataloader is not None:
