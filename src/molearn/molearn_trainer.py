@@ -313,7 +313,11 @@ class Molearn_Physics_Trainer(Molearn_Trainer):
         bond/=n
         angle/=n
         torsion/=n
-        total_physics = torch.nansum(torch.tensor([bond ,angle ,torsion]))
+        _all = torch.tensor([bond, angle, torsion])
+        _all[_all.isinf()]=1e35
+        total_physics = _all.nansum()
+        #total_physics = torch.nansum(torch.tensor([bond ,angle ,torsion]))
+
         return {'physics_loss':total_physics, 'bond_energy':bond, 'angle_energy':angle, 'torsion_energy':torsion}
 
 
@@ -321,7 +325,7 @@ class Molearn_Physics_Trainer(Molearn_Trainer):
         results = self.common_step(batch)
         results.update(self.common_physics_step(batch, self._internal['encoded'], results['mse_loss']))
         with torch.no_grad():
-            scale = self.psf*results['mse_loss']/results['physics_loss']
+            scale = self.psf*results['mse_loss']/(results['physics_loss']+1e-5)
         final_loss = results['mse_loss']+scale*results['physics_loss']
         results['loss'] = final_loss
         return results
@@ -329,7 +333,7 @@ class Molearn_Physics_Trainer(Molearn_Trainer):
     def valid_step(self, batch):
         results = self.common_step(batch)
         results.update(self.common_physics_step(batch, self._internal['encoded'], results['mse_loss']))
-        scale = self.psf*results['mse_loss']/results['physics_loss']
+        scale = self.psf*results['mse_loss']/(results['physics_loss']+1e-5)
         final_loss = results['mse_loss']+scale*results['physics_loss']
         results['loss'] = final_loss
         return results
