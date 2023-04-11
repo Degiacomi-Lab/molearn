@@ -8,7 +8,7 @@ import torch
 import biobox as bb
 import csv
 import molearn
-from molearn.autoencoder import Autoencoder as Net
+from molearn.models.foldingnet import AutoEncoder as Net
 from molearn.loss_functions import Auto_potential
 from molearn.pdb_data import PDBData
 from molearn.openmm_loss import openmm_energy

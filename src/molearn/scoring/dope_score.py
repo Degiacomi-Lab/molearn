@@ -9,7 +9,7 @@ from modeller.scripts import complete_pdb
 from modeller.optimizers import ConjugateGradients
 
 from multiprocessing import Pool, Event, get_context
-
+import os
     
 class DOPE_Score:
 
@@ -107,18 +107,18 @@ def process_dope(coords, kwargs):
     return worker_dope_score.get_dope(coords,**kwargs)
 
 class Parallel_DOPE_Score():
-    def __init__(self, mol, nproc=-1, **kwargs):
+    def __init__(self, mol, processes=-1, **kwargs):
         
         # set a number of processes as user desires, capped on number of CPUs
-        if nproc > 0:
-            nproc = min(nproc, cpu_count())
+        if processes > 0:
+            processes = min(processes, cpu_count())
         else:
-            nproc = cpu_count()
+            processes = cpu_count()
             
         self.mol = deepcopy(mol)
         score = DOPE_Score
         ctx = get_context('spawn')
-        self.pool = ctx.Pool(processes=nproc, initializer=set_global_score,
+        self.pool = ctx.Pool(processes=processes, initializer=set_global_score,
                          initargs=(score, dict(mol=mol)),
                          **kwargs,
                          )

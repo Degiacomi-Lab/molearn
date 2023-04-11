@@ -1,4 +1,4 @@
-#import os
+import os
 #from openmm.unit import kelvin, picosecond
 from openmm import Platform
 from openmm.app import ForceField, PDBFile, Simulation #, OBC2

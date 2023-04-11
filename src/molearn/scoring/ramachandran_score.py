@@ -67,19 +67,19 @@ def process_ramachandran(coords, kwargs):
 
 class Parallel_Ramachandran_Score():
     
-    def __init__(self, mol, nproc=-1):
+    def __init__(self, mol, processes=-1):
         
         # set a number of processes as user desires, capped on number of CPUs
-        if nproc > 0:
-            nproc = min(nproc, cpu_count())
+        if processes > 0:
+            processes = min(processes, cpu_count())
         else:
-            nproc = cpu_count()
+            processes = cpu_count()
         
         self.mol = deepcopy(mol)
         score = Ramachandran_Score
         ctx = get_context('spawn')
         
-        self.pool = ctx.Pool(processes=nproc, initializer=set_global_score,
+        self.pool = ctx.Pool(processes=processes, initializer=set_global_score,
                          initargs=(score, dict(mol=mol)),
                          )
         self.process_function = process_ramachandran

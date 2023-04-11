@@ -15,7 +15,7 @@ __version__ = '1.1'
 __date__ = '$Date: 2022-10-26 $'
 from .loss_functions import Auto_potential
 from .protein_handler import *
-from .molearn_trainer import Molearn_Trainer, Molearn_Physics_Trainer, OpenMM_Physics_Trainer, Molearn_Constrained
+from .molearn_trainer import *
 from .pdb_data import PDBData
 from .openmm_loss import openmm_energy
 #from .analysis import MolearnAnalysis, MolearnGUI

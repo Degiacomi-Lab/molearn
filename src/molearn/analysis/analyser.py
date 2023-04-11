@@ -267,13 +267,13 @@ class MolearnAnalysis(object):
         return self.surf_z, self.surf_c, self.xvals, self.yvals
 
 
-    def _ramachandran_score(self, frame, nproc=-1):
+    def _ramachandran_score(self, frame, processes=-1):
         '''
         returns multiprocessing AsyncResult
         AsyncResult.get() will return the result
         '''
         if not hasattr(self, 'ramachandran_score_class'):
-            self.ramachandran_score_class = Parallel_Ramachandran_Score(self.mol, nproc=nproc) #Parallel_Ramachandran_Score(self.mol)
+            self.ramachandran_score_class = Parallel_Ramachandran_Score(self.mol, processes=processes) #Parallel_Ramachandran_Score(self.mol)
         assert len(frame.shape) == 2, f'We wanted 2D data but got {len(frame.shape)} dimensions'
         if frame.shape[0] == 3:
             f = frame.permute(1,0)
@@ -286,13 +286,13 @@ class MolearnAnalysis(object):
         return self.ramachandran_score_class.get_score(f*self.stdval)
 
 
-    def _dope_score(self, frame, refine = True, nproc=-1):
+    def _dope_score(self, frame, refine = True, processes=-1):
         '''
         returns multiprocessing AsyncResult
         AsyncResult.get() will return the result
         '''
         if not hasattr(self, 'dope_score_class'):
-            self.dope_score_class = Parallel_DOPE_Score(self.mol, nproc=nproc)
+            self.dope_score_class = Parallel_DOPE_Score(self.mol, processes=processes)
 
         assert len(frame.shape) == 2, f'We wanted 2D data but got {len(frame.shape)} dimensions'
         if frame.shape[0] == 3:
@@ -343,7 +343,7 @@ class MolearnAnalysis(object):
         return score
 
 
-    def scan_dope(self, samples = 50, refine = True, nproc = -1):
+    def scan_dope(self, samples = 50, refine = True, processes = -1):
 
         if hasattr(self, "surf_dope_refined") and hasattr(self, "surf_dope_unrefined"):
             if samples == len(self.surf_dope_refined) and samples == len(self.surf_dope_unrefined):
@@ -359,7 +359,7 @@ class MolearnAnalysis(object):
         with torch.no_grad():
             for i, j in enumerate(z_in):
                 structure = self.network.decode(j)[:,:,:self.training_set.shape[2]]
-                results.append(self._dope_score(structure[0], refine=refine, nproc=nproc))
+                results.append(self._dope_score(structure[0], refine=refine, processes=processes))
         
         results = np.array([r.get() for r in results])
         
@@ -372,7 +372,7 @@ class MolearnAnalysis(object):
             return self.surf_dope_unrefined, self.xvals, self.yvals            
 
 
-    def scan_ramachandran(self, samples = 50, nproc = -1):
+    def scan_ramachandran(self, samples = 50, processes = -1):
         if hasattr(self, "surf_ramachandran"):
             if samples == len(self.surf_ramachandran):
                 return self.surf_ramachandran_favored, self.surf_ramachandran_allowed, self.surf_ramachandran_outliers
@@ -384,7 +384,7 @@ class MolearnAnalysis(object):
         with torch.no_grad():
             for i,j in enumerate(z_in):
                 structure = self.network.decode(j)[:,:,:self.training_set.shape[2]]
-                results.append(self._ramachandran_score(structure[0], nproc=nproc))
+                results.append(self._ramachandran_score(structure[0], processes=processes))
         results = np.array([r.get() for r in results])
         self.surf_ramachandran_favored = results[:,0].reshape(len(self.xvals), len(self.yvals))
         self.surf_ramachandran_allowed = results[:,1].reshape(len(self.xvals), len(self.yvals))
