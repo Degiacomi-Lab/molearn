@@ -11,6 +11,5 @@
 
 
 __author__ = "V. K. Ramaswamy, S. C. Musson, C. G. Willcocks, M. T. Degiacomi"
-__version__ = '1.0'
-__date__ = '$Date: 2021-01-01 $'
-from molearn.old_networks.old_networks import *
+__version__ = '1.1'
+__date__ = '$Date: 2023-04-11 $'
