@@ -283,11 +283,13 @@ class Molearn_Trainer():
             _name = f'{checkpoint_folder}/{checkpoint_name}'
         checkpoint = torch.load(_name)
         if not hasattr(self, 'autoencoder'):
+            raise NotImplementedError('self.autoencoder does not exist, I have no way of knowing what network you want to load checkoint weights into yet, please set the network first')
             self.get_network(autoencoder_kwargs=checkpoint['network_kwargs'])
 
         self.autoencoder.load_state_dict(checkpoint['model_state_dict'])
         if load_optimiser:
             if not hasattr(self, 'optimiser'):
+                raise NotImplementedError('self.optimiser does not exist, I have no way of knowing what optimiser you previously used, please set it first.')
                 self.get_optimiser(dict(lr=1e-20, momentum=0.9))
             self.optimiser.load_state_dict(checkpoint['optimizer_state_dict'])
         epoch = checkpoint['epoch']
