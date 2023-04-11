@@ -117,7 +117,7 @@ class OpenmmPluginScore():
             #self.mol.data.loc[:,'resname'][self.mol.data['resname']==key]=value
             self.mol.data.loc[self.mol.data['resname']==key,'resname']=value
             #self.mol.data.loc[lambda df: df['resname']==key, key]=value
-        tmp_file = 'tmp{np.random.randint(1e10)}.pdb'
+        tmp_file = f'tmp{np.random.randint(1e10)}.pdb'
         self.atoms = atoms
         self.mol.write_pdb(tmp_file)
         self.pdb = PDBFile(tmp_file)
