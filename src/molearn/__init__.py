@@ -19,6 +19,10 @@ from .networks import *
 from .molearn_trainer import Molearn_Trainer, Molearn_Physics_Trainer, OpenMM_Physics_Trainer, Molearn_Constrained
 from .pdb_data import PDBData
 from .openmm_loss import openmm_energy
+<<<<<<< Updated upstream
+=======
+#from .analysis import MolearnAnalysis, MolearnGUI
+>>>>>>> Stashed changes
 
 try:
     from .sinkhorn_trainer import Sinkhorn_Trainer

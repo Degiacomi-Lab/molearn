@@ -84,6 +84,7 @@ class ModifiedForceField(ForceField):
                         template = t
                         matches = m
                         return [template, matches]
+                print(f'multpile for {t.name}')
                 # We found multiple matches.  This is OK if and only if they assign identical types and parameters to all atoms.
                 t1, m1 = allMatches[0]
 
@@ -100,7 +101,7 @@ class OpenmmPluginScore():
     NB. The current torchintegratorplugin only supports float on GPU and double on CPU.
     '''
     
-    def __init__(self, mol=None, xml_file = ['amber14-all.xml', 'implicit/obc2.xml'], platform = 'CUDA', remove_NB=False, alternative_residue_names = dict(HIS='HIE'), atoms=['CA', 'C', 'N',
+    def __init__(self, mol=None, xml_file = ['amber14-all.xml', 'implicit/obc2.xml'], platform = 'CUDA', remove_NB=False, alternative_residue_names = dict(HIS='HIE', HSE='HIE'), atoms=['CA', 'C', 'N',
                                                                                                                                                                               'CB',
                                                                                                                                                                               'O'],
                 soft=False):
@@ -112,6 +113,10 @@ class OpenmmPluginScore():
         :param remove_NB: (bool, default False) remove NonbondedForce, CustomGBForce, CMMotionRemover
         '''
         self.mol = mol
+        for key, value in alternative_residue_names.items():
+            #self.mol.data.loc[:,'resname'][self.mol.data['resname']==key]=value
+            self.mol.data.loc[self.mol.data['resname']==key,'resname']=value
+            #self.mol.data.loc[lambda df: df['resname']==key, key]=value
         tmp_file = 'tmp.pdb'
         self.atoms = atoms
         self.mol.write_pdb(tmp_file)

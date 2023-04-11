@@ -24,8 +24,9 @@ class DOPE_Score:
 
         alternate_residue_names = dict(CSS=('CYX',))
         atoms = ' '.join(list(_mol.data['name'].unique()))
-        _mol.write_pdb('tmp.pdb', conformations=[0])
-        log.level(0, 0, 0, 0, 0)
+        tmp_file = f'tmp{np.random.randint(1e10)}.pdb'
+        _mol.write_pdb(tmp_file, conformations=[0])
+        log.level(0,0,0,0,0)
         env = environ()
         env.libs.topology.read(file='$(LIB)/top_heav.lib')
         env.libs.parameters.read(file='$(LIB)/par.lib')
@@ -51,6 +52,7 @@ class DOPE_Score:
             if i<len(atom_residue):
                 assert _mol.data['name'][atom_order[i]]==j.name
         self.cg = ConjugateGradients()
+        os.remove(tmp_file)
 
     def get_dope(self, frame, refine=False):
         # expect coords to be shape [N, 3] use .cpu().numpy().copy() before passing here and make sure it is scaled correctly
