@@ -117,7 +117,7 @@ class OpenmmPluginScore():
             #self.mol.data.loc[:,'resname'][self.mol.data['resname']==key]=value
             self.mol.data.loc[self.mol.data['resname']==key,'resname']=value
             #self.mol.data.loc[lambda df: df['resname']==key, key]=value
-        tmp_file = 'tmp.pdb'
+        tmp_file = 'tmp{np.random.randint(1e10)}.pdb'
         self.atoms = atoms
         self.mol.write_pdb(tmp_file)
         self.pdb = PDBFile(tmp_file)
@@ -161,6 +161,7 @@ class OpenmmPluginScore():
         self.simulation.context.setPositions(self.pdb.positions)
         self.get_score = self.get_energy
         print(self.simulation.context.getState(getEnergy=True).getPotentialEnergy()._value)
+        os.remove(tmp_file)
     
     def ignore_hydrogen(self):
         #ignore = ['ASH', 'LYN', 'GLH', 'HID', 'HIP', 'CYM', ]
