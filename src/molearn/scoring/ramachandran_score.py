@@ -12,8 +12,9 @@ from ..utils import cpu_count
 
 class Ramachandran_Score():
     def __init__(self, mol, threshold=1e-3):
-        mol.write_pdb('rama_tmp.pdb')
-        filename = 'rama_tmp.pdb'
+        tmp_file = f'rama_tmp{np.random.randint(1e10)}.pdb'
+        mol.write_pdb(tmp_file)#'rama_tmp.pdb')
+        filename = tmp_file#'rama_tmp.pdb'
         self.mol = mol
         self.dm = DataManager(datatypes = ['model'])
         self.dm.process_model_file(filename)
@@ -28,6 +29,7 @@ class Ramachandran_Score():
         self.idxs = np.where(cdist(m, x)<threshold)[1]
         assert self.idxs.shape[0] == m.shape[0]
         assert not np.any(((m-x[self.idxs])>threshold))
+        os.remove(tmp_file)
 
     def get_score(self, coords, as_ratio = False):
         '''
