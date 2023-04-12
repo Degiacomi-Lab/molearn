@@ -1,6 +1,6 @@
-# MOLEARN SOURCE
+# Molearn source
 
-This folder contains *molearn* source code. ***NOTE: this README file is a work in preparation***.
+This folder contains *molearn* source code. ***NOTE: this README file is in preparation***.
 
 ## Folders
 
@@ -12,8 +12,8 @@ This folder contains *molearn* source code. ***NOTE: this README file is a work 
 
 ## Files
 
-- `loss_functions.py`: ...
-- `molearn_trainer.py`: ...
-- `pdb_data.py`: ...
-- `protein_handler.py`: ...
-- `utils.py`: ...
+- `loss_functions.py`: evaluation of model energy without OpenMM
+- `molearn_trainer.py`: main class to set up and train a neural network with molearn loss function
+- `pdb_data.py`: protein data loader
+- `protein_handler.py`: functions to load protein and force field data
+- `utils.py`: useful functions used throughout the code
