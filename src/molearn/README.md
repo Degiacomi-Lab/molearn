@@ -12,9 +12,9 @@ This folder contains *molearn* source code.
 
 ## Files
 
-- `loss_functions.py`: evaluation of model energy without OpenMM
 - `molearn_trainer.py`: main class to set up and train a neural network with molearn loss function
 - `sinkhorn_trainer.py`: main class to set up and train a neural network with sinkhorn loss function (not imported by default)
-- `pdb_data.py`: protein data loader
-- `protein_handler.py`: functions to load protein and force field data
 - `utils.py`: useful functions used throughout the code
+- `pdb_data.py`: protein data handler
+- `loss_functions.py`: legacy functions, evaluation of model energy without OpenMM
+- `protein_handler.py`: legacy functions, protein data handler without OpenMM
