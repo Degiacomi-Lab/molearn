@@ -2,6 +2,7 @@ import os, sys
 import numpy as np
 import torch
 import random
+import string
 
 def random_string(length=32):
     '''
