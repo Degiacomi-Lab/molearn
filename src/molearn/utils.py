@@ -1,6 +1,16 @@
 import os, sys
 import numpy as np
 import torch
+import random
+
+def random_string(length=32):
+    '''
+    generate a random string of arbitrary characters. Useful to generate temporary file names.
+
+    :param length: length of random string
+    '''
+    return ''.join([random.choice(string.ascii_letters)
+                    for n in range(length)])
 
 
 def as_numpy(tensor):

@@ -1,7 +1,7 @@
 import numpy as np
 from copy import deepcopy
 
-from ..utils import ShutUp, cpu_count
+from ..utils import ShutUp, cpu_count, random_string
 
 import modeller
 from modeller import *
@@ -24,13 +24,14 @@ class DOPE_Score:
 
         alternate_residue_names = dict(CSS=('CYX',))
         atoms = ' '.join(list(_mol.data['name'].unique()))
-        tmp_file = f'tmp{np.random.randint(1e10)}.pdb'
+        #tmp_file = f'tmp{np.random.randint(1e10)}.pdb'
+        tmp_file = f'tmp{random_string()}.pdb'
         _mol.write_pdb(tmp_file, conformations=[0])
         log.level(0,0,0,0,0)
         env = environ()
         env.libs.topology.read(file='$(LIB)/top_heav.lib')
         env.libs.parameters.read(file='$(LIB)/par.lib')
-        self.fast_mdl = complete_pdb(env, 'tmp.pdb')
+        self.fast_mdl = complete_pdb(env, tmp_file)
         self.fast_fs = selection(self.fast_mdl.chains[0])
         self.fast_ss = self.fast_fs.only_atom_types(atoms)
         atom_residue = _mol.get_data(columns=['name', 'resname', 'resid'])

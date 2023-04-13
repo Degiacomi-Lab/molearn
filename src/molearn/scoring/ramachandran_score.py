@@ -7,12 +7,12 @@ from iotbx.data_manager import DataManager
 from mmtbx.validation.ramalyze import ramalyze
 from scitbx.array_family import flex
 
-from ..utils import cpu_count
+from ..utils import cpu_count, random_string
 
 
 class Ramachandran_Score():
     def __init__(self, mol, threshold=1e-3):
-        tmp_file = f'rama_tmp{np.random.randint(1e10)}.pdb'
+        tmp_file = f'rama_tmp{random_string()}.pdb'
         mol.write_pdb(tmp_file)#'rama_tmp.pdb')
         filename = tmp_file#'rama_tmp.pdb'
         self.mol = mol
