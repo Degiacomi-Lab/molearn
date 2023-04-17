@@ -8,7 +8,7 @@ from mmtbx.validation.ramalyze import ramalyze
 from scitbx.array_family import flex
 
 from ..utils import cpu_count, random_string
-
+import os
 
 class Ramachandran_Score():
     def __init__(self, mol, threshold=1e-3):

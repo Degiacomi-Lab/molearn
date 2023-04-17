@@ -115,7 +115,7 @@ class MolearnAnalysis(object):
         return self._test_set_decoded.clone()
 
 
-    def get_error(self, dataset="", align=False):
+    def get_error(self, dataset="", z=None, decoded=None, align=False):
         '''
         Calculate the reconstruction error of a dataset encoded and decoded by a trained neural network
         '''
@@ -128,6 +128,10 @@ class MolearnAnalysis(object):
             dataset = self.test_set
             z = self.test_set_z
             decoded = self.test_set_decoded
+        elif z is not None:
+            if decoded is None:
+                with torch.no_grad():
+                    decoded = self.network.decode(z)[:,:,:dataset.shape[2]]
         else:
             with torch.no_grad():
                 z = self.network.encode(dataset.float())
@@ -151,7 +155,7 @@ class MolearnAnalysis(object):
         return np.array(err)
 
 
-    def get_dope(self, dataset="", refined=True):
+    def get_dope(self, dataset="", z=None, decoded = None, refined=True):
 
         if dataset == "" or dataset == "training_set":
             dataset = self.training_set
@@ -161,6 +165,10 @@ class MolearnAnalysis(object):
             dataset = self.test_set
             z = self.test_set_z
             decoded = self.test_set_decoded
+        elif z is not None:
+            if decoded is None:
+                with torch.no_grad():
+                    decoded = self.network.decode(z)[:,:,:dataset.shape[2]]
         else:
             with torch.no_grad():
                 z = self.network.encode(dataset.float())
@@ -175,7 +183,7 @@ class MolearnAnalysis(object):
         else:
             return (dope_dataset,), (dope_decoded,)
 
-    def get_ramachandran(self, dataset=""):
+    def get_ramachandran(self, dataset="", z = None, decoded = None):
         if dataset == "" or dataset == "training_set":
             dataset = self.training_set
             z = self.training_set_z
@@ -184,6 +192,10 @@ class MolearnAnalysis(object):
             dataset = self.test_set
             z = self.test_set_z
             decoded = self.test_set_decoded
+        elif z is not None:
+            if decoded is None:
+                with torch.no_grad():
+                    decoded = self.network.decode(z)[:,:,:dataset.shape[2]]
         else:
             with torch.no_grad():
                 z = self.network.encode(dataset.float())
@@ -370,6 +382,58 @@ class MolearnAnalysis(object):
         else:
             self.surf_dope_unrefined = results.reshape(len(self.xvals), len(self.yvals))
             return self.surf_dope_unrefined, self.xvals, self.yvals            
+
+
+    def scan_all(self, samples = 50, processes = -1):
+        self.xvals, self.yvals = self._get_sampling_ranges(samples)
+        X, Y = torch.meshgrid(torch.tensor(self.xvals), torch.tensor(self.yvals))
+        z_in = torch.stack((X,Y), dim=2).view(samples*samples, 1, 2, 1).float()
+        z_size = len(z_in)
+        dope = []
+        rama = []
+        error_z = []
+        error_c = []
+        with torch.no_grad():
+            for i,j in enumerate(z_in):
+                if i%100==0:
+                    print(f'on same {i} out of {z_size}, {100*i/z_size}%')
+
+                structure = self.network.decode(j.to(self.device))[:,:,:self.training_set.shape[2]]
+                dope.append(self._dope_score(structure[0], refine=True, processes=processes))
+                rama.append(self._ramachandran_score(structure[0], processes=processes))
+                z2 = self.network.encode(structure)
+                structure2 = self.network.decode(z2)[:,:,:self.training_set.shape[2]]
+                error_z.append(np.sum((z2.cpu().numpy().flatten()-j.numpy().flatten())**2)) # Latent space L2, i.e. (1) vs (3)
+                error_c.append(np.sum((structure2.cpu().numpy().flatten()-structure.cpu().numpy().flatten())**2)) # Cartesian L2, i.e. (2) vs (4)
+        
+        print('finish dope')
+        dope = np.array([r.get() for r in dope])
+        print('finish rama')
+        rama = np.array([r.get() for r in rama])
+        error_z = np.sqrt(np.array(error_z))
+        error_c = np.sqrt(np.array(error_c))
+
+        self.surf_c = error_c.reshape(samples, samples)
+        self.surf_z = error_z.reshape(samples, samples)
+        self.surf_dope_unrefined = dope[:,0].reshape(samples, samples)
+        self.surf_dope_refined = dope[:,1].reshape(samples, samples)
+        self.surf_ramachandran_favored = rama[:,0].reshape(samples, samples)
+        self.surf_ramachandran_allowed = rama[:,1].reshape(samples, samples)
+        self.surf_ramachandran_outliers = rama[:,2].reshape(samples, samples)
+        self.surf_ramachandran_total = rama[:,3].reshape(samples, samples)
+
+        return dict(
+            landscape_err_latent=self.surf_z,
+            landscape_err_3d=self.surf_c,
+            landscape_dope_unrefined = self.surf_dope_unrefined,
+            landscape_dope_refined = self.surf_dope_refined,
+            landscape_ramachandran_favored = self.surf_ramachandran_favored,
+            landscape_ramachandran_allowed = self.surf_ramachandran_allowed,
+            landscape_ramachandran_outlier = self.surf_ramachandran_outliers,
+            landscape_ramachandran_total = self.surf_ramachandran_total,
+            xvals = self.xvals,
+            yvals = self.yvals,
+            )
 
 
     def scan_ramachandran(self, samples = 50, processes = -1):
