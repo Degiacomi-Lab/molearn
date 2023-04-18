@@ -384,7 +384,7 @@ class MolearnAnalysis(object):
             return self.surf_dope_unrefined, self.xvals, self.yvals            
 
 
-    def scan_all(self, samples = 50, processes = -1):
+    def scan_all(self, samples = 50, processes = -1, rmsd_from = None):
         self.xvals, self.yvals = self._get_sampling_ranges(samples)
         X, Y = torch.meshgrid(torch.tensor(self.xvals), torch.tensor(self.yvals))
         z_in = torch.stack((X,Y), dim=2).view(samples*samples, 1, 2, 1).float()
@@ -393,6 +393,16 @@ class MolearnAnalysis(object):
         rama = []
         error_z = []
         error_c = []
+        rmsd_structures = {}
+        rmsd = {}
+        if rmsd_from is not None:
+            if not isinstance(rmsd_from, dict):
+                rmsd_from = dict(name_not_set = rmsd_from)
+            for key, value in rmsd_from.items():
+                rmsd_structures[key] = value.float().view(1,3,-1).to(self.device)
+                rmsd[key] = []
+
+
         with torch.no_grad():
             for i,j in enumerate(z_in):
                 if i%100==0:
@@ -401,10 +411,16 @@ class MolearnAnalysis(object):
                 structure = self.network.decode(j.to(self.device))[:,:,:self.training_set.shape[2]]
                 dope.append(self._dope_score(structure[0], refine=True, processes=processes))
                 rama.append(self._ramachandran_score(structure[0], processes=processes))
+
+                for key, value in rmsd_structures.items():
+                    rmsd_value = (((structure-value)*self.stdval)**2).sum(dim=1).mean().cpu().item()
+                    rmsd[key].append(rmsd_value)
+
                 z2 = self.network.encode(structure)
                 structure2 = self.network.decode(z2)[:,:,:self.training_set.shape[2]]
                 error_z.append(np.sum((z2.cpu().numpy().flatten()-j.numpy().flatten())**2)) # Latent space L2, i.e. (1) vs (3)
                 error_c.append(np.sum((structure2.cpu().numpy().flatten()-structure.cpu().numpy().flatten())**2)) # Cartesian L2, i.e. (2) vs (4)
+
         
         print('finish dope')
         dope = np.array([r.get() for r in dope])
@@ -422,6 +438,12 @@ class MolearnAnalysis(object):
         self.surf_ramachandran_outliers = rama[:,2].reshape(samples, samples)
         self.surf_ramachandran_total = rama[:,3].reshape(samples, samples)
 
+        rmsd_surfs = {}
+        for key, value in rmsd.items():
+            surf_rmsd = np.array(value).reshape(samples, samples)
+            setattr(self, f'surf_rmsd_from_{key}', surf_rmsd)
+            rmsd_surfs[f'landscape_rmsd_from_{key}'] = surf_rmsd
+
         return dict(
             landscape_err_latent=self.surf_z,
             landscape_err_3d=self.surf_c,
@@ -433,6 +455,7 @@ class MolearnAnalysis(object):
             landscape_ramachandran_total = self.surf_ramachandran_total,
             xvals = self.xvals,
             yvals = self.yvals,
+            **rmsd_surfs,
             )
 
 
