@@ -101,7 +101,7 @@ class OpenmmPluginScore():
     NB. The current torchintegratorplugin only supports float on GPU and double on CPU.
     '''
     
-    def __init__(self, mol=None, xml_file = ['amber14-all.xml', 'implicit/obc2.xml'], platform = 'CUDA', remove_NB=False, alternative_residue_names = dict(HIS='HIE', HSE='HIE'), atoms=['CA', 'C', 'N',
+    def __init__(self, mol=None, xml_file = ['amber14-all.xml'], platform = 'CUDA', remove_NB=False, alternative_residue_names = dict(HIS='HIE', HSE='HIE'), atoms=['CA', 'C', 'N',
                                                                                                                                                                               'CB',
                                                                                                                                                                               'O'],
                 soft=False):
@@ -110,7 +110,7 @@ class OpenmmPluginScore():
         :param data_dir: (string, default None) if pldataloader is not given then this will be used to find files such as 'variants.npy'
         :param xml_file: (string, default: "amber14-all.xml") xml parameter file
         :param platform: (string, default 'CUDA') either 'CUDA' or 'Reference'.
-        :param remove_NB: (bool, default False) remove NonbondedForce, CustomGBForce, CMMotionRemover
+        :param remove_NB: (bool, default False) remove NonbondedForce, CustomGBForce, CMMotionRemover else just remove CustomGBForce
         '''
         self.mol = mol
         for key, value in alternative_residue_names.items():
@@ -151,6 +151,13 @@ class OpenmmPluginScore():
                                           openmm.NonbondedForce,
                                           openmm.CMMotionRemover)):
                         self.system.removeForce(idx)
+            else:
+                forces = self.system.getForces()
+                for idx in reversed(range(len(forces))):
+                    force = forces[idx]
+                    if isinstance(force, openmm.CustomGBForce):
+                        self.system.removeForce(idx)
+
 
         self.integrator = TorchExposedIntegrator()
         self.platform = Platform.getPlatformByName(platform)
