@@ -8,10 +8,11 @@ tags:
   
 authors:
   - name: Samuel C. Musson
-    orcid: 0000-0000-0000-0000
+    orcid: 0000-0002-2189-554X
     equal-contrib: false
     affiliation: 1
   - name: Matteo T. Degiacomi
+    orcid: 0000-0003-4672-471X
     equal-contrib: false
     corresponding: true
     affiliation: 1
@@ -63,10 +64,10 @@ While MD enables obtaining key insight into biomolecular function, it is not a
 silver bullet: exhaustive sampling of key biological processes such as folding
 or spontaneous binding with partners usually lay beyond what can be routinely
 observed. Generative Neural Networks (GNNs) have been shown to be effective
-predictors of proteins 3D structure from their sequence `[@Jumper2021; @Baek2021]`.
+predictors of proteins 3D structure from their sequence [@Jumper2021; @Baek2021].
 Several efforts have also demonstrated that a neural network trained with MD
 conformers can learn a meaningful dimensionality reduction of the data, usable
-for reaction coordinate definition `[@frassek2021extended; @chen2018collective]`, or driving conformational space sampling `[@noe2019boltzmann; @sidky2020molecular; @mehdi2022accelerating]`.
+for reaction coordinate definition [@frassek2021extended; @chen2018collective], or driving conformational space sampling [@noe2019boltzmann; @sidky2020molecular; @mehdi2022accelerating].
 In this context, we have previously presented GNNs capable of generating protein
 conformations based on small pools of examples produced from MD [@Degiacomi2019; @Ramaswamy2021].
 
@@ -83,8 +84,8 @@ learning protein conformational spaces from examples obtained via experiments or
  Classes available provide support for the following tasks:
 -	*Data loading*. We provide methods to parse molecular conformers and convert them in a pyTorch [@paszke2019pytorch] tensor format suitable for training.
 -	*Model design*. Molearn comes with a range of pre-implemented models, ready to be trained on any desired datasets.
--	*Loss function definition*. While the classical loss function in a generative model typically builds upon a mean square error between input and output, here we provide the capability of directly interacting with the OpenMM molecular dynamics engine [eastman2017openmm]. Specifically, we have implemented means of pushing data in pyTorch tensor format directly into OpenMM backend. This enables quickly evaluating the energy of a generated model according to any force field accepted by OpenMM. This also enables directly running MD simulations with generated conformers while the model trains.
--	*Model analysis*. Once a model is trained, it is important to gather metrics defining the quality of its models. We provide tools to quickly quantify the DOPE score [shen2006statistical] and Ramachandran plot of generated conformers, as well as the RMSD between generated models and known conformers We also provide a graphical user interface, enabling the visualisation of neural network latent space via plotly [plotly]. The GUI also enables generating and visualising predicted interpolations with a 3D view supported by via nglview [nguyen2018nglview].
+-	*Loss function definition*. While the classical loss function in a generative model typically builds upon a mean square error between input and output, here we provide the capability of directly interacting with the OpenMM molecular dynamics engine [@eastman2017openmm]. Specifically, we have implemented means of pushing data in pyTorch tensor format directly into OpenMM backend. This enables quickly evaluating the energy of a generated model according to any force field accepted by OpenMM. This also enables directly running MD simulations with generated conformers while the model trains.
+-	*Model analysis*. Once a model is trained, it is important to gather metrics defining the quality of its models. We provide tools to quickly quantify the DOPE score [@shen2006statistical] and Ramachandran plot of generated conformers, as well as the RMSD between generated models and known conformers We also provide a graphical user interface, enabling the visualisation of neural network latent space via plotly [@plotly]. The GUI also enables generating and visualising predicted interpolations with a 3D view supported by via nglview [@nguyen2018nglview].
 
 
 # Usage
