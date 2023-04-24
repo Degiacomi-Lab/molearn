@@ -13,21 +13,6 @@
 __author__ = "V. K. Ramaswamy, S. C. Musson, C. G. Willcocks, M. T. Degiacomi"
 __version__ = '1.1'
 __date__ = '$Date: 2022-10-26 $'
-from .loss_functions import Auto_potential
-from .protein_handler import *
 from .molearn_trainer import *
 from .pdb_data import PDBData
-from .openmm_loss import openmm_energy
-
-#try:
-    #from .analysis import MolearnAnalysis, MolearnGUI
-#except Exception as e:
-#    import warnings
-#    warnings.warn(f"{e}. Cannot import analysis tools.")
-
-#try:
-#    from sinkhorn_trainer import Sinkhorn_Trainer
-#except Exception as e:
-#    import warnings
-#    warnings.warn(f"{e}. Will not be able to use sinkhorn_trainer.")
-    
+import loss_functions

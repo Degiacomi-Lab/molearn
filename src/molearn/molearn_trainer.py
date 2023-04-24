@@ -9,9 +9,9 @@ import biobox as bb
 import csv
 import molearn
 from molearn.models.foldingnet import AutoEncoder as Net
-from molearn.loss_functions import Auto_potential
+from molearn.loss_functions import TorchProteinEnergy
 from molearn.pdb_data import PDBData
-from molearn.openmm_loss import openmm_energy
+from molearn.loss_functions import openmm_energy
 import warnings
 from decimal import Decimal
 import json
@@ -302,7 +302,7 @@ class Molearn_Physics_Trainer(Molearn_Trainer):
 
     def prepare_physics(self, physics_scaling_factor=0.1):
         self.psf = physics_scaling_factor
-        self.physics_loss = Auto_potential(self._data.dataset[0]*self.std, pdb_atom_names = self._data.get_atominfo(), device = self.device, method = 'roll')
+        self.physics_loss = TorchProteinEnergy(self._data.dataset[0]*self.std, pdb_atom_names = self._data.get_atominfo(), device = self.device, method = 'roll')
 
     def common_physics_step(self, batch, latent, mse_loss):
         alpha = torch.rand(int(len(batch)//2), 1, 1).type_as(latent)

@@ -15,9 +15,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from copy import deepcopy
-from .protein_handler import get_convolutions
+from molearn.loss_functions.torch_protein_energy_utils import get_convolutions
 
-class Auto_potential():
+#class Auto_potential():
+class TorchProteinEnergy():
     def __init__(self, frame, pdb_atom_names,
                 padded_residues=False,
                 method =('indexed', 'convolutional', 'roll')[2],

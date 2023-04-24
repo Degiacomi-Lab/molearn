@@ -10,6 +10,3 @@
 # if not, write to the Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
 
 
-__author__ = "V. K. Ramaswamy, S. C. Musson, C. G. Willcocks, M. T. Degiacomi"
-__version__ = '1.1'
-__date__ = '$Date: 2023-04-11 $'
