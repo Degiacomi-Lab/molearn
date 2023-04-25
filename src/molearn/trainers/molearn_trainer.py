@@ -47,6 +47,9 @@ class Molearn_Trainer():
             autoencoder_total = get_parameters(False, self.autoencoder),
                       )
 
+    def set_autoencoder(self, autoencoder, **kwargs):
+        self.autoencoder = autoencoder(**kwargs).to(self.device)
+        self._autoencoder_kwargs = kwargs
 
     def set_dataloader(self, train_dataloader=None, valid_dataloader=None):
         if train_dataloader is not None:
@@ -65,8 +68,8 @@ class Molearn_Trainer():
         self._data = data
 
 
-    def get_optimiser(self, **optimiser_kwargs):
-        self.optimiser = torch.optim.AdamW(self.autoencoder.parameters(), **optimiser_kwargs)
+    def prepare_optimiser(self, lr = 1e-3, weight_decay = 0.0001, **optimiser_kwargs):
+        self.optimiser = torch.optim.AdamW(self.autoencoder.parameters(), lr=lr, weight_decay = weight_decay, **optimiser_kwargs)
 
     def log(self, log_dict, verbose=None):
         dump = json.dumps(log_dict)
@@ -78,7 +81,7 @@ class Molearn_Trainer():
     def scheduler_step(self, logs):
         pass
 
-    def run(self, max_epochs=1600, log_filename = None, log_folder=None, checkpoint_frequency=8, checkpoint_folder='checkpoints', allow_n_failures=10, verbose=None):
+    def run(self, max_epochs=1600, log_filename = None, log_folder=None, checkpoint_frequency=1, checkpoint_folder='checkpoints', allow_n_failures=10, verbose=None):
         if log_filename is not None:
             self.log_filename = log_filename
             if log_folder is not None:
