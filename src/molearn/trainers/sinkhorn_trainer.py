@@ -5,11 +5,15 @@ import numpy as np
 import torch
 from molearn.loss_functions import openmm_energy
 from molearn.data import PDBData
-from molearn.autoencoder import Decoder
 import json
 import biobox as bb
 from time import time
-from geomloss import SamplesLoss
+try:
+    from geomloss import SamplesLoss
+except ImportError as e:
+    import warnings
+    warnings.warn(f'{e}. Will not be able to use sinkhorn because geomloss is not installed.')
+
 import shutil
 from copy import deepcopy
 
@@ -78,24 +82,6 @@ class Sinkhorn_Trainer():
         self.mol = data.mol
         self._data = data
 
-    def get_network(self, decoder_kwargs=None, power=5,max_number_of_atoms=None, network = None):
-        self._decoder_kwargs = decoder_kwargs
-        if isinstance(max_number_of_atoms, int):
-            n_atoms = max_number_of_atoms
-        else:
-            n_atoms = self.mol.coordinates.shape[1]
-        if decoder_kwargs == None:
-            _kwargs = dict(latent_dim=self.latent_dim, n_channels = 3)
-        else:
-            _kwargs = decoder_kwargs
-            assert _kwargs['latent_dim']==self.latent_dim
-        init_n = (n_atoms//(2**power))+1
-        print(f'Given a number of atoms: {n_atoms}, init_n should be set to {init_n} '+
-              f'allowing a maximum of {init_n*(2**power)} atoms')
-        _kwargs['init_n'] = init_n
-        net = network if network is not None else Decoder
-        print('Network type' , type(net))
-        self.decoder = net(**_kwargs).to(self.device)
 
     def get_adam_opt(self, *args, **kwargs):
         self.opt = torch.optim.AdamW(self.decoder.parameters(), *args, **kwargs)
