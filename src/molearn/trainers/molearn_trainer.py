@@ -65,42 +65,8 @@ class Molearn_Trainer():
         self._data = data
 
 
-    def get_network(self, autoencoder_kwargs=None, max_number_of_atoms=None, network = None):
-        self._autoencoder_kwargs = autoencoder_kwargs
-        if isinstance(max_number_of_atoms, int):
-            n_atoms = max_number_of_atoms
-        else:
-            n_atoms = self.mol.coordinates.shape[1]
-
-        power = autoencoder_kwargs['depth']+2
-        init_n = (n_atoms//(2**power))+1
-        print(f'Given a number of atoms: {n_atoms}, init_n should be set to {init_n} '+
-              f'allowing a maximum of {init_n*(2**power)} atoms')
-        autoencoder_kwargs['init_n'] = init_n
-        net = network if network is not None else Net
-        print('Network type' , type(net))
-        self.autoencoder = net(**autoencoder_kwargs).to(self.device)
-
-    def get_optimiser(self, optimiser_kwargs=None):
-        self.optimiser = torch.optim.SGD(self.autoencoder.parameters(), **optimiser_kwargs)
-
-    def get_adam_optimiser(self, optimiser_kwargs=None):
-        self.optimiser = torch.optim.Adam(self.autoencoder.parameters(), **optimiser_kwargs)
-
-    def set_reduceLROnPlateau(self, verbose=True,patience = 16):
-        self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimiser, mode='min', patience=patience, verbose=verbose)
-        #def override_step(self, logs):
-        #    self.scheduler.step(logs['valid_loss'])
-        #self.scheduler_step = override_step
-        self.scheduler_key = 'valid_loss'
-
-    def scheduler_step(self, logs):
-        try:
-            self.scheduler.step(logs.get(self.scheduler_key, None))
-        except ValueError as e:
-            print(e)
-
-
+    def get_optimiser(self, **optimiser_kwargs):
+        self.optimiser = torch.optim.AdamW(self.autoencoder.parameters(), **optimiser_kwargs)
 
     def log(self, log_dict, verbose=None):
         dump = json.dumps(log_dict)
@@ -109,6 +75,8 @@ class Molearn_Trainer():
         with open(self.log_filename, 'a') as f:
             f.write(dump+'\n')
 
+    def scheduler_step(self, logs):
+        pass
 
     def run(self, max_epochs=1600, log_filename = None, log_folder=None, checkpoint_frequency=8, checkpoint_folder='checkpoints', allow_n_failures=10, verbose=None):
         if log_filename is not None:
@@ -124,24 +92,22 @@ class Molearn_Trainer():
             try:
                 for epoch in range(self.epoch, max_epochs):
                     time1 = time.time()
-                    train_logs = self.train_epoch(epoch)
+                    logs = self.train_epoch(epoch)
                     time2 = time.time()
                     with torch.no_grad():
-                        valid_logs = self.valid_epoch(epoch)
+                        logs.update(self.valid_epoch(epoch))
                     time3 = time.time()
-                    if self.scheduler is not None:
-                        self.scheduler_step(valid_logs)
-                        train_logs['lr']= self.scheduler.get_last_lr()
-                    if self.best is None or self.best > valid_logs['valid_loss']:
-                        self.checkpoint(epoch, valid_logs, checkpoint_folder)
+                    self.scheduler_step(logs)
+                    if self.best is None or self.best > logs['valid_loss']:
+                        self.checkpoint(epoch, logs, checkpoint_folder)
                     elif epoch%checkpoint_frequency==0:
-                        self.checkpoint(epoch, valid_logs, checkpoint_folder)
+                        self.checkpoint(epoch, logs, checkpoint_folder)
                     time4 = time.time()
-                    logs = {'epoch':epoch, **train_logs, **valid_logs,
-                            'train_seconds':time2-time1,
-                            'valid_seconds':time3-time2,
-                            'checkpoint_seconds': time4-time3,
-                            'total_seconds':time4-time1}
+                    logs.update(epoch = epoch,
+                            train_seconds=time2-time1,
+                            valid_seconds=time3-time2,
+                            checkpoint_seconds= time4-time3,
+                            total_seconds=time4-time1)
                     self.log(logs)
                     if np.isnan(logs['valid_loss']) or np.isnan(logs['train_loss']):
                         raise TrainingFailure('nan received, failing')
@@ -284,13 +250,11 @@ class Molearn_Trainer():
         checkpoint = torch.load(_name)
         if not hasattr(self, 'autoencoder'):
             raise NotImplementedError('self.autoencoder does not exist, I have no way of knowing what network you want to load checkoint weights into yet, please set the network first')
-            self.get_network(autoencoder_kwargs=checkpoint['network_kwargs'])
 
         self.autoencoder.load_state_dict(checkpoint['model_state_dict'])
         if load_optimiser:
             if not hasattr(self, 'optimiser'):
                 raise NotImplementedError('self.optimiser does not exist, I have no way of knowing what optimiser you previously used, please set it first.')
-                self.get_optimiser(dict(lr=1e-20, momentum=0.9))
             self.optimiser.load_state_dict(checkpoint['optimizer_state_dict'])
         epoch = checkpoint['epoch']
         self.epoch = epoch+1
