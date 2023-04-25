@@ -3,8 +3,8 @@ import os
 import glob 
 import numpy as np 
 import torch
-from molearn.openmm_loss import openmm_energy
-from molearn.pdb_data import PDBData
+from molearn.loss_functions import openmm_energy
+from molearn.data import PDBData
 from molearn.autoencoder import Decoder
 import json
 import biobox as bb

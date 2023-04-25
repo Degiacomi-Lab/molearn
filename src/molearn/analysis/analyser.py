@@ -20,7 +20,7 @@ from modeller import *
 from modeller.scripts import complete_pdb
 
 from ..scoring import Parallel_DOPE_Score, Parallel_Ramachandran_Score
-from ..pdb_data import PDBData
+from ..data import PDBData
 
 from ..utils import as_numpy
 

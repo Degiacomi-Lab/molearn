@@ -13,6 +13,7 @@
 __author__ = "V. K. Ramaswamy, S. C. Musson, C. G. Willcocks, M. T. Degiacomi"
 __version__ = '1.1'
 __date__ = '$Date: 2022-10-26 $'
-from .pdb_data import PDBData
-import loss_functions
-from trainers import *
+
+
+from .data import PDBData
+from .trainers import OpenMM_Physics_Trainer

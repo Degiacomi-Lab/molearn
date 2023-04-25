@@ -9,8 +9,7 @@
 # You should have received a copy of the GNU General Public License along with molightning ;
 # if not, write to the Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
 """
-trainers holds classes for training networks
+loaders holds classes for loading data
 """
+from .pdb_data import PDBData
 
-from .molearn_trainer import *
-from .sinkhorn_trainer import *

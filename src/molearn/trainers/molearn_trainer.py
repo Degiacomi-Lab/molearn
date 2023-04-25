@@ -10,7 +10,7 @@ import csv
 import molearn
 from molearn.models.foldingnet import AutoEncoder as Net
 from molearn.loss_functions import TorchProteinEnergy
-from molearn.pdb_data import PDBData
+from molearn.data import PDBData
 from molearn.loss_functions import openmm_energy
 import warnings
 from decimal import Decimal

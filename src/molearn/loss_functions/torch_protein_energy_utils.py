@@ -403,14 +403,6 @@ def get_convolutions(dataset, pdb_atom_names,
 
     tornsion_weigths: shape [number of convolutions, 3, conv_size]
 
-
-
-
-    examples code:
-        dataset, meanval, stdval, atom_info, charge_vdw=load_data(file_name, get_atom_info='idxs')
-        a = get_convolutions((dataset*stdval)[0], atom_info)
-
-
     '''
 
 

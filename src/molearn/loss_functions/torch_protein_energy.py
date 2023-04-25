@@ -17,7 +17,6 @@ import torch.nn.functional as F
 from copy import deepcopy
 from molearn.loss_functions.torch_protein_energy_utils import get_convolutions
 
-#class Auto_potential():
 class TorchProteinEnergy():
     def __init__(self, frame, pdb_atom_names,
                 padded_residues=False,
@@ -26,7 +25,7 @@ class TorchProteinEnergy():
 
         '''
         At instantiation will load amber parameters and create the necessary convolutions/indexs/rolls to calculate the energy of the molecule. Energy can be assessed with the
-        ``Auto_conv_potential.get_loss(x)`` method
+        ``TorchProteinEnergy.get_energy(x)`` method
 
         :param frame: Example coordinates of the structure in a torch array. The interatomic distance will be used to determine the connectivity of the atoms.
             Coordinates should be of ``shape [3, N]`` where N is the number of atoms.
@@ -55,21 +54,21 @@ class TorchProteinEnergy():
             elif method == 'roll':
                 self._roll_init(frame, pdb_atom_names, NB=NB, fix_h=fix_h,alt_vdw=alt_vdw, version=version)
 
-    def get_loss(self, x):
+    def get_energy(self, x, nonbonded=False):
         '''
             :param x: tensor of shape [B, 3, N] where B is batch_size, N is number of atoms. If padded_residues = True then tensor of shape [B, R, M, 3] where B is R is number of Residues and M is
                 the maximum number of atoms in a residue.
+            :param nonbonded: Boolean (default False), Whether to return a softened nonbonded energy
             :returns: ``float`` Bond energy (average over batch)
             :returns: ``float`` Angle energy (average over batch)
             :returns: ``float`` Torsion energy (average over batch)
-            :returns: ``float`` non-bonded energy (average over batch)
+            :returns: ``float`` (optional if nonbonded = True) non-bonded energy (average over batch)
         '''
-        if self.method == 'roll':
-            return self._roll_loss(x)
-        if self.method == 'convolutional':
-            return self._convolutional_loss(x)
-        if self.method == 'indexed':
-            return self._padded_residues_loss(x)
+        if nonbonded:
+            return (*self.get_bonded_energy(x), self._nb_loss(x))
+        else:
+            return self.get_bonded_energy(x)
+
 
     def _roll_init(self, frame, pdb_atom_names, NB='full', fix_h=False,alt_vdw=[], version=4):
         (b_masks, b_equil, b_force, b_weights,
@@ -130,7 +129,7 @@ class TorchProteinEnergy():
         self.vdw_B = (2*vdw_e*(vdw_R**6)).to(self.device)
         self.q1q2 = q1q2.to(self.device)
 
-        self.get_loss = self._roll_loss
+        self.get_bonded_energy = self._bonded_roll_loss
         if NB == 'full':
             self._nb_loss = self._cdist_nb_full
         elif NB == 'repulsive':
@@ -159,7 +158,7 @@ class TorchProteinEnergy():
         self.vdw_B = (2*vdw_e*(vdw_R**6)).to(self.device)
         self.q1q2 = q1q2.to(self.device)
 
-        self.get_loss = self._convolutional_loss
+        self.get_bonded_energy = self._bonded_convolutional_loss
         if NB == 'full':
             self._nb_loss = self._cdist_nb_full
         elif NB == 'repulsive':
@@ -184,28 +183,26 @@ class TorchProteinEnergy():
         self.vdw_A = (vdw_e*(vdw_R**12)).to(self.device)
         self.vdw_B = (2*vdw_e*(vdw_R**6)).to(self.device)
         self.q1q2 = q1q2.to(self.device)
-        self.get_loss = self._padded_residues_loss
+        self.get_bonded_energy = self._bonded_padded_residues_loss
         self.relevant = self.bond_idxs.unique().to(self.device)
         if NB=='full':
             self._nb_loss = self._cdist_nb_full
         elif NB=='repulsive':
             self._nb_loss = self._cdist_nb
 
-    def _convolutional_loss(self, x):
+    def _bonded_convolutional_loss(self, x):
         bs = x.shape[0]
         bloss = self._conv_bond_loss(x)
         aloss = self._conv_angle_loss(x)
         tloss = self._conv_torsion_loss(x)
-        nbloss = self._nb_loss(x)
-        return bloss/bs, aloss/bs, tloss/bs, nbloss/bs
+        return bloss/bs, aloss/bs, tloss/bs
 
-    def _roll_loss(self, x):
+    def _bonded_roll_loss(self, x):
         bs = x.shape[0]
         bloss, aloss, tloss = self._roll_bond_angle_torsion_loss(x)
-        nbloss = self._nb_loss(x)
-        return bloss/bs, aloss/bs, tloss/bs, nbloss/bs
+        return bloss/bs, aloss/bs, tloss/bs
 
-    def _padded_residues_loss(self, x):
+    def _bonded_padded_residues_loss(self, x):
         #x.shape [B, R, M, 3]
         x = x.view(x.shape[0], -1, 3)[:,]
         v = x[:,self.bond_idxs[:,1]]-x[:,self.bond_idxs[:,0]] #j-i == i->j
@@ -225,8 +222,8 @@ class TorchProteinEnergy():
         p = self.torsion_para
         tloss=((p[:,1]/p[:,0])*(1+torch.cos((p[:,3]*t3.unsqueeze(2))-p[:,2]))).sum()
         bs = x.shape[0]
-        return bloss/bs, aloss/bs, tloss/bs, self._nb_loss(x.permute(0,2,1))/bs
-
+        return bloss/bs, aloss/bs, tloss/bs
+    
     def _cdist_nb_full(self, x, cutoff=9.0, mask=False):
         dmat = torch.cdist(x.permute(0,2,1),x.permute(0,2,1))
         dmat6 = (self._warp_domain(dmat, 1.9)**6)
