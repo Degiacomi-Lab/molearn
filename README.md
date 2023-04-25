@@ -9,7 +9,6 @@ Included in this repository are the following:
 * Source code is in the `molearn` folder
 * Documentation for this is in the `doc` folder.
 * Example launching scripts in the `examples` folder
-* The [Amber parameters](https://ambermd.org/AmberModels.php) released in the [AmberTools20 package](https://ambermd.org/AmberTools.php) published under a GNU General Public Licence. These are loaded in by the Torch potential to calculate the energy of a protein conformation.
 
 ## Requirements ##
 
@@ -17,10 +16,10 @@ Molearn requires Python 3.x and the following packages (and their associated pac
 * numpy
 * PyTorch (1.7+)
 * [OpenMM](https://openmm.org/documentation)
-* [Modeller](https://salilab.org/modeller/)
 * [Biobox](https://github.com/Degiacomi-Lab/biobox)
 
 Optional packages are:
+* [Modeller](https://salilab.org/modeller/), for calculation of DOPE score
 * [geomloss](https://www.kernel-operations.io/geomloss/), for calculation of sinkhorn distances during training
 * [cctbx](https://cctbx.github.io/), for calculation of Ramachandran scores during analysis
 
