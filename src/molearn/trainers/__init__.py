@@ -12,5 +12,5 @@
 trainers holds classes for training networks
 """
 
-from .molearn_trainer import *
+from .trainer import *
 from .sinkhorn_trainer import *

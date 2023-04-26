@@ -19,7 +19,7 @@ import json
 class TrainingFailure(Exception):
     pass
 
-class Molearn_Trainer():
+class Trainer():
     def __init__(self, device = None, log_filename = 'log_file.dat'):
         if not device:
             self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
@@ -263,7 +263,7 @@ class Molearn_Trainer():
         self.epoch = epoch+1
 
 
-class Molearn_Physics_Trainer(Molearn_Trainer):
+class Molearn_Physics_Trainer(Trainer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -305,7 +305,7 @@ class Molearn_Physics_Trainer(Molearn_Trainer):
         results['loss'] = final_loss
         return results
 
-class OpenMM_Physics_Trainer(Molearn_Trainer):
+class OpenMM_Physics_Trainer(Trainer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
