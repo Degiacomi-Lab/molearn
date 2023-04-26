@@ -7,8 +7,8 @@ if __name__ == '__main__':
 
     ##### Load Data #####
     data = PDBData()
-    data.import_pdb('MurD_closed_selection.pdb')
-    data.import_pdb('MurD_open_selection.pdb')
+    data.import_pdb('data/MurD_closed_selection.pdb')
+    data.import_pdb('data/MurD_open_selection.pdb')
     data.fix_terminal()
     data.atomselect(atoms = ['CA', 'C', 'N', 'CB', 'O'])
 
