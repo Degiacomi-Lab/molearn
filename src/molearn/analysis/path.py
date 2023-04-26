@@ -25,14 +25,18 @@ class PriorityQueue(object):
 
     def get(self):
         '''
-        returns pop top priority element from queue
+        :returns: pop top priority element from queue
         '''
         return heapq.heappop(self.elements)[1]
 
     
-def _heuristic(pt1, pt2, graph, euclidean=True):
+def _heuristic(pt1, pt2, graph=None, euclidean=True):
     '''
-    : returns penalty associated with the distance between points.
+    :param pt1: 2D coordinate of starting point
+    :param pt2: 2D coordinate of end point
+    :param euclidean: if True, evaluate value of graph at regularly spaced points on a straight line between pt1 and pt2
+    :param graph: only used if euclidean=False, graph for euclidean penalty evaluation
+    :returns: penalty associated with the distance between points
     '''
 
     if not euclidean:
@@ -50,10 +54,10 @@ def _heuristic(pt1, pt2, graph, euclidean=True):
     
 def _neighbors(idx, gridshape, flattened=True):
     '''
-    return coordinates of gridpoints adjacent to a given point in a grid
-    : param idx : index of point in a grid. Can be either a flattened index or a 2D coordinate.
-    : param gridshape : tuple defining grid shape
-    : flattened : if False, return 2D coordinates, flattened index otherwise (default) 
+    :param idx: index of point in a grid. Can be either a flattened index or a 2D coordinate.
+    :param gridshape: tuple defining grid shape
+    :param flattened: if False, return 2D coordinates, flattened index otherwise (default) 
+    :returns: coordinates of gridpoints adjacent to a given point in a grid
     '''
 
     try:
@@ -89,7 +93,7 @@ def _neighbors(idx, gridshape, flattened=True):
     
 def _cost(pt, graph):
     '''
-    evaluate cost of moving onto a grid cell
+    :returns: scalar value, reporting on the cost of moving onto a grid cell
     '''
     # separate function for clarity, and in case in the future we want to alter this
     return graph[pt]
@@ -98,10 +102,10 @@ def _cost(pt, graph):
 def _astar(start_2d, goal_2d, in_graph, euclidean=True):
     '''
     A* algorithm, find path connecting two points in a landscape.
-    :param start : starting point
-    :param goal : end point
-    :param in_graph : 2D landscape
-    :returns connectivity dictionary, total path cost (same type as graph)
+    :param start: starting point
+    :param goal: end point
+    :param in_graph: 2D landscape
+    :returns: connectivity dictionary, total path cost (same type as graph)
     '''
     
     graph = in_graph.copy()
@@ -132,7 +136,7 @@ def _astar(start_2d, goal_2d, in_graph, euclidean=True):
             if (thenext not in cost_so_far) or (new_cost < cost_so_far[thenext]):
                 cost_so_far[thenext] = new_cost
                                 
-                h = _heuristic(goal_2d, thenext_2d, graph, euclidean)
+                h = _heuristic(goal_2d, thenext_2d, graph=graph, euclidean=euclidean)
                 priority = new_cost + h
                 frontier.put(thenext, priority)
                 came_from[thenext] = current
@@ -143,13 +147,13 @@ def _astar(start_2d, goal_2d, in_graph, euclidean=True):
 def get_path(idx_start, idx_end, landscape, xvals, yvals, smooth=3):
     '''
     Find shortest path between two points on a weighted grid
-    : param idx_start : index on a 2D grid, as start point for a path
-    : param idx_end : index on a 2D grid, as end point for a path
-    : param landscape : 2D grid
-    : param xvals : x-axis values, to yield actual coordinates
-    : param yvals : y-axis values, to yield actual coordinates
-    : param smooth : size of kernel for running average (must be >=1, default 3)
-    : returns array of 2D coordinates each with an associated value on lanscape
+    :param idx_start: index on a 2D grid, as start point for a path
+    :param idx_end: index on a 2D grid, as end point for a path
+    :param landscape: 2D grid
+    :param xvals: x-axis values, to yield actual coordinates
+    :param yvals: y-axis values, to yield actual coordinates
+    :param smooth: size of kernel for running average (must be >=1, default 3)
+    :returns: array of 2D coordinates each with an associated value on lanscape
     '''
 
     if type(smooth) != int or smooth<1:
@@ -193,10 +197,10 @@ def get_path(idx_start, idx_end, landscape, xvals, yvals, smooth=3):
 def _get_point_index(crd, xvals, yvals):
     '''
     Extract index (of 2D surface) closest to a given real value coordinate
-    : param crd : coordinate
-    : param xvals : x-axis of surface
-    : param yvals : y-axis of surface
-    : returns 1D array with x,y coordinates
+    :param crd: coordinate
+    :param xvals: x-axis of surface
+    :param yvals: y-axis of surface
+    :returns: 1D array with x,y coordinates
     '''
 
     my_x = np.argmin(np.abs(xvals - crd[0]))
@@ -207,12 +211,12 @@ def _get_point_index(crd, xvals, yvals):
 def get_path_aggregate(crd, landscape, xvals, yvals, input_is_index=False):
     '''
     Create a chain of shortest paths via give waypoints
-    : param crd : waypoints coordinates (Nx2 array)
-    : param landscape : 2D grid
-    : param xvals : x-axis values, to yield actual coordinates
-    : param yvals : y-axis values, to yield actual coordinates
-    : param input_is_index: if False (default), assume crd contains actual coordinates, graph indexing otherwise
-    : returns array of 2D coordinates each with an associated value on lanscape
+    :param crd: waypoints coordinates (Nx2 array)
+    :param landscape: 2D grid
+    :param xvals: x-axis values, to yield actual coordinates
+    :param yvals: y-axis values, to yield actual coordinates
+    :param input_is_index: if False (default), assume crd contains actual coordinates, graph indexing otherwise
+    :returns: array of 2D coordinates each with an associated value on lanscape
     '''
     
     if len(crd)<2:
@@ -238,9 +242,9 @@ def get_path_aggregate(crd, landscape, xvals, yvals, input_is_index=False):
 def oversample(crd, pts=10):
     '''
     Add extra equally spaced points between a list of points
-    : param crd : Nx2 numpy array
-    : param pts : int number of extra points to add in each interval
-    : returns Mx2 numpy array, with M>=N.
+    :param crd: Nx2 numpy array
+    :param pts: int number of extra points to add in each interval
+    :returns: Mx2 numpy array, with M>=N.
     ''' 
     pts += 1
     steps = np.linspace(1./pts, 1, pts)
