@@ -1,7 +1,10 @@
+import sys, os
+sys.path.insert(0, os.path.join(os.path.abspath(os.pardir),'src'))
 from molearn.data import PDBData
 from molearn.trainers import OpenMM_Physics_Trainer
 from molearn.models.foldingnet import AutoEncoder
 import torch
+
 
 if __name__ == '__main__':
 
