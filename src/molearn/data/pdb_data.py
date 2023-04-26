@@ -104,6 +104,28 @@ class PDBData:
             self.train_dataloader = torch.utils.data.DataLoader(self.train_dataset, batch_size=batch_size, pin_memory=pin_memory, shuffle=True)
         self.valid_dataloader = torch.utils.data.DataLoader(self.valid_dataset, batch_size=batch_size, pin_memory=pin_memory,shuffle=True)
         return self.train_dataloader, self.valid_dataloader
+    
+    def split(self, *args, **kwargs):
+        '''
+        Split this PDBData into two other PDBData objects corresponding to train and valid sets
+        :param manual_seed: manual seed used to split dataset
+        :param validation_split: default 0.1 ratio of valid to train structures data points
+        :param train_size: default None, specify number of train structures to be returned
+        :param valid_size: default None, speficy number of valid structures to be returned
+        :returns: PDBData object corresponding to train set
+        :returns: PDBData object corresponding to validation set
+        '''
+        #validation_split=0.1, valid_size=None, train_size=None, manual_seed = None):
+        train_dataset, valid_dataset = self.get_datasets(*args, **kwargs)
+        train = PDBData()
+        valid = PDBData()
+        for data in [train, valid]:
+            for key in ['_mol', 'std', 'mean', 'filename']:
+                setattr(data, key, getattr(self, key))
+        train.dataset = train_dataset
+        valid.dataset = valid_dataset
+        return train, valid
+
 
     def get_datasets(self, validation_split=0.1, valid_size=None, train_size=None, manual_seed = None):
         '''
