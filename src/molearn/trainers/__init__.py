@@ -13,4 +13,6 @@ trainers holds classes for training networks
 """
 
 from .trainer import *
+from .torch_physics_trainer import *
+from .openmm_physics_trainer import *
 from .sinkhorn_trainer import *
