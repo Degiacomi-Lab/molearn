@@ -10,7 +10,12 @@ Welcome to molearn's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-   molearn
+   data
+   loss_functions
+   models
+   trainers
+   scoring
+   analysis
 
 
 Indices and tables

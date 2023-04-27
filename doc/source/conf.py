@@ -12,9 +12,8 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../../torch_potential'))
-sys.path.insert(0, os.path.abspath('../..'))
-
+sys.path.insert(0, os.path.abspath('../../src'))
+sys.path.insert(0, os.path.abspath('../../src/molearn'))
 
 # -- Project information -----------------------------------------------------
 
@@ -23,7 +22,7 @@ copyright = '2021, V. K. Ramaswamy, S. C. Musson, M. T. Degiacomi'
 author = 'V. K. Ramaswamy, S. C. Musson, M. T. Degiacomi'
 
 # The full version, including alpha/beta/rc tags
-release = '1.0.0'
+release = '1.3.0'
 
 
 # -- General configuration ---------------------------------------------------

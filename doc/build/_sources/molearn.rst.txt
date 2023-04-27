@@ -2,17 +2,17 @@
 loss functions
 --------------
 
-.. autoclass:: molearn.Auto_potential
+.. autoclass:: molearn.loss_functions
    :members: get_loss
 
 protein loading
 ---------------
 
-.. automodule:: molearn
+.. automodule:: molearn.data
    :members: load_data
 
 example network
 ---------------
-.. autoclass:: molearn.Autoencoder
+.. autoclass:: molearn.models
    :members: encode, decode
 

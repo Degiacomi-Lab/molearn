@@ -1,17 +1,19 @@
 
 <!DOCTYPE html>
 
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>loss functions &#8212; molearn 1.0.0 documentation</title>
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+    <title>loss functions &#8212; molearn 1.3.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/classic.css" />
     
-    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
     
     <link rel="index" title="Index" href="genindex.html" />
@@ -30,7 +32,7 @@
         <li class="right" >
           <a href="index.html" title="Welcome to molearn’s documentation!"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">molearn 1.0.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">molearn 1.3.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">loss functions</a></li> 
       </ul>
     </div>  
@@ -40,172 +42,22 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="loss-functions">
-<h1>loss functions<a class="headerlink" href="#loss-functions" title="Permalink to this headline">¶</a></h1>
-<dl class="py class">
-<dt id="molearn.Auto_potential">
-<em class="property">class </em><code class="sig-name descname">Auto_potential</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">frame</span></em>, <em class="sig-param"><span class="n">pdb_atom_names</span></em>, <em class="sig-param"><span class="n">padded_residues</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">method</span><span class="o">=</span><span class="default_value">'roll'</span></em>, <em class="sig-param"><span class="n">device</span><span class="o">=</span><span class="default_value">device(type='cpu')</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/loss_functions.html#Auto_potential"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#molearn.Auto_potential" title="Permalink to this definition">¶</a></dt>
-<dd><p>At instantiation will load amber parameters and create the necessary convolutions/indexs/rolls to calculate the energy of the molecule. Energy can be assessed with the
-<code class="docutils literal notranslate"><span class="pre">Auto_conv_potential.get_loss(x)</span></code> method</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>frame</strong> – Example coordinates of the structure in a torch array. The interatomic distance will be used to determine the connectivity of the atoms.
-Coordinates should be of <code class="docutils literal notranslate"><span class="pre">shape</span> <span class="pre">[3,</span> <span class="pre">N]</span></code> where N is the number of atoms.
-If <code class="docutils literal notranslate"><span class="pre">padded_residues</span> <span class="pre">=</span> <span class="pre">True</span></code> then Coordinates should be of <code class="docutils literal notranslate"><span class="pre">shape</span> <span class="pre">[R,</span> <span class="pre">M,</span> <span class="pre">3]</span></code> where R is the number of residues
-and M is the maximum number of atoms in a residue.</p></li>
-<li><p><strong>pdb_atom_names</strong> – Array of <code class="docutils literal notranslate"><span class="pre">shape</span> <span class="pre">[N,</span> <span class="pre">2]</span></code> containing the pdb atom names in <code class="docutils literal notranslate"><span class="pre">pdb_atom_names[:,</span> <span class="pre">0]</span></code> and residue names in <code class="docutils literal notranslate"><span class="pre">pdb_atom_names[:,</span> <span class="pre">1]</span></code>. If
-<code class="docutils literal notranslate"><span class="pre">padded_residues</span> <span class="pre">=</span> <span class="pre">True</span></code> then should be <code class="docutils literal notranslate"><span class="pre">shape</span> <span class="pre">[R,</span> <span class="pre">M,</span> <span class="pre">2]</span></code>.</p></li>
-<li><p><strong>padded_residues</strong> – If true the dataset should be formatted as <code class="docutils literal notranslate"><span class="pre">shape</span> <span class="pre">[R,</span> <span class="pre">M,</span> <span class="pre">3]</span></code> where R is the number of residues and M is the maximum number of atoms.
-Padding should be <code class="docutils literal notranslate"><span class="pre">nan</span></code>.
-<strong>Note</strong> only <code class="docutils literal notranslate"><span class="pre">method</span> <span class="pre">=</span> <span class="pre">&quot;indexed&quot;</span></code> is currently implemented currently for this.</p></li>
-<li><p><strong>method</strong> – <p><code class="docutils literal notranslate"><span class="pre">method</span> <span class="pre">=</span> <span class="pre">&quot;convolutional&quot;</span></code> (currently experimental) method uses convolutions to calculate force (padded_residues=false only).</p>
-<p><code class="docutils literal notranslate"><span class="pre">method</span> <span class="pre">=</span> <span class="pre">&quot;roll&quot;</span></code> method uses rolling and slicing to calculate force (padded_residues = false only)</p>
-<p><code class="docutils literal notranslate"><span class="pre">method</span> <span class="pre">=</span> <span class="pre">&quot;indexed&quot;</span></code> (experimental) method is only impremented for padded_residues=True. Uses indexes to calculate forces.</p>
-</p></li>
-<li><p><strong>device</strong> – <code class="docutils literal notranslate"><span class="pre">torch.device(&quot;cuda&quot;)</span> <span class="pre">if</span> <span class="pre">torch.cuda.is_available()</span> <span class="pre">else</span> <span class="pre">torch.device(&quot;cpu&quot;)</span></code></p></li>
-</ul>
-</dd>
-</dl>
-<dl class="py method">
-<dt id="molearn.Auto_potential.get_loss">
-<code class="sig-name descname">get_loss</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/loss_functions.html#Auto_potential.get_loss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#molearn.Auto_potential.get_loss" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>x</strong> – tensor of shape [B, 3, N] where B is batch_size, N is number of atoms. If padded_residues = True then tensor of shape [B, R, M, 3] where B is R is number of Residues and M is
-the maximum number of atoms in a residue.</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">float</span></code> Bond energy (average over batch)</p>
-</dd>
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">float</span></code> Angle energy (average over batch)</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">float</span></code> Torsion energy (average over batch)</p>
-</dd>
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">float</span></code> non-bonded energy (average over batch)</p>
-</dd>
-</dl>
+  <section id="loss-functions">
+<h1>loss functions<a class="headerlink" href="#loss-functions" title="Permalink to this heading">¶</a></h1>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="molearn.loss_functions">
+<span class="sig-name descname"><span class="pre">loss_functions</span></span><a class="headerlink" href="#molearn.loss_functions" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of &lt;module ‘molearn.loss_functions’ from ‘C:\Users\xdzl45\workspace\molearn\src\molearn\loss_functions\__init__.py’&gt;</p>
 </dd></dl>
 
-</dd></dl>
-
-</div>
-<div class="section" id="module-molearn">
-<span id="protein-loading"></span><h1>protein loading<a class="headerlink" href="#module-molearn" title="Permalink to this headline">¶</a></h1>
-<dl class="py function">
-<dt id="molearn.load_data">
-<code class="sig-name descname">load_data</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">f_name</span><span class="o">=</span><span class="default_value">'test.pdb'</span></em>, <em class="sig-param"><span class="n">atoms</span><span class="o">=</span><span class="default_value">['CA', 'C', 'N', 'CB', 'O']</span></em>, <em class="sig-param"><span class="n">restart</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">dataset_sample_size</span><span class="o">=</span><span class="default_value">- 1</span></em>, <em class="sig-param"><span class="n">get_crds</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">padded_residues</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">get_name_resname</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">get_max_rmsd</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">get_bb_mol</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">device</span><span class="o">=</span><span class="default_value">device(type='cpu')</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/protein_handler.html#load_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#molearn.load_data" title="Permalink to this definition">¶</a></dt>
-<dd><p>This function will load and prepare data from a pdb file returning the data as a tuple of of the coordinates, dataset std, dataset mean.</p>
-<p>The coordinates of the dataset will be centered around the mean and scaled by the std <code class="docutils literal notranslate"><span class="pre">(dataset-dataset.mean())/dataset.std()</span></code>. Coordinates are usually represented in an array shape [B, N,
-3] where B is the number of conformations, N is the number of atoms and 3 is the dimensionality of the data (here cartesian). We permute the data to be shape [B, 3, N] so that we have 1D data
-with 3 channels for ML applications.</p>
-<p>Function has a number of additional options:</p>
-<ul class="simple">
-<li><p>load/save a file <em>dataset_conformations.npy</em> containing the conformations of the loaded dataset to allow restarting or custom subsets of the dataset to be used.</p></li>
-<li><p>determine the two structure with the largest disimilarity (determined with RMSD) and return them as <code class="docutils literal notranslate"><span class="pre">torch.tensor</span></code> arrays.
-These can be used as text cases to interpolate between the most extreme examples</p></li>
-<li><p>return the <code class="docutils literal notranslate"><span class="pre">biobox.molecule</span></code> used to load the data</p></li>
-<li><p>return the pdb atom and residue names</p></li>
-<li><p>reformat the data by padded residues shape [B, R, M, 3].</p></li>
-</ul>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>f_name</strong> – path / filename for the .pdb dataset</p></li>
-<li><p><strong>atoms</strong> – PDB atom names in a list of strings <code class="docutils literal notranslate"><span class="pre">[&quot;CA&quot;,</span> <span class="pre">&quot;C&quot;,</span> <span class="pre">&quot;N&quot;,</span> <span class="pre">&quot;CB&quot;,</span> <span class="pre">&quot;O&quot;]</span></code>. <code class="docutils literal notranslate"><span class="pre">&quot;*&quot;</span></code> for all atoms.
-<code class="docutils literal notranslate"><span class="pre">biobox.molecule.atomselect</span></code> of only these atoms will return the coordinates corresponding to these atoms.</p></li>
-<li><p><strong>restart</strong> – <p>If true, the loaded pdb conformations will be indexed with the contents of <em>dataset_conformations.npy</em> before being returned.</p>
-<p>If false, <code class="docutils literal notranslate"><span class="pre">B</span> <span class="pre">=</span> <span class="pre">dataset_sample_size</span></code> conformations will be randomly selected and returned. The indexes of the conformations with respect to the original pdb file will be saved to
-<code class="docutils literal notranslate"><span class="pre">dataset_conformations.npy</span></code>.</p>
-<p>If the same random subset of conformations is needed again then set <code class="docutils literal notranslate"><span class="pre">restart</span> <span class="pre">=</span> <span class="pre">True</span></code>.</p>
-</p></li>
-<li><p><strong>dataset_sample_size</strong> – A random selection of <code class="docutils literal notranslate"><span class="pre">dataset_sample_size</span></code> (int) conformations will be returned. If <code class="docutils literal notranslate"><span class="pre">dataset_sample_size</span> <span class="pre">=</span> <span class="pre">-1</span></code> Then all conformations will be returned in the same order as in the pdb file.</p></li>
-<li><p><strong>get_crds</strong> – If true the first three items of the returned tuple will be the scaled dataset (<code class="docutils literal notranslate"><span class="pre">shape</span> <span class="pre">[Batchsize,</span> <span class="pre">3,</span> <span class="pre">Number</span> <span class="pre">of</span> <span class="pre">atoms]</span></code>), dataset <em>mean</em>, and the dataset <em>std</em>. Original
-dataset can be recovered with <code class="docutils literal notranslate"><span class="pre">dataset*std+mean</span></code>.</p></li>
-<li><p><strong>padded_residues</strong> – <p>If True the returned dataset will be of shape [B, R, M, 3] where B is the number of conformations, R is the number of residues, M is the maximum number of
-atoms per residue, 3 corresponds to the cartesian coordinates. The dataset is <code class="docutils literal notranslate"><span class="pre">np.nan</span></code> padded where required.</p>
-<p>If false, the returned dataset will be of shape [B, 3, N]. Whele B is the number of conformations, and N is the number of atoms.</p>
-</p></li>
-<li><p><strong>get_name_resname</strong> – If true will append to the returned tuple  [PDB atom name (<code class="docutils literal notranslate"><span class="pre">String</span></code>), residue name (<code class="docutils literal notranslate"><span class="pre">String</span></code>)] for each atom shape = [N, 2]</p></li>
-<li><p><strong>get_bb_mol</strong> – If True, will append to the returned tuple the biobox Molecule object used to produce this data.</p></li>
-<li><p><strong>get_max_rmsd</strong> – If True, calculates the rmsd of each conformation against each other then appends to the returned tuple two <code class="docutils literal notranslate"><span class="pre">torch.tensor</span></code> arrays (TEST1, TEST0) corresponding to the frames with the highest rmsd.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><p><strong>tuple</strong> containing:</p>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">torch.tensor</span></code> dataset (if <code class="docutils literal notranslate"><span class="pre">get_crds=True</span></code>)</p>
-<ul>
-<li><p>shape [B, 3, N] (<code class="docutils literal notranslate"><span class="pre">padded_residues</span> <span class="pre">=</span> <span class="pre">False</span></code>)</p></li>
-<li><p>shape [B, R, M, 3] (<code class="docutils literal notranslate"><span class="pre">padded_residues</span> <span class="pre">=</span> <span class="pre">True</span></code>)</p></li>
-</ul>
-</li>
-<li><p><code class="docutils literal notranslate"><span class="pre">float</span></code> dataset mean (if <code class="docutils literal notranslate"><span class="pre">get_crds=True</span></code>)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">float</span></code> dataset std (if <code class="docutils literal notranslate"><span class="pre">get_crds=True</span></code>)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">numpy.array</span></code> atoms names and atom residues shape [N, 2] (if <code class="docutils literal notranslate"><span class="pre">get_name_resname=True</span></code>)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">biobox.molecule</span></code> object used to load data (if <code class="docutils literal notranslate"><span class="pre">get_bb_mol</span></code>)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">torch.tensor</span></code> TEST0 shape [3, N] (if <code class="docutils literal notranslate"><span class="pre">get_max_rmsd</span></code>)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">torch.tensor</span></code> TEST1 shape [3, N] (if <code class="docutils literal notranslate"><span class="pre">get_max_rmsd</span></code>)</p></li>
-</ul>
-</p>
-</dd>
-</dl>
-</dd></dl>
-
-</div>
-<div class="section" id="example-network">
-<h1>example network<a class="headerlink" href="#example-network" title="Permalink to this headline">¶</a></h1>
-<dl class="py class">
-<dt id="molearn.Autoencoder">
-<em class="property">class </em><code class="sig-name descname">Autoencoder</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">init_z</span><span class="o">=</span><span class="default_value">32</span></em>, <em class="sig-param"><span class="n">latent_z</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">depth</span><span class="o">=</span><span class="default_value">4</span></em>, <em class="sig-param"><span class="n">m</span><span class="o">=</span><span class="default_value">1.5</span></em>, <em class="sig-param"><span class="n">r</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">droprate</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/networks.html#Autoencoder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#molearn.Autoencoder" title="Permalink to this definition">¶</a></dt>
-<dd><p>Simple 1D convolutional Autoencoder with residueal blocks</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>init_z</strong> – For the first layer the network encoder has <code class="docutils literal notranslate"><span class="pre">in_channels</span> <span class="pre">=</span> <span class="pre">3</span></code> and <code class="docutils literal notranslate"><span class="pre">out_channels</span> <span class="pre">=</span> <span class="pre">init_z</span></code>. Each subsequent layer has <code class="docutils literal notranslate"><span class="pre">in_channels</span> <span class="pre">=</span> <span class="pre">init_z*i*m</span></code> and
-‘’out_channels = init_z*(i+1)*m``. The decoder has the same structure in reverse</p></li>
-<li><p><strong>latent_z</strong> – Dimensionality of the latent space</p></li>
-<li><p><strong>depth</strong> – number of layers of the encoder (and decoder)</p></li>
-<li><p><strong>m</strong> – The number of channels in each layer is increased by a factor of m</p></li>
-<li><p><strong>r</strong> – Number of residual layers on each layer</p></li>
-<li><p><strong>droprate</strong> – droprate</p></li>
-</ul>
-</dd>
-</dl>
-<dl class="py method">
-<dt id="molearn.Autoencoder.decode">
-<code class="sig-name descname">decode</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/networks.html#Autoencoder.decode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#molearn.Autoencoder.decode" title="Permalink to this definition">¶</a></dt>
-<dd><p>Decode the latent coordinates</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>x</strong> – input latent coordinates shape [B, 2, 1]</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>output size is [B, 3, init_z*m**depth]</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="molearn.Autoencoder.encode">
-<code class="sig-name descname">encode</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/networks.html#Autoencoder.encode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#molearn.Autoencoder.encode" title="Permalink to this definition">¶</a></dt>
-<dd><p>Encode the data to the latent space</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>x</strong> – input data shape [B, 3, N] where B is batch_size, and N is the number of atoms, and the dimensionality of the data should be 3 (cartesian)</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>output data shape [B, Z, 1]</p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-</div>
+</section>
+<section id="module-molearn.data">
+<span id="protein-loading"></span><h1>protein loading<a class="headerlink" href="#module-molearn.data" title="Permalink to this heading">¶</a></h1>
+<p>loaders holds classes for loading data</p>
+</section>
+<section id="example-network">
+<h1>example network<a class="headerlink" href="#example-network" title="Permalink to this heading">¶</a></h1>
+</section>
 
 
             <div class="clearer"></div>
@@ -214,16 +66,20 @@ atoms per residue, 3 corresponds to the cartesian coordinates. The dataset is <c
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-  <h3><a href="index.html">Table of Contents</a></h3>
-  <ul>
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
 <li><a class="reference internal" href="#">loss functions</a></li>
-<li><a class="reference internal" href="#module-molearn">protein loading</a></li>
+<li><a class="reference internal" href="#module-molearn.data">protein loading</a></li>
 <li><a class="reference internal" href="#example-network">example network</a></li>
 </ul>
 
-  <h4>Previous topic</h4>
-  <p class="topless"><a href="index.html"
-                        title="previous chapter">Welcome to molearn’s documentation!</a></p>
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="index.html"
+                          title="previous chapter">Welcome to molearn’s documentation!</a></p>
+  </div>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -235,12 +91,12 @@ atoms per residue, 3 corresponds to the cartesian coordinates. The dataset is <c
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -257,13 +113,13 @@ atoms per residue, 3 corresponds to the cartesian coordinates. The dataset is <c
         <li class="right" >
           <a href="index.html" title="Welcome to molearn’s documentation!"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">molearn 1.0.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">molearn 1.3.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">loss functions</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2021, V. K. Ramaswamy, S. C. Musson, M. T. Degiacomi.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.4.3.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.0.2.
     </div>
   </body>
 </html>
