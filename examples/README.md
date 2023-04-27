@@ -16,8 +16,9 @@ The file `MurD_closed_apo.tar.gz` features 900 conformation of an MD simulation 
 The files `5A5E_full.pdb` and `5A5E_full.pdb` are experimentally determined structures of two intermediates.
 
 
-## Training protocols
+## Scripts
 
-* `bb_foldingnet_basic.py`: minimal example demonstrating how to load data, setup foldingnet, and train it.
+* `bb_foldingnet_basic.py`: minimal example demonstrating how to load data, setup foldingnet, and train it. An example output is saved in the folder `xbb_foldingnet_checkpoints`
+* `analysis_example.py`: minimal example of analysis of trained neural network. By default, it will load the content of the `data` and `xbb_foldingnet_checkpoints` folders.
 
 More examples will follow.
