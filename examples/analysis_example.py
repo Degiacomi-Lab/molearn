@@ -8,13 +8,14 @@ from molearn.data import PDBData
 
 
 print("> Loading network parameters...")
+
 fname = 'xbb_foldingnet_checkpoints\\checkpoint_no_optimizer_state_dict_epoch167_loss0.003259085263643.ckpt'
 checkpoint = torch.load(fname, map_location=torch.device('cpu'))
 net = AutoEncoder(**checkpoint['network_kwargs'])
 net.load_state_dict(checkpoint['model_state_dict'])
 
-
 print("> Loading training data...")
+
 MA = MolearnAnalysis()
 MA.set_network(net)
 
@@ -39,13 +40,12 @@ data_train, data_test = data.split(manual_seed=25)
 MA.set_dataset("training", data_train)
 MA.set_dataset("test", data_test)
 
-
 print("> calculating RMSD of training and test set")
+
 err_train = MA.get_error('training')
 err_test = MA.get_error('test')
 
 print("> generating error landscape")
-
 # build a 50x50 grid. By default, it will be 10% larger than the region occupied
 # by all loaded datasets
 MA.setup_grid(50)

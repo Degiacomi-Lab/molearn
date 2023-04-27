@@ -43,13 +43,14 @@ class MolearnAnalysis(object):
 
     def get_dataset(self, key):
         '''
-        :param key: key pointing to a single structure that has been with MolearnAnalysis.set_dataset(key, structure)
+        :param key: key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, structure)
         '''
         return self._datasets[key]
 
     def set_dataset(self, key, data, atomselect="*"):
         '''
-        :param key: key pointing to a single structure that has been with MolearnAnalysis.set_dataset(key, structure)
+        :param data: PDBdata object, containing atomic coordinates
+        :param key: string, label to be associated with data
         '''
         if isinstance(data, str) and data.endswith('.pdb'):
             d = PDBData()
@@ -60,7 +61,7 @@ class MolearnAnalysis(object):
         elif isinstance(data, PDBData):
             _data = data
         else:
-            raise NotImplementedError('No other data typethan PDBData has been implemented for this method')
+            raise NotImplementedError('data should be an PDBData instance')
         for _key, dataset in self._datasets.items():
             assert dataset.shape[2]== _data.dataset.shape[2] and dataset.shape[1]==_data.dataset.shape[1], f'number of d.o.f differes: {key} has shape {_data.shape} while {_key} has shape {dataset.shape}'
         self._datasets[key] = _data.dataset.float()
@@ -77,7 +78,8 @@ class MolearnAnalysis(object):
 
     def get_encoded(self, key):
         '''
-        :param key: key pointing to a single structure that has been with MolearnAnalysis.set_dataset(key, structure)
+        :param key: key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, structure)
+        :returns: array containing the encoding in latent space of dataset associated with key
         '''
         if key not in self._encoded:
             assert key in self._datasets, f'key {key} does not exist in internal _datasets or in _latent_coords, add it with MolearnAnalysis.set_latent_coords(key, torch.Tensor) '\
@@ -96,13 +98,13 @@ class MolearnAnalysis(object):
 
     def set_encoded(self, key, coords):
         '''
-        :param key: key pointing to a single structure that has been with MolearnAnalysis.set_dataset(key, structure)
+        :param key: key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, structure)
         '''
         self._encoded[key] = torch.tensor(coords).float()
 
     def get_decoded(self, key):
         '''
-        :param key: key pointing to a single structure that has been with MolearnAnalysis.set_dataset(key, structure)
+        :param key: key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, structure)
         '''
         if key not in self._decoded:
             with torch.no_grad():
@@ -116,7 +118,7 @@ class MolearnAnalysis(object):
 
     def set_decoded(self, key, structures):
         '''
-        :param key: key pointing to a single structure that has been with MolearnAnalysis.set_dataset(key, structure)
+        :param key: key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, structure)
         '''
         self._decoded[key] = structures
 
@@ -126,11 +128,10 @@ class MolearnAnalysis(object):
     def get_error(self, key, align=False):
         '''
         Calculate the reconstruction error of a dataset encoded and decoded by a trained neural network
-        :param key: key pointing to a single structure that has been with MolearnAnalysis.set_dataset(key, structure)
+        :param key: key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, structure)
         :param align: if True, the RMSD will be calculated by finding the optimal alignment between structures (default False)
         :returns: 1D array containing the RMSD between input structures and their encoded-decoded counterparts
         '''
-
         dataset = self.get_dataset(key)
         z = self.get_encoded(key)
         decoded = self.get_decoded(key)
@@ -155,7 +156,7 @@ class MolearnAnalysis(object):
 
     def get_dope(self, key, refined=True):
         '''
-        :param key: key pointing to a single structure that has been with MolearnAnalysis.set_dataset(key, structure)
+        :param key: key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, structure)
         :param refined: if True (default), return DOPE score of input and output structure both before and after refinement
         '''
         dataset = self.get_dataset(key)
@@ -175,7 +176,7 @@ class MolearnAnalysis(object):
 
     def get_ramachandran(self, key):
         '''
-        :param key: key pointing to a single structure that has been with MolearnAnalysis.set_dataset(key, structure)
+        :param key: key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, structure)
         '''
         
         dataset = self.get_dataset(key)
@@ -234,7 +235,7 @@ class MolearnAnalysis(object):
         '''
         experimental function, creating a coloured landscape of RMSD vs single target structure
         target should be a Tensor of a single protein stucture loaded via load_test
-        :param key: key pointing to a single structure that has been with MolearnAnalysis.set_dataset(key, structure)
+        :param key: key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, structure)
         :param index: Default None, if key corresponds to multiple structures then an index is required to use only one structure as target.
         '''
         s_key = f'RMSD_from_{key}' if index is None else f'RMSD_from_{key}_index_{index}'
@@ -341,7 +342,8 @@ class MolearnAnalysis(object):
 
     def reference_dope_score(self, frame):
         '''
-        give a numpy array with shape [1, N, 3], already scaled to the correct size
+        :param frame: numpy array with shape [1, N, 3] with Cartesian coordinates of atoms
+        :returns: DOPE score
         '''
         self.mol.coordinates = deepcopy(frame)
         self.mol.write_pdb('tmp.pdb')
@@ -383,7 +385,6 @@ class MolearnAnalysis(object):
         :param samples: sampling of grid sampling
         :returns: grid scanning of latent space according to provided function, x, and y grid axes
         '''
-        
         decoded = self.get_decoded('grid')
         results = []
         for i,j in enumerate(decoded):
