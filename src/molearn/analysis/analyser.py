@@ -29,7 +29,7 @@ warnings.filterwarnings("ignore")
 
 class MolearnAnalysis(object):
     
-    def __init__(self,):
+    def __init__(self):
         self._datasets = {}
         self._encoded = {}
         self._decoded = {}
@@ -42,9 +42,15 @@ class MolearnAnalysis(object):
         self.device = next(network.parameters()).device
 
     def get_dataset(self, key):
+        '''
+        :param key: key pointing to a single structure that has been with MolearnAnalysis.set_dataset(key, structure)
+        '''
         return self._datasets[key]
 
     def set_dataset(self, key, data, atomselect="*"):
+        '''
+        :param key: key pointing to a single structure that has been with MolearnAnalysis.set_dataset(key, structure)
+        '''
         if isinstance(data, str) and data.endswith('.pdb'):
             d = PDBData()
             d.import_pdb(data)
@@ -70,6 +76,9 @@ class MolearnAnalysis(object):
             self.shape = (_data.dataset.shape[1], _data.dataset.shape[2])
 
     def get_encoded(self, key):
+        '''
+        :param key: key pointing to a single structure that has been with MolearnAnalysis.set_dataset(key, structure)
+        '''
         if key not in self._encoded:
             assert key in self._datasets, f'key {key} does not exist in internal _datasets or in _latent_coords, add it with MolearnAnalysis.set_latent_coords(key, torch.Tensor) '\
             'or add the corresponding dataset with MolearnAnalysis.set_dataset(name, PDBDataset)'
@@ -86,9 +95,15 @@ class MolearnAnalysis(object):
         return self._encoded[key]
 
     def set_encoded(self, key, coords):
+        '''
+        :param key: key pointing to a single structure that has been with MolearnAnalysis.set_dataset(key, structure)
+        '''
         self._encoded[key] = torch.tensor(coords).float()
 
     def get_decoded(self, key):
+        '''
+        :param key: key pointing to a single structure that has been with MolearnAnalysis.set_dataset(key, structure)
+        '''
         if key not in self._decoded:
             with torch.no_grad():
                 batch_size = self.batch_size
@@ -100,6 +115,9 @@ class MolearnAnalysis(object):
         return self._decoded[key]
 
     def set_decoded(self, key, structures):
+        '''
+        :param key: key pointing to a single structure that has been with MolearnAnalysis.set_dataset(key, structure)
+        '''
         self._decoded[key] = structures
 
     def num_trainable_params(self):
@@ -108,6 +126,9 @@ class MolearnAnalysis(object):
     def get_error(self, key, align=False):
         '''
         Calculate the reconstruction error of a dataset encoded and decoded by a trained neural network
+        :param key: key pointing to a single structure that has been with MolearnAnalysis.set_dataset(key, structure)
+        :param align: if True, the RMSD will be calculated by finding the optimal alignment between structures (default False)
+        :returns: 1D array containing the RMSD between input structures and their encoded-decoded counterparts
         '''
 
         dataset = self.get_dataset(key)
@@ -133,7 +154,10 @@ class MolearnAnalysis(object):
 
 
     def get_dope(self, key, refined=True):
-
+        '''
+        :param key: key pointing to a single structure that has been with MolearnAnalysis.set_dataset(key, structure)
+        :param refined: if True (default), return DOPE score of input and output structure both before and after refinement
+        '''
         dataset = self.get_dataset(key)
         decoded = self.get_decoded(key)
         
@@ -150,6 +174,10 @@ class MolearnAnalysis(object):
                         decoded_dope_unrefined = dope_decoded,)
 
     def get_ramachandran(self, key):
+        '''
+        :param key: key pointing to a single structure that has been with MolearnAnalysis.set_dataset(key, structure)
+        '''
+        
         dataset = self.get_dataset(key)
         decoded = self.get_decoded(key)
 
@@ -159,12 +187,19 @@ class MolearnAnalysis(object):
 
     def setup_grid(self, samples=64, bounds_from = None, bounds = None, padding=0.1):
         '''
+        :param samples: grid size (build a samples x samples grid)
         :param bounds_from: str, list of strings, or 'all'
         :param bounds: tuple (xmin, xmax, ymin, ymax) or None
+        :param padding: define size of extra spacing around boundary conditions (as ratio of axis dimensions, default 0.1)
         '''
+        
         key = 'grid'
-        if bounds_from is not None:
+        if bounds is None:
+            if bounds_from is None:
+                bounds_from = "all"
+            
             bounds = self._get_bounds(bounds_from, exclude = key)
+        
         bx = (bounds[1]-bounds[0])*padding
         by = (bounds[3]-bounds[2])*padding
         self.xvals = np.linspace(bounds[0]-bx, bounds[1]+bx, samples)
@@ -173,9 +208,11 @@ class MolearnAnalysis(object):
         meshgrid = np.meshgrid(self.xvals, self.yvals)
         stack = np.stack(meshgrid, axis=2).reshape(-1,1,2)
         self.set_encoded(key, stack)
+        
         return key
 
     def _get_bounds(self, bounds_from, exclude = ['grid', 'grid_decoded']):
+        
         if isinstance(exclude, str):
             exclude = [exclude,]
         if bounds_from == 'all':
@@ -248,6 +285,7 @@ class MolearnAnalysis(object):
             f = frame
         if isinstance(f, torch.Tensor):
             f = f.data.cpu().numpy()
+        
         return self.ramachandran_score_class.get_score(f*self.stdval)
         #nf, na, no, nt = self.ramachandran_score_class.get_score(f*self.stdval)
         #return {'favored':nf, 'allowed':na, 'outliers':no, 'total':nt}
@@ -316,8 +354,8 @@ class MolearnAnalysis(object):
         return score
 
     def scan_dope(self, **kwargs):
-        u_key = f'DOPE_unrefined'
-        r_key = f'DOPE_refined'
+        u_key = 'DOPE_unrefined'
+        r_key = 'DOPE_refined'
         if u_key not in self.surfaces:
             assert 'grid' in self._encoded, 'make sure to call MolearnAnalysis.setup_grid first'
             decoded = self.get_decoded('grid')
@@ -334,27 +372,32 @@ class MolearnAnalysis(object):
             rama = self.get_all_ramachandran_score(decoded, processes=processes)
             for key, value in rama.items():
                 self.surfaces[keys[key]] = value
+
         return self.surfaces['Ramachandran_favored'], self.xvals, self.yvals
   
     def scan_custom(self, fct, params, key):
         '''
-        param f: function taking atomic coordinates as input, an optional list of parameters. Returns a single value.
-        param params: parameters to be passed to function f
-        param label: name of the dataset generated by this function scan
-        param samples: sampling of grid sampling
-        returns: grid scanning of latent space according to provided function, x, and y grid axes
+        :param f: function taking atomic coordinates as input, an optional list of parameters. Returns a single value.
+        :param params: parameters to be passed to function f
+        :param label: name of the dataset generated by this function scan
+        :param samples: sampling of grid sampling
+        :returns: grid scanning of latent space according to provided function, x, and y grid axes
         '''
+        
         decoded = self.get_decoded('grid')
         results = []
         for i,j in enumerate(decoded):
             s = (j.view(1,3,-1).permute(0,2,1)*self.stdval).numpy()
             results.append(fct(s, *params))
         self.surfaces[key] = np.array(results).reshape(self.n_samples, self.n_samples)
+        
         return self.surfaces[key],self.xvals, self.yvals
 
     def generate(self, crd):
         '''
-        generate a collection of protein conformations, given (Nx2) coordinates in the latent space
+        generate a collection of protein conformations, given coordinates in the latent space
+        :param crd: coordinates in the latent space, as a (Nx2) array
+        :returns: collection of protein conformations in the Cartesian space (NxMx3, where M is the number of atoms in the protein)
         ''' 
         with torch.no_grad():
             z = torch.tensor(crd.transpose(1, 2, 0)).float()   

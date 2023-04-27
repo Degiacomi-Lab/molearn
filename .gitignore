@@ -267,7 +267,9 @@ TSWLatexianTemp*
 wop*
 mp*
 nop*
-examples*
+examples/data
+examples/xbb_foldingnet_checkpoints
+*ipynb
 *__pycache__
 ERROR*
 LOG*
