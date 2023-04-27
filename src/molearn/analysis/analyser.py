@@ -334,7 +334,7 @@ class MolearnAnalysis(object):
             rama = self.get_all_ramachandran_score(decoded, processes=processes)
             for key, value in rama.items():
                 self.surfaces[keys[key]] = value
-        return self.surfaces['Ramachandran_favored'], xvals, yvals
+        return self.surfaces['Ramachandran_favored'], self.xvals, self.yvals
   
     def scan_custom(self, fct, params, key):
         '''
