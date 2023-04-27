@@ -50,9 +50,15 @@
 <dd><dl class="py method">
 <dt class="sig sig-object py" id="molearn.analysis.MolearnAnalysis.generate">
 <span class="sig-name descname"><span class="pre">generate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">crd</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/analysis/analyser.html#MolearnAnalysis.generate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.MolearnAnalysis.generate" title="Permalink to this definition">¶</a></dt>
-<dd><p>generate a collection of protein conformations, given coordinates in the latent space
-:param crd: coordinates in the latent space, as a (Nx2) array
-:returns: collection of protein conformations in the Cartesian space (NxMx3, where M is the number of atoms in the protein)</p>
+<dd><p>Generate a collection of protein conformations, given coordinates in the latent space.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>crd</strong> – coordinates in the latent space, as a (Nx2) array</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>collection of protein conformations in the Cartesian space (NxMx3, where M is the number of atoms in the protein)</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -72,7 +78,7 @@
 <span class="sig-name descname"><span class="pre">get_dataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/analysis/analyser.html#MolearnAnalysis.get_dataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.MolearnAnalysis.get_dataset" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>key</strong> – key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, structure)</p>
+<dd class="field-odd"><p><strong>key</strong> – key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, data)</p>
 </dd>
 </dl>
 </dd></dl>
@@ -82,7 +88,7 @@
 <span class="sig-name descname"><span class="pre">get_decoded</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/analysis/analyser.html#MolearnAnalysis.get_decoded"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.MolearnAnalysis.get_decoded" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>key</strong> – key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, structure)</p>
+<dd class="field-odd"><p><strong>key</strong> – key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, data)</p>
 </dd>
 </dl>
 </dd></dl>
@@ -93,7 +99,7 @@
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>key</strong> – key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, structure)</p></li>
+<li><p><strong>key</strong> – key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, data)</p></li>
 <li><p><strong>refined</strong> – if True (default), return DOPE score of input and output structure both before and after refinement</p></li>
 </ul>
 </dd>
@@ -105,7 +111,7 @@
 <span class="sig-name descname"><span class="pre">get_encoded</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/analysis/analyser.html#MolearnAnalysis.get_encoded"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.MolearnAnalysis.get_encoded" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>key</strong> – key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, structure)</p>
+<dd class="field-odd"><p><strong>key</strong> – key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, data)</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>array containing the encoding in latent space of dataset associated with key</p>
@@ -116,10 +122,18 @@
 <dl class="py method">
 <dt class="sig sig-object py" id="molearn.analysis.MolearnAnalysis.get_error">
 <span class="sig-name descname"><span class="pre">get_error</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">align</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/analysis/analyser.html#MolearnAnalysis.get_error"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.MolearnAnalysis.get_error" title="Permalink to this definition">¶</a></dt>
-<dd><p>Calculate the reconstruction error of a dataset encoded and decoded by a trained neural network
-:param key: key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, structure)
-:param align: if True, the RMSD will be calculated by finding the optimal alignment between structures (default False)
-:returns: 1D array containing the RMSD between input structures and their encoded-decoded counterparts</p>
+<dd><p>Calculate the reconstruction error of a dataset encoded and decoded by a trained neural network.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> – key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, data)</p></li>
+<li><p><strong>align</strong> – if True, the RMSD will be calculated by finding the optimal alignment between structures (default False)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>1D array containing the RMSD between input structures and their encoded-decoded counterparts</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -127,7 +141,7 @@
 <span class="sig-name descname"><span class="pre">get_ramachandran</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/analysis/analyser.html#MolearnAnalysis.get_ramachandran"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.MolearnAnalysis.get_ramachandran" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>key</strong> – key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, structure)</p>
+<dd class="field-odd"><p><strong>key</strong> – key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, data)</p>
 </dd>
 </dl>
 </dd></dl>
@@ -151,10 +165,9 @@
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>f</strong> – function taking atomic coordinates as input, an optional list of parameters. Returns a single value.</p></li>
+<li><p><strong>fct</strong> – function taking atomic coordinates as input, an optional list of parameters. Returns a single value.</p></li>
 <li><p><strong>params</strong> – parameters to be passed to function f</p></li>
-<li><p><strong>label</strong> – name of the dataset generated by this function scan</p></li>
-<li><p><strong>samples</strong> – sampling of grid sampling</p></li>
+<li><p><strong>key</strong> – name of the dataset generated by this function scan</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -166,17 +179,22 @@
 <dl class="py method">
 <dt class="sig sig-object py" id="molearn.analysis.MolearnAnalysis.scan_error">
 <span class="sig-name descname"><span class="pre">scan_error</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/analysis/analyser.html#MolearnAnalysis.scan_error"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.MolearnAnalysis.scan_error" title="Permalink to this definition">¶</a></dt>
-<dd><p>grid sample the latent space on a samples x samples grid (64 x 64 by default).
+<dd><p>Grid sample the latent space on a samples x samples grid (64 x 64 by default).
 Boundaries are defined by training set projections extrema, plus/minus 10%</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="molearn.analysis.MolearnAnalysis.scan_error_from_target">
 <span class="sig-name descname"><span class="pre">scan_error_from_target</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/analysis/analyser.html#MolearnAnalysis.scan_error_from_target"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.MolearnAnalysis.scan_error_from_target" title="Permalink to this definition">¶</a></dt>
-<dd><p>experimental function, creating a coloured landscape of RMSD vs single target structure
-target should be a Tensor of a single protein stucture loaded via load_test
-:param key: key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, structure)
-:param index: Default None, if key corresponds to multiple structures then an index is required to use only one structure as target.</p>
+<dd><p>Calculate landscape of RMSD vs single target structure. Target should be a Tensor of a single protein stucture</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> – key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, data)</p></li>
+<li><p><strong>index</strong> – Default None, if key corresponds to multiple structures then an index is required to use only one structure as target.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -197,7 +215,7 @@ target should be a Tensor of a single protein stucture loaded via load_test
 <span class="sig-name descname"><span class="pre">set_decoded</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">structures</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/analysis/analyser.html#MolearnAnalysis.set_decoded"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.MolearnAnalysis.set_decoded" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>key</strong> – key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, structure)</p>
+<dd class="field-odd"><p><strong>key</strong> – key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, data)</p>
 </dd>
 </dl>
 </dd></dl>
@@ -207,7 +225,7 @@ target should be a Tensor of a single protein stucture loaded via load_test
 <span class="sig-name descname"><span class="pre">set_encoded</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coords</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/analysis/analyser.html#MolearnAnalysis.set_encoded"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.MolearnAnalysis.set_encoded" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>key</strong> – key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, structure)</p>
+<dd class="field-odd"><p><strong>key</strong> – key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, data)</p>
 </dd>
 </dl>
 </dd></dl>
@@ -232,73 +250,7 @@ target should be a Tensor of a single protein stucture loaded via load_test
 <dl class="py class">
 <dt class="sig sig-object py" id="molearn.analysis.MolearnGUI">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">MolearnGUI</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">MA</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/analysis/GUI.html#MolearnGUI"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.MolearnGUI" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="py method">
-<dt class="sig sig-object py" id="molearn.analysis.MolearnGUI.button_load_state_event">
-<span class="sig-name descname"><span class="pre">button_load_state_event</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">check</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/analysis/GUI.html#MolearnGUI.button_load_state_event"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.MolearnGUI.button_load_state_event" title="Permalink to this definition">¶</a></dt>
-<dd><p>load class state</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="molearn.analysis.MolearnGUI.button_pdb_event">
-<span class="sig-name descname"><span class="pre">button_pdb_event</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">check</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/analysis/GUI.html#MolearnGUI.button_pdb_event"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.MolearnGUI.button_pdb_event" title="Permalink to this definition">¶</a></dt>
-<dd><p>save PDB file corresponding to the interpolation shown in the 3D view</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="molearn.analysis.MolearnGUI.button_save_state_event">
-<span class="sig-name descname"><span class="pre">button_save_state_event</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">check</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/analysis/GUI.html#MolearnGUI.button_save_state_event"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.MolearnGUI.button_save_state_event" title="Permalink to this definition">¶</a></dt>
-<dd><p>save class state</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="molearn.analysis.MolearnGUI.check_test_event">
-<span class="sig-name descname"><span class="pre">check_test_event</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">change</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/analysis/GUI.html#MolearnGUI.check_test_event"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.MolearnGUI.check_test_event" title="Permalink to this definition">¶</a></dt>
-<dd><p>control display of test set</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="molearn.analysis.MolearnGUI.check_training_event">
-<span class="sig-name descname"><span class="pre">check_training_event</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">change</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/analysis/GUI.html#MolearnGUI.check_training_event"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.MolearnGUI.check_training_event" title="Permalink to this definition">¶</a></dt>
-<dd><p>control display of training set</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="molearn.analysis.MolearnGUI.drop_background_event">
-<span class="sig-name descname"><span class="pre">drop_background_event</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">change</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/analysis/GUI.html#MolearnGUI.drop_background_event"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.MolearnGUI.drop_background_event" title="Permalink to this definition">¶</a></dt>
-<dd><p>control colouring style of latent space surface</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="molearn.analysis.MolearnGUI.drop_path_event">
-<span class="sig-name descname"><span class="pre">drop_path_event</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">change</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/analysis/GUI.html#MolearnGUI.drop_path_event"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.MolearnGUI.drop_path_event" title="Permalink to this definition">¶</a></dt>
-<dd><p>control way paths are looked for</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="molearn.analysis.MolearnGUI.interact_3D">
-<span class="sig-name descname"><span class="pre">interact_3D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mybox</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">samplebox</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/analysis/GUI.html#MolearnGUI.interact_3D"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.MolearnGUI.interact_3D" title="Permalink to this definition">¶</a></dt>
-<dd><p>generate and display proteins according to latent space trail</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="molearn.analysis.MolearnGUI.on_click">
-<span class="sig-name descname"><span class="pre">on_click</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trace</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">points</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">selector</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/analysis/GUI.html#MolearnGUI.on_click"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.MolearnGUI.on_click" title="Permalink to this definition">¶</a></dt>
-<dd><p>control display of training set</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="molearn.analysis.MolearnGUI.range_slider_event">
-<span class="sig-name descname"><span class="pre">range_slider_event</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">change</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/analysis/GUI.html#MolearnGUI.range_slider_event"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.MolearnGUI.range_slider_event" title="Permalink to this definition">¶</a></dt>
-<dd><p>update surface colouring upon manipulation of range slider</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="molearn.analysis.MolearnGUI.trail_update_event">
-<span class="sig-name descname"><span class="pre">trail_update_event</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">change</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/analysis/GUI.html#MolearnGUI.trail_update_event"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.MolearnGUI.trail_update_event" title="Permalink to this definition">¶</a></dt>
-<dd><p>update trails (waypoints and way they are connected)</p>
-</dd></dl>
-
-</dd></dl>
+<dd></dd></dl>
 
 </section>
 

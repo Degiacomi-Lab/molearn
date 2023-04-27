@@ -6,4 +6,3 @@ Analysis
    :members:
 
 .. autoclass:: molearn.analysis.MolearnGUI
-   :members:

@@ -84,7 +84,7 @@
 
 <div class="viewcode-block" id="MolearnAnalysis.get_dataset"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.MolearnAnalysis.get_dataset">[docs]</a>    <span class="k">def</span> <span class="nf">get_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        :param key: key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, structure)</span>
+<span class="sd">        :param key: key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, data)</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_datasets</span><span class="p">[</span><span class="n">key</span><span class="p">]</span></div>
 
@@ -119,8 +119,8 @@
 
 <div class="viewcode-block" id="MolearnAnalysis.get_encoded"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.MolearnAnalysis.get_encoded">[docs]</a>    <span class="k">def</span> <span class="nf">get_encoded</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        :param key: key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, structure)</span>
-<span class="sd">        :returns: array containing the encoding in latent space of dataset associated with key</span>
+<span class="sd">        :param key: key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, data)</span>
+<span class="sd">        :return: array containing the encoding in latent space of dataset associated with key</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_encoded</span><span class="p">:</span>
             <span class="k">assert</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_datasets</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;key </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s1"> does not exist in internal _datasets or in _latent_coords, add it with MolearnAnalysis.set_latent_coords(key, torch.Tensor) &#39;</span>\
@@ -139,13 +139,13 @@
 
 <div class="viewcode-block" id="MolearnAnalysis.set_encoded"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.MolearnAnalysis.set_encoded">[docs]</a>    <span class="k">def</span> <span class="nf">set_encoded</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">coords</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        :param key: key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, structure)</span>
+<span class="sd">        :param key: key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, data)</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_encoded</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span><span class="o">.</span><span class="n">float</span><span class="p">()</span></div>
 
 <div class="viewcode-block" id="MolearnAnalysis.get_decoded"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.MolearnAnalysis.get_decoded">[docs]</a>    <span class="k">def</span> <span class="nf">get_decoded</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        :param key: key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, structure)</span>
+<span class="sd">        :param key: key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, data)</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_decoded</span><span class="p">:</span>
             <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
@@ -159,7 +159,7 @@
 
 <div class="viewcode-block" id="MolearnAnalysis.set_decoded"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.MolearnAnalysis.set_decoded">[docs]</a>    <span class="k">def</span> <span class="nf">set_decoded</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">structures</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        :param key: key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, structure)</span>
+<span class="sd">        :param key: key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, data)</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_decoded</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">structures</span></div>
 
@@ -168,10 +168,11 @@
 
 <div class="viewcode-block" id="MolearnAnalysis.get_error"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.MolearnAnalysis.get_error">[docs]</a>    <span class="k">def</span> <span class="nf">get_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">align</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        Calculate the reconstruction error of a dataset encoded and decoded by a trained neural network</span>
-<span class="sd">        :param key: key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, structure)</span>
+<span class="sd">        Calculate the reconstruction error of a dataset encoded and decoded by a trained neural network.</span>
+<span class="sd">        </span>
+<span class="sd">        :param key: key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, data)</span>
 <span class="sd">        :param align: if True, the RMSD will be calculated by finding the optimal alignment between structures (default False)</span>
-<span class="sd">        :returns: 1D array containing the RMSD between input structures and their encoded-decoded counterparts</span>
+<span class="sd">        :return: 1D array containing the RMSD between input structures and their encoded-decoded counterparts</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">dataset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_dataset</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
         <span class="n">z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_encoded</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
@@ -197,7 +198,7 @@
 
 <div class="viewcode-block" id="MolearnAnalysis.get_dope"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.MolearnAnalysis.get_dope">[docs]</a>    <span class="k">def</span> <span class="nf">get_dope</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">refined</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        :param key: key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, structure)</span>
+<span class="sd">        :param key: key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, data)</span>
 <span class="sd">        :param refined: if True (default), return DOPE score of input and output structure both before and after refinement</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">dataset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_dataset</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
@@ -217,7 +218,7 @@
 
 <div class="viewcode-block" id="MolearnAnalysis.get_ramachandran"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.MolearnAnalysis.get_ramachandran">[docs]</a>    <span class="k">def</span> <span class="nf">get_ramachandran</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        :param key: key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, structure)</span>
+<span class="sd">        :param key: key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, data)</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         
         <span class="n">dataset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_dataset</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
@@ -274,9 +275,9 @@
 
 <div class="viewcode-block" id="MolearnAnalysis.scan_error_from_target"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.MolearnAnalysis.scan_error_from_target">[docs]</a>    <span class="k">def</span> <span class="nf">scan_error_from_target</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        experimental function, creating a coloured landscape of RMSD vs single target structure</span>
-<span class="sd">        target should be a Tensor of a single protein stucture loaded via load_test</span>
-<span class="sd">        :param key: key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, structure)</span>
+<span class="sd">        Calculate landscape of RMSD vs single target structure. Target should be a Tensor of a single protein stucture</span>
+<span class="sd">        </span>
+<span class="sd">        :param key: key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, data)</span>
 <span class="sd">        :param index: Default None, if key corresponds to multiple structures then an index is required to use only one structure as target.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">s_key</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;RMSD_from_</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">if</span> <span class="n">index</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="sa">f</span><span class="s1">&#39;RMSD_from_</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s1">_index_</span><span class="si">{</span><span class="n">index</span><span class="si">}</span><span class="s1">&#39;</span>
@@ -291,7 +292,7 @@
 
 <div class="viewcode-block" id="MolearnAnalysis.scan_error"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.MolearnAnalysis.scan_error">[docs]</a>    <span class="k">def</span> <span class="nf">scan_error</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        grid sample the latent space on a samples x samples grid (64 x 64 by default).</span>
+<span class="sd">        Grid sample the latent space on a samples x samples grid (64 x 64 by default).</span>
 <span class="sd">        Boundaries are defined by training set projections extrema, plus/minus 10%</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">s_key</span> <span class="o">=</span> <span class="s1">&#39;Network_RMSD&#39;</span>
@@ -384,7 +385,7 @@
 <div class="viewcode-block" id="MolearnAnalysis.reference_dope_score"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.MolearnAnalysis.reference_dope_score">[docs]</a>    <span class="k">def</span> <span class="nf">reference_dope_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">frame</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        :param frame: numpy array with shape [1, N, 3] with Cartesian coordinates of atoms</span>
-<span class="sd">        :returns: DOPE score</span>
+<span class="sd">        :return: DOPE score</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mol</span><span class="o">.</span><span class="n">coordinates</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">frame</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mol</span><span class="o">.</span><span class="n">write_pdb</span><span class="p">(</span><span class="s1">&#39;tmp.pdb&#39;</span><span class="p">)</span>
@@ -420,11 +421,10 @@
   
 <div class="viewcode-block" id="MolearnAnalysis.scan_custom"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.MolearnAnalysis.scan_custom">[docs]</a>    <span class="k">def</span> <span class="nf">scan_custom</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fct</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        :param f: function taking atomic coordinates as input, an optional list of parameters. Returns a single value.</span>
+<span class="sd">        :param fct: function taking atomic coordinates as input, an optional list of parameters. Returns a single value.</span>
 <span class="sd">        :param params: parameters to be passed to function f</span>
-<span class="sd">        :param label: name of the dataset generated by this function scan</span>
-<span class="sd">        :param samples: sampling of grid sampling</span>
-<span class="sd">        :returns: grid scanning of latent space according to provided function, x, and y grid axes</span>
+<span class="sd">        :param key: name of the dataset generated by this function scan</span>
+<span class="sd">        :return: grid scanning of latent space according to provided function, x, and y grid axes</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">decoded</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_decoded</span><span class="p">(</span><span class="s1">&#39;grid&#39;</span><span class="p">)</span>
         <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
@@ -437,9 +437,10 @@
 
 <div class="viewcode-block" id="MolearnAnalysis.generate"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.MolearnAnalysis.generate">[docs]</a>    <span class="k">def</span> <span class="nf">generate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">crd</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        generate a collection of protein conformations, given coordinates in the latent space</span>
+<span class="sd">        Generate a collection of protein conformations, given coordinates in the latent space.</span>
+<span class="sd">        </span>
 <span class="sd">        :param crd: coordinates in the latent space, as a (Nx2) array</span>
-<span class="sd">        :returns: collection of protein conformations in the Cartesian space (NxMx3, where M is the number of atoms in the protein)</span>
+<span class="sd">        :return: collection of protein conformations in the Cartesian space (NxMx3, where M is the number of atoms in the protein)</span>
 <span class="sd">        &#39;&#39;&#39;</span> 
         <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
             <span class="n">z</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">crd</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span><span class="o">.</span><span class="n">float</span><span class="p">()</span>   
