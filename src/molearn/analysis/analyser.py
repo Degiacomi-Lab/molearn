@@ -94,6 +94,7 @@ class MolearnAnalysis(object):
                         encoded = torch.empty(dataset.shape[0], z.shape[1], z.shape[2])
                     encoded[i:i+batch_size] = z
                 self._encoded[key] = encoded
+                
         return self._encoded[key]
 
     def set_encoded(self, key, coords):
@@ -189,6 +190,8 @@ class MolearnAnalysis(object):
 
     def setup_grid(self, samples=64, bounds_from = None, bounds = None, padding=0.1):
         '''
+        Define a point grid regularly sampling the latent space.
+        
         :param samples: grid size (build a samples x samples grid)
         :param bounds_from: str, list of strings, or 'all'
         :param bounds: tuple (xmin, xmax, ymin, ymax) or None
@@ -214,20 +217,27 @@ class MolearnAnalysis(object):
         return key
 
     def _get_bounds(self, bounds_from, exclude = ['grid', 'grid_decoded']):
-        
+        '''        
+        :param bounds_from: keys of datasets to be considered for identification of boundaries in latent space
+        :param eclude: keys of dataset not to consider
+        :return: four scalars as edges of x and y axis: xmin, xmax, ymin, ymax
+        '''
         if isinstance(exclude, str):
             exclude = [exclude,]
+            
         if bounds_from == 'all':
-            bounds_from = [key for key in self._encoded.keys() if key not in exclude]
-        elif isinstance(bounds_from,str):
+            bounds_from = [key for key in self._datasets.keys() if key not in exclude]
+        elif isinstance(bounds_from, str):
             bounds_from = [bounds_from,]
-        xmin, ymin, xmax, ymax = [],[],[],[]
+        
+        xmin, ymin, xmax, ymax = [], [], [], []
         for key in bounds_from:
             z = self.get_encoded(key)
             xmin.append(z[:,0].min())
             ymin.append(z[:,1].min())
             xmax.append(z[:,0].max())
             ymax.append(z[:,1].max())
+            
         xmin, ymin = min(xmin), min(ymin)
         xmax, ymax = max(xmax), max(ymax)
         return xmin, xmax, ymin, ymax
