@@ -164,9 +164,10 @@ class MolearnGUI(object):
         control colouring style of latent space surface
         '''
 
-        if change.new == "drift":
+        if change.new == 'drift':
             try:
-                data = self.MA.surf_z.T
+                data = self.MA.surfaces['Network_z_drift']
+                #data = self.MA.surf_z.T
             except:
                 return
             
@@ -174,16 +175,19 @@ class MolearnGUI(object):
 
         elif change.new == "RMSD":
             try:
-                data = self.MA.surf_c.T
+                
+                data = self.MA.surfaces["Network_RMSD"]
+                #data = self.MA.surf_c.T
             except:
                 return
             
             self.block0.children[2].readout_format = '.1f'
 
 
-        elif change.new == "target RMSD":
+        elif "RMSD_from_" in change.new: #== "target RMSD":
             try:
-                data = self.MA.surf_target.T
+                data = self.MA.surfaces[change.new]
+                #data = self.MA.surf_target.T
             except:
                 return
             
@@ -192,7 +196,8 @@ class MolearnGUI(object):
 
         elif change.new == "DOPE_unrefined":
             try:
-                data = self.MA.surf_dope_unrefined.T
+                data = self.MA.surfaces["DOPE_unrefined"]
+                #data = self.MA.surf_dope_unrefined.T
             except:
                 return
             
@@ -200,31 +205,35 @@ class MolearnGUI(object):
 
         elif change.new == "DOPE_refined":
             try:
-                data = self.MA.surf_dope_refined.T
+                data = self.MA.surfaces["DOPE_refined"]
+                #data = self.MA.surf_dope_refined.T
             except:
                 return
             
             self.block0.children[2].readout_format = 'd'
         
-        elif change.new == "ramachandran_favored":
+        elif change.new == "Ramachandran_favored":
             try:
-                data = self.MA.surf_ramachandran_favored.T
+                data = self.MA.surfaces["Ramachandran_favoured"]
+                #data = self.MA.surf_ramachandran_favored.T
             except:
                 return
             
             self.block0.children[2].readout_format = '.1f'
 
-        elif change.new == "ramachandran_allowed":
+        elif change.new == "Ramachandran_allowed":
             try:
-                data = self.MA.surf_ramachandran_allowed.T
+                data = self.MA.surfaces["Ramachandran_allowed"]
+                #data = self.MA.surf_ramachandran_allowed.T
             except:
                 return
             
             self.block0.children[2].readout_format = '.1f'
             
-        elif change.new == "ramachandran_outliers":
+        elif change.new == "Ramachandran_outliers":
             try:
-                data = self.MA.surf_ramachandran_outliers.T
+                data = self.MA.surfaces["DOPE_outliers"]
+                #data = self.MA.surf_ramachandran_outliers.T
             except:
                 return
             
@@ -233,7 +242,8 @@ class MolearnGUI(object):
         elif "custom" in change.new:
             mykey = change.new.split(":")[1]
             try:
-                data = self.MA.custom_data[mykey].T
+                data = self.MA.surfaces[mykey]
+                #data = self.MA.custom_data[mykey].T
             except Exception:
                 return      
             
@@ -395,25 +405,28 @@ class MolearnGUI(object):
         
         # surface representation menu
         options = []
-        if hasattr(self.MA, "surf_z"):
-            options.append("drift")
-        if hasattr(self.MA, "surf_c"):
-            options.append("RMSD")       
-        if hasattr(self.MA, "surf_dope_unrefined"):
-            options.append("DOPE_unrefined")
-        if hasattr(self.MA, "surf_dope_refined"):
-            options.append("DOPE_refined")
-        if hasattr(self.MA, "surf_target"): 
-            options.append("target RMSD")
-        if hasattr(self.MA, "surf_ramachandran_favored"):
-            options.append("ramachandran_favored")
-        if hasattr(self.MA, "surf_ramachandran_allowed"):
-            options.append("ramachandran_allowed")
-        if hasattr(self.MA, "surf_ramachandran_outliers"):
-            options.append("ramachandran_outliers")
-        if hasattr(self.MA, "custom_data"):
-            for k in list(self.MA.custom_data):
-                options.append(f'custom:{k}')
+        for f in list(self.MA):
+            options.append(f)
+        
+        #if hasattr(self.MA, "surf_z"):
+        #    options.append("drift")
+        #if hasattr(self.MA, "surf_c"):
+        #    options.append("RMSD")       
+        #if hasattr(self.MA, "surf_dope_unrefined"):
+        #    options.append("DOPE_unrefined")
+        #if hasattr(self.MA, "surf_dope_refined"):
+        #    options.append("DOPE_refined")
+        #if hasattr(self.MA, "surf_target"): 
+        #    options.append("target RMSD")
+        #if hasattr(self.MA, "surf_ramachandran_favored"):
+        #    options.append("ramachandran_favored")
+        #if hasattr(self.MA, "surf_ramachandran_allowed"):
+        #    options.append("ramachandran_allowed")
+        #if hasattr(self.MA, "surf_ramachandran_outliers"):
+        #    options.append("ramachandran_outliers")
+        #if hasattr(self.MA, "custom_data"):
+        #    for k in list(self.MA.custom_data):
+        #        options.append(f'custom:{k}')
 
         if len(options) == 0:
             options.append("none")
@@ -519,26 +532,28 @@ class MolearnGUI(object):
         ### LATENT SPACE REPRESENTATION ###
 
         # coloured background
-        if "drift" in options:
-            sc = self.MA.surf_z
-        elif "target RMSD" in options:
-            sc = self.MA.surf_target
-        elif "DOPE_unrefined" in options:
-            sc = self.MA.surf_dope_unrefined
-        elif "DOPE_refined" in options:
-            sc = self.MA.surf_dope_refined
-        elif "ramachandran_favored" in options:
-            sc = self.MA.surf_ramachandran_favored
-        elif "ramachandran_allowed" in options:
-            sc = self.MA.surf_ramachandran_allowed
-        elif "ramachandran_outliers" in options:
-            sc = self.MA.surf_ramachandran_outliers
-        elif len(options)>0:
-            if "custom" in options[0]:
-                label = options[0].split(":")[1]
-                sc = self.MA.custom_data[label]
-            else:
-                sc = []
+        #if "drift" in options:
+        #    sc = self.MA.surf_z
+        #elif "target RMSD" in options:
+        #    sc = self.MA.surf_target
+        #elif "DOPE_unrefined" in options:
+        #    sc = self.MA.surf_dope_unrefined
+        #elif "DOPE_refined" in options:
+        #    sc = self.MA.surf_dope_refined
+        #elif "ramachandran_favored" in options:
+        #    sc = self.MA.surf_ramachandran_favored
+        #elif "ramachandran_allowed" in options:
+        #    sc = self.MA.surf_ramachandran_allowed
+        #elif "ramachandran_outliers" in options:
+        #    sc = self.MA.surf_ramachandran_outliers
+        #elif len(options)>0:
+        #    if "custom" in options[0]:
+        #        label = options[0].split(":")[1]
+        #        sc = self.MA.custom_data[label]
+        #    else:
+        #        sc = []
+        if len(options)>0:
+            sc = self.MA.surfaces[options[0]]
         else:
             sc = []
             
@@ -548,7 +563,8 @@ class MolearnGUI(object):
         else:
 
             if self.MA:
-                xvals, yvals = self.MA._get_sampling_ranges(50)
+                xvals, yvals = self.MA.setup_grid(samples=50)
+                #xvals, yvals = self.MA.setup_get_sampling_ranges(50)
             else:               
                 xvals = np.linspace(0, 1, 10)
                 yvals = np.linspace(0, 1, 10)
@@ -557,25 +573,49 @@ class MolearnGUI(object):
             plot1 = go.Heatmap(x=xvals, y=yvals, z=surf_empty, opacity=0.0, showscale=False, name="latent_space")   
                       
         # training set
-        if hasattr(self.MA, "training_set_z"):
+        if "train" or "training" in list(self._datasets):
+            mydata = self.MA.get_encoded("train")
+            
             color = "white" if len(sc)>0 else "black"
-            plot2 = go.Scatter(x=as_numpy(self.MA.training_set_z)[:, 0].flatten(),
-                               y=as_numpy(self.MA.training_set_z)[:, 1].flatten(),
-                   showlegend=False, opacity=0.9, mode="markers",
-                   marker=dict(color=color, size=5), name="training", visible=False)
+            plot2 = go.Scatter(x=mydata[:, 0].flatten(),
+                              y=mydata[:, 1].flatten(),
+                  showlegend=False, opacity=0.9, mode="markers",
+                  marker=dict(color=color, size=5), name="training", visible=False)
         else:
             plot2 = go.Scatter(x=[], y=[])
             self.check_training.disabled = True
+
+        if "test" in list(self._datasets):
+            mydata = self.MA.get_encoded("test")
             
-        # test set
-        if hasattr(self.MA, "test_set_z"):
-            plot3 = go.Scatter(x=as_numpy(self.MA.test_set_z)[:, 0].flatten(),
-                               y=as_numpy(self.MA.test_set_z)[:, 1].flatten(),
-                   showlegend=False, opacity=0.9, mode="markers",
-                   marker=dict(color='silver', size=5), name="test", visible=False)
+            color = "white" if len(sc)>0 else "black"
+            plot3 = go.Scatter(x=mydata[:, 0].flatten(),
+                              y=mydata[:, 1].flatten(),
+                  showlegend=False, opacity=0.9, mode="markers",
+                  marker=dict(color=color, size=5), name="training", visible=False)
         else:
             plot3 = go.Scatter(x=[], y=[])
-            self.check_test.disabled = True
+            self.check_training.disabled = True
+            
+        #if hasattr(self.MA, "training_set_z"):
+        #    color = "white" if len(sc)>0 else "black"
+        #    plot2 = go.Scatter(x=as_numpy(self.MA.training_set_z)[:, 0].flatten(),
+        #                       y=as_numpy(self.MA.training_set_z)[:, 1].flatten(),
+        #           showlegend=False, opacity=0.9, mode="markers",
+        #           marker=dict(color=color, size=5), name="training", visible=False)
+        #else:
+        #    plot2 = go.Scatter(x=[], y=[])
+        #    self.check_training.disabled = True
+            
+        # test set
+        #if hasattr(self.MA, "test_set_z"):
+         #   plot3 = go.Scatter(x=as_numpy(self.MA.test_set_z)[:, 0].flatten(),
+         #                      y=as_numpy(self.MA.test_set_z)[:, 1].flatten(),
+         #          showlegend=False, opacity=0.9, mode="markers",
+         #          marker=dict(color='silver', size=5), name="test", visible=False)
+        #else:
+        #    plot3 = go.Scatter(x=[], y=[])
+        #    self.check_test.disabled = True
       
         # path
         plot4 = go.Scatter(x=np.array([]), y=np.array([]),

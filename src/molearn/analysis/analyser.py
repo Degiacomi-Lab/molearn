@@ -402,7 +402,7 @@ class MolearnAnalysis(object):
             results.append(fct(s, *params))
         self.surfaces[key] = np.array(results).reshape(self.n_samples, self.n_samples)
         
-        return self.surfaces[key],self.xvals, self.yvals
+        return self.surfaces[key], self.xvals, self.yvals
 
     def generate(self, crd):
         '''
