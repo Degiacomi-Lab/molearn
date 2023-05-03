@@ -27,16 +27,19 @@ from tkinter import Tk, filedialog
 import plotly.graph_objects as go
 import nglview as nv
 
-from ..utils import as_numpy
+#from ..utils import as_numpy
 from .analyser import MolearnAnalysis
 from .path import oversample, get_path_aggregate
 
 
 class MolearnGUI(object):
     
-    def __init__(self, MA=[]):
+    def __init__(self, MA=None):
+        '''
+        :param MA: :func:`MolearnAnalysis <molearn.analysis.MolearnAnalysis>` instance
+        '''
         
-        if not isinstance(MA, MolearnAnalysis) and MA != []:
+        if not isinstance(MA, MolearnAnalysis) and MA is not None:
             raise Exception(f'Expecting an MolearnAnalysis instance, {type(MA)} found')
         else:
             self.MA = MA
@@ -520,8 +523,7 @@ class MolearnGUI(object):
 
         self.range_slider.observe(self.range_slider_event, names='value')
 
-
-        if self.MA == []:
+        if self.MA is None:
             self.button_save_state.disabled = True
             self.button_pdb.disabled = True
             
