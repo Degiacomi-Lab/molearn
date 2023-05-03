@@ -27,7 +27,6 @@ from tkinter import Tk, filedialog
 import plotly.graph_objects as go
 import nglview as nv
 
-#from ..utils import as_numpy
 from .analyser import MolearnAnalysis
 from .path import oversample, get_path_aggregate
 

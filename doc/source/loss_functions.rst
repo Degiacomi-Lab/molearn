@@ -2,14 +2,8 @@
 Loss Functions
 --------------
 
-.. automodule:: molearn.loss_functions.openmm_energy
+.. automodule:: molearn.loss_functions.openmm_thread
    :members:
-
-.. automodule:: molearn.loss_functions.OpenmmPluginScore
-   :members:
-
-.. automodule:: molearn.loss_functions.OpenMMPluginScoreSoftForceField
-   :members:   
    
-.. automodule:: molearn.loss_functions.TorchProteinEnergy
+.. automodule:: molearn.loss_functions.torch_protein_energy
    :members:

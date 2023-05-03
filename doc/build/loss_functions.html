@@ -46,47 +46,191 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <section id="module-molearn.loss_functions.openmm_energy">
-<span id="loss-functions"></span><h1>Loss Functions<a class="headerlink" href="#module-molearn.loss_functions.openmm_energy" title="Permalink to this heading">¶</a></h1>
-<p>Base class for all neural network modules.</p>
-<p>Your models should also subclass this class.</p>
-<p>Modules can also contain other Modules, allowing to nest them in
-a tree structure. You can assign the submodules as regular attributes:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
-<span class="kn">import</span> <span class="nn">torch.nn.functional</span> <span class="k">as</span> <span class="nn">F</span>
-
-<span class="k">class</span> <span class="nc">Model</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">conv1</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Conv2d</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">conv2</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Conv2d</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
-        <span class="n">x</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">conv1</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
-        <span class="k">return</span> <span class="n">F</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">conv2</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
-</pre></div>
-</div>
-<p>Submodules assigned in this way will be registered, and will have their
-parameters converted too when you call <code class="xref py py-meth docutils literal notranslate"><span class="pre">to()</span></code>, etc.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>As per the example above, an <code class="docutils literal notranslate"><span class="pre">__init__()</span></code> call to the parent class
-must be made before assignment on the child.</p>
-</div>
-<dl class="field-list simple">
-<dt class="field-odd">ivar training<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Boolean represents whether this module is in training or
-evaluation mode.</p>
-</dd>
-<dt class="field-even">vartype training<span class="colon">:</span></dt>
-<dd class="field-even"><p>bool</p>
+  <section id="module-molearn.loss_functions.openmm_thread">
+<span id="loss-functions"></span><h1>Loss Functions<a class="headerlink" href="#module-molearn.loss_functions.openmm_thread" title="Permalink to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="molearn.loss_functions.openmm_thread.ModifiedForceField">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ModifiedForceField</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alternative_residue_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/loss_functions/openmm_thread.html#ModifiedForceField"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.loss_functions.openmm_thread.ModifiedForceField" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load one or more XML files and create a ForceField object based on them.</p>
+<dl class="simple">
+<dt>files<span class="classifier">list</span></dt><dd><p>A list of XML files defining the force field.  Each entry may
+be an absolute file path, a path relative to the current working
+directory, a path relative to this module’s data subdirectory
+(for built in force fields), or an open file-like object with a
+read() method from which the forcefield XML data can be loaded.</p>
 </dd>
 </dl>
-<span class="target" id="module-molearn.loss_functions.OpenmmPluginScore"></span><p>This will use the new Openmm Plugin to calculate forces and energy. The intention is that this will be fast enough to be able to calculate forces and energy during training.
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="molearn.loss_functions.openmm_thread.OpenMMPluginScoreSoftForceField">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">OpenMMPluginScoreSoftForceField</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">platform</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'CUDA'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">atoms</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['CA',</span> <span class="pre">'C',</span> <span class="pre">'N',</span> <span class="pre">'CB',</span> <span class="pre">'O']</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/loss_functions/openmm_thread.html#OpenMMPluginScoreSoftForceField"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.loss_functions.openmm_thread.OpenMMPluginScoreSoftForceField" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mol</strong> – (biobox.Molecule, default None) If pldataloader is not given, then a biobox object will be taken from this parameter. If neither are given then an error  will be thrown.</p></li>
+<li><p><strong>data_dir</strong> – (string, default None) if pldataloader is not given then this will be used to find files such as ‘variants.npy’</p></li>
+<li><p><strong>xml_file</strong> – (string, default: “amber14-all.xml”) xml parameter file</p></li>
+<li><p><strong>platform</strong> – (string, default ‘CUDA’) either ‘CUDA’ or ‘Reference’.</p></li>
+<li><p><strong>remove_NB</strong> – (bool, default False) remove NonbondedForce, CustomGBForce, CMMotionRemover else just remove CustomGBForce</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="molearn.loss_functions.openmm_thread.OpenmmPluginScore">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">OpenmmPluginScore</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xml_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['amber14-all.xml']</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">platform</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'CUDA'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">remove_NB</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alternative_residue_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{'HIS':</span> <span class="pre">'HIE',</span> <span class="pre">'HSE':</span> <span class="pre">'HIE'}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">atoms</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['CA',</span> <span class="pre">'C',</span> <span class="pre">'N',</span> <span class="pre">'CB',</span> <span class="pre">'O']</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">soft</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/loss_functions/openmm_thread.html#OpenmmPluginScore"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.loss_functions.openmm_thread.OpenmmPluginScore" title="Permalink to this definition">¶</a></dt>
+<dd><p>This will use the new Openmm Plugin to calculate forces and energy. The intention is that this will be fast enough to be able to calculate forces and energy during training.
 NB. The current torchintegratorplugin only supports float on GPU and double on CPU.</p>
-<span class="target" id="module-molearn.loss_functions.OpenMMPluginScoreSoftForceField"></span><p>This will use the new Openmm Plugin to calculate forces and energy. The intention is that this will be fast enough to be able to calculate forces and energy during training.
-NB. The current torchintegratorplugin only supports float on GPU and double on CPU.</p>
-<span class="target" id="module-molearn.loss_functions.TorchProteinEnergy"></span></section>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mol</strong> – (biobox.Molecule, default None) If pldataloader is not given, then a biobox object will be taken from this parameter. If neither are given then an error  will be thrown.</p></li>
+<li><p><strong>data_dir</strong> – (string, default None) if pldataloader is not given then this will be used to find files such as ‘variants.npy’</p></li>
+<li><p><strong>xml_file</strong> – (string, default: “amber14-all.xml”) xml parameter file</p></li>
+<li><p><strong>platform</strong> – (string, default ‘CUDA’) either ‘CUDA’ or ‘Reference’.</p></li>
+<li><p><strong>remove_NB</strong> – (bool, default False) remove NonbondedForce, CustomGBForce, CMMotionRemover else just remove CustomGBForce</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="molearn.loss_functions.openmm_thread.OpenmmPluginScore.execute">
+<span class="sig-name descname"><span class="pre">execute</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/loss_functions/openmm_thread.html#OpenmmPluginScore.execute"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.loss_functions.openmm_thread.OpenmmPluginScore.execute" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>x</strong> – torch tensor shape [b, N, 3]. dtype=float. device = gpu</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="molearn.loss_functions.openmm_thread.OpenmmPluginScore.get_energy">
+<span class="sig-name descname"><span class="pre">get_energy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pos_ptr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force_ptr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">energy_ptr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_particles</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/loss_functions/openmm_thread.html#OpenmmPluginScore.get_energy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.loss_functions.openmm_thread.OpenmmPluginScore.get_energy" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pos_ptr</strong> – tensor.data_ptr()</p></li>
+<li><p><strong>force_ptr</strong> – tensor.data_ptr()</p></li>
+<li><p><strong>energy_ptr</strong> – tensor.data_ptr()</p></li>
+<li><p><strong>n_particles</strong> – int</p></li>
+<li><p><strong>batch_size</strong> – int</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="molearn.loss_functions.openmm_thread.OpenmmTorchEnergyMinimizer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">OpenmmTorchEnergyMinimizer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xml_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['amber14-all.xml']</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">platform</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'CUDA'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">remove_NB</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alternative_residue_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{'HIS':</span> <span class="pre">'HIE',</span> <span class="pre">'HSE':</span> <span class="pre">'HIE'}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">atoms</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['CA',</span> <span class="pre">'C',</span> <span class="pre">'N',</span> <span class="pre">'CB',</span> <span class="pre">'O']</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">soft</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/loss_functions/openmm_thread.html#OpenmmTorchEnergyMinimizer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.loss_functions.openmm_thread.OpenmmTorchEnergyMinimizer" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mol</strong> – (biobox.Molecule, default None) If pldataloader is not given, then a biobox object will be taken from this parameter. If neither are given then an error  will be thrown.</p></li>
+<li><p><strong>data_dir</strong> – (string, default None) if pldataloader is not given then this will be used to find files such as ‘variants.npy’</p></li>
+<li><p><strong>xml_file</strong> – (string, default: “amber14-all.xml”) xml parameter file</p></li>
+<li><p><strong>platform</strong> – (string, default ‘CUDA’) either ‘CUDA’ or ‘Reference’.</p></li>
+<li><p><strong>remove_NB</strong> – (bool, default False) remove NonbondedForce, CustomGBForce, CMMotionRemover else just remove CustomGBForce</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="molearn.loss_functions.openmm_thread.openmm_clamped_energy_function">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">openmm_clamped_energy_function</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/loss_functions/openmm_thread.html#openmm_clamped_energy_function"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.loss_functions.openmm_thread.openmm_clamped_energy_function" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="molearn.loss_functions.openmm_thread.openmm_clamped_energy_function.backward">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">backward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ctx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grad_output</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/loss_functions/openmm_thread.html#openmm_clamped_energy_function.backward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.loss_functions.openmm_thread.openmm_clamped_energy_function.backward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines a formula for differentiating the operation with backward mode
+automatic differentiation (alias to the vjp function).</p>
+<p>This function is to be overridden by all subclasses.</p>
+<p>It must accept a context <code class="xref py py-attr docutils literal notranslate"><span class="pre">ctx</span></code> as the first argument, followed by
+as many outputs as the <a class="reference internal" href="#molearn.loss_functions.openmm_thread.openmm_clamped_energy_function.forward" title="molearn.loss_functions.openmm_thread.openmm_clamped_energy_function.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a> returned (None will be passed in
+for non tensor outputs of the forward function),
+and it should return as many tensors, as there were inputs to
+<a class="reference internal" href="#molearn.loss_functions.openmm_thread.openmm_clamped_energy_function.forward" title="molearn.loss_functions.openmm_thread.openmm_clamped_energy_function.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a>. Each argument is the gradient w.r.t the given output,
+and each returned value should be the gradient w.r.t. the
+corresponding input. If an input is not a Tensor or is a Tensor not
+requiring grads, you can just pass None as a gradient for that input.</p>
+<p>The context can be used to retrieve tensors saved during the forward
+pass. It also has an attribute <code class="xref py py-attr docutils literal notranslate"><span class="pre">ctx.needs_input_grad</span></code> as a tuple
+of booleans representing whether each input needs gradient. E.g.,
+<a class="reference internal" href="#molearn.loss_functions.openmm_thread.openmm_clamped_energy_function.backward" title="molearn.loss_functions.openmm_thread.openmm_clamped_energy_function.backward"><code class="xref py py-func docutils literal notranslate"><span class="pre">backward()</span></code></a> will have <code class="docutils literal notranslate"><span class="pre">ctx.needs_input_grad[0]</span> <span class="pre">=</span> <span class="pre">True</span></code> if the
+first input to <a class="reference internal" href="#molearn.loss_functions.openmm_thread.openmm_clamped_energy_function.forward" title="molearn.loss_functions.openmm_thread.openmm_clamped_energy_function.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a> needs gradient computated w.r.t. the
+output.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="molearn.loss_functions.openmm_thread.openmm_clamped_energy_function.forward">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ctx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plugin</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clamp</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/loss_functions/openmm_thread.html#openmm_clamped_energy_function.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.loss_functions.openmm_thread.openmm_clamped_energy_function.forward" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>plugin</strong> – # OpenmmPluginScore instance</p></li>
+<li><p><strong>x</strong> – torch tensor, dtype = float, shape = [B, N, 3], device = Cuda</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>energy tensor, dtype = double, shape = [B], device CPU</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="molearn.loss_functions.openmm_thread.openmm_energy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">openmm_energy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mol</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">std</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clamp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/loss_functions/openmm_thread.html#openmm_energy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.loss_functions.openmm_thread.openmm_energy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initializes internal Module state, shared by both nn.Module and ScriptModule.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="molearn.loss_functions.openmm_thread.openmm_energy_function">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">openmm_energy_function</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/loss_functions/openmm_thread.html#openmm_energy_function"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.loss_functions.openmm_thread.openmm_energy_function" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="molearn.loss_functions.openmm_thread.openmm_energy_function.backward">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">backward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ctx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grad_output</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/loss_functions/openmm_thread.html#openmm_energy_function.backward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.loss_functions.openmm_thread.openmm_energy_function.backward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines a formula for differentiating the operation with backward mode
+automatic differentiation (alias to the vjp function).</p>
+<p>This function is to be overridden by all subclasses.</p>
+<p>It must accept a context <code class="xref py py-attr docutils literal notranslate"><span class="pre">ctx</span></code> as the first argument, followed by
+as many outputs as the <a class="reference internal" href="#molearn.loss_functions.openmm_thread.openmm_energy_function.forward" title="molearn.loss_functions.openmm_thread.openmm_energy_function.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a> returned (None will be passed in
+for non tensor outputs of the forward function),
+and it should return as many tensors, as there were inputs to
+<a class="reference internal" href="#molearn.loss_functions.openmm_thread.openmm_energy_function.forward" title="molearn.loss_functions.openmm_thread.openmm_energy_function.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a>. Each argument is the gradient w.r.t the given output,
+and each returned value should be the gradient w.r.t. the
+corresponding input. If an input is not a Tensor or is a Tensor not
+requiring grads, you can just pass None as a gradient for that input.</p>
+<p>The context can be used to retrieve tensors saved during the forward
+pass. It also has an attribute <code class="xref py py-attr docutils literal notranslate"><span class="pre">ctx.needs_input_grad</span></code> as a tuple
+of booleans representing whether each input needs gradient. E.g.,
+<a class="reference internal" href="#molearn.loss_functions.openmm_thread.openmm_energy_function.backward" title="molearn.loss_functions.openmm_thread.openmm_energy_function.backward"><code class="xref py py-func docutils literal notranslate"><span class="pre">backward()</span></code></a> will have <code class="docutils literal notranslate"><span class="pre">ctx.needs_input_grad[0]</span> <span class="pre">=</span> <span class="pre">True</span></code> if the
+first input to <a class="reference internal" href="#molearn.loss_functions.openmm_thread.openmm_energy_function.forward" title="molearn.loss_functions.openmm_thread.openmm_energy_function.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a> needs gradient computated w.r.t. the
+output.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="molearn.loss_functions.openmm_thread.openmm_energy_function.forward">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ctx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plugin</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/loss_functions/openmm_thread.html#openmm_energy_function.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.loss_functions.openmm_thread.openmm_energy_function.forward" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>plugin</strong> – # OpenmmPluginScore instance</p></li>
+<li><p><strong>x</strong> – torch tensor, dtype = float, shape = [B, N, 3], device = any</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>energy tensor, dtype = float, shape = [B], device  = any</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<span class="target" id="module-molearn.loss_functions.torch_protein_energy"></span></section>
 
 
             <div class="clearer"></div>

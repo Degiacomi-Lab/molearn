@@ -1,5 +1,5 @@
 """
-Scoring holds the classes for calculating DOPE, Ramachandran and OPENMM energy
+`Scoring` holds classes for calculating DOPE and Ramachandran scores.
 """
 try:
     from .dope_score import Parallel_DOPE_Score, DOPE_Score

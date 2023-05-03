@@ -239,6 +239,7 @@ class Decoder(nn.Module):
 
 
 class AutoEncoder(nn.Module):
+    
     def __init__(self, *args, **kwargs):
         super().__init__()
 
