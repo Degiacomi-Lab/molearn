@@ -52,21 +52,115 @@
 <dt class="sig sig-object py" id="molearn.data.PDBData">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">PDBData</span></span><a class="reference internal" href="_modules/molearn/data/pdb_data.html#PDBData"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.data.PDBData" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="py method">
+<dt class="sig sig-object py" id="molearn.data.PDBData.atomselect">
+<span class="sig-name descname"><span class="pre">atomselect</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">atoms</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_atoms</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/data/pdb_data.html#PDBData.atomselect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.data.PDBData.atomselect" title="Permalink to this definition">¶</a></dt>
+<dd><p>From imported PDBs, cut out only atoms of interest.
+<a class="reference internal" href="#molearn.data.PDBData.import_pdb" title="molearn.data.PDBData.import_pdb"><code class="xref py py-func docutils literal notranslate"><span class="pre">import_pdb</span></code></a> must have been called at least once.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>atoms</strong> – list of atom names, or “no_hydrogen”.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="molearn.data.PDBData.fix_terminal">
+<span class="sig-name descname"><span class="pre">fix_terminal</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/data/pdb_data.html#PDBData.fix_terminal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.data.PDBData.fix_terminal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rename N-terminal Oxygens (OT1, OT2, OXT) as O</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="molearn.data.PDBData.frame">
+<span class="sig-name descname"><span class="pre">frame</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/data/pdb_data.html#PDBData.frame"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.data.PDBData.frame" title="Permalink to this definition">¶</a></dt>
+<dd><p>return <cite>biobox.Molecule</cite> object with loaded data</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="molearn.data.PDBData.get_atominfo">
+<span class="sig-name descname"><span class="pre">get_atominfo</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/data/pdb_data.html#PDBData.get_atominfo"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.data.PDBData.get_atominfo" title="Permalink to this definition">¶</a></dt>
+<dd><p>generate list of all atoms in dataset, where every line contains [atom name, residue name, resid]</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="molearn.data.PDBData.get_dataloader">
+<span class="sig-name descname"><span class="pre">get_dataloader</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validation_split</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pin_memory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataset_sample_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">manual_seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shuffle</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sampler</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/data/pdb_data.html#PDBData.get_dataloader"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.data.PDBData.get_dataloader" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>batch_size</strong> – </p></li>
+<li><p><strong>validation_split</strong> – </p></li>
+<li><p><strong>pin_memory</strong> – </p></li>
+<li><p><strong>dataset_sample_size</strong> – </p></li>
+<li><p><strong>manual_seed</strong> – </p></li>
+<li><p><strong>shuffle</strong> – </p></li>
+<li><p><strong>sampler</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><cite>torch.utils.data.DataLoader</cite> for training set</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><cite>torch.utils.data.DataLoader</cite> for validation set</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="molearn.data.PDBData.get_datasets">
 <span class="sig-name descname"><span class="pre">get_datasets</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">validation_split</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">valid_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">manual_seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/data/pdb_data.html#PDBData.get_datasets"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.data.PDBData.get_datasets" title="Permalink to this definition">¶</a></dt>
-<dd><p>returns torch.Tensor for training and validation structures.</p>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>validation_split</strong> – </p></li>
+<li><p><strong>valid_size</strong> – </p></li>
+<li><p><strong>train_size</strong> – </p></li>
+<li><p><strong>manual_seed</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return<span class="colon">:</span></dt>
+<dd class="field-even"><p>two <cite>torch.Tensor</cite>, for training and validation structures.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="molearn.data.PDBData.import_pdb">
+<span class="sig-name descname"><span class="pre">import_pdb</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/data/pdb_data.html#PDBData.import_pdb"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.data.PDBData.import_pdb" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load multiPDB file.
+This command can be called multiple times to load many datasets, if these feature the same number of atoms</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>filename</strong> – path to multiPDB file.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="molearn.data.PDBData.prepare_dataset">
+<span class="sig-name descname"><span class="pre">prepare_dataset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/data/pdb_data.html#PDBData.prepare_dataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.data.PDBData.prepare_dataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Once all datasets have been loaded, normalise data and convert into <cite>torch.Tensor</cite> (ready for training)</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="molearn.data.PDBData.split">
 <span class="sig-name descname"><span class="pre">split</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/data/pdb_data.html#PDBData.split"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.data.PDBData.split" title="Permalink to this definition">¶</a></dt>
-<dd><p>Split this PDBData into two other PDBData objects corresponding to train and valid sets
-:param manual_seed: manual seed used to split dataset
-:param validation_split: default 0.1 ratio of valid to train structures data points
-:param train_size: default None, specify number of train structures to be returned
-:param valid_size: default None, speficy number of valid structures to be returned
-:returns: PDBData object corresponding to train set
-:returns: PDBData object corresponding to validation set</p>
+<dd><p>Split <cite>PDBData &lt;molearn.data.PDBData&gt;</cite> into two other <cite>PDBData &lt;molearn.data.PDBData&gt;</cite> objects corresponding to train and valid sets.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>manual_seed</strong> – manual seed used to split dataset</p></li>
+<li><p><strong>validation_split</strong> – default 0.1 ratio of valid to train structures data points</p></li>
+<li><p><strong>train_size</strong> – default None, specify number of train structures to be returned</p></li>
+<li><p><strong>valid_size</strong> – default None, speficy number of valid structures to be returned</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><cite>PDBData &lt;molearn.data.PDBData&gt;</cite> object corresponding to train set</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><cite>PDBData &lt;molearn.data.PDBData&gt;</cite> object corresponding to validation set</p>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>
