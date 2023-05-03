@@ -166,94 +166,96 @@ class MolearnGUI(object):
         control colouring style of latent space surface
         '''
 
-        if change.new == 'drift':
-            try:
-                data = self.MA.surfaces['Network_z_drift']
-                #data = self.MA.surf_z.T
-            except:
-                return
-            
+        #if change.new == 'drift':
+        #    try:
+        #        data = self.MA.surfaces['Network_z_drift']
+        #        #data = self.MA.surf_z.T
+        #    except:
+        #        return
+        #    
+        #    self.block0.children[2].readout_format = '.1f'
+        #
+        #elif change.new == "RMSD":
+        #    try:
+        #        
+        #        data = self.MA.surfaces["Network_RMSD"]
+        #        #data = self.MA.surf_c.T
+        #    except:
+        #        return
+        #    
+        #    self.block0.children[2].readout_format = '.1f'
+        #
+        #
+        #elif "RMSD_from_" in change.new: #== "target RMSD":
+        #    try:
+        #        data = self.MA.surfaces[change.new]
+        #        #data = self.MA.surf_target.T
+        #    except:
+        #        return
+        #   
+        #    self.block0.children[2].readout_format = '.1f'
+        #
+        #elif change.new == "DOPE_unrefined":
+        #    try:
+        #        data = self.MA.surfaces["DOPE_unrefined"]
+        #        #data = self.MA.surf_dope_unrefined.T
+        #    except:
+        #        return
+        #    
+        #    self.block0.children[2].readout_format = 'd'
+        #
+        #elif change.new == "DOPE_refined":
+        #    try:
+        #        data = self.MA.surfaces["DOPE_refined"]
+        #        #data = self.MA.surf_dope_refined.T
+        #    except:
+        #        return
+        #    
+        #    self.block0.children[2].readout_format = 'd'
+        #
+        #elif change.new == "Ramachandran_favored":
+        #    try:
+        #        data = self.MA.surfaces["Ramachandran_favoured"]
+        #        #data = self.MA.surf_ramachandran_favored.T
+        #    except:
+        #        return
+        #    
+        #    self.block0.children[2].readout_format = '.1f'
+        #
+        #elif change.new == "Ramachandran_allowed":
+        #    try:
+        #        data = self.MA.surfaces["Ramachandran_allowed"]
+        #        #data = self.MA.surf_ramachandran_allowed.T
+        #    except:
+        #        return
+        #    
+        #    self.block0.children[2].readout_format = '.1f'
+        #    
+        #elif change.new == "Ramachandran_outliers":
+        #    try:
+        #        data = self.MA.surfaces["DOPE_outliers"]
+        #        #data = self.MA.surf_ramachandran_outliers.T
+        #    except:
+        #        return
+        #    
+        #    self.block0.children[2].readout_format = '.1f'
+        
+        if "custom" in change.new:
+            mykey = change.new.split(":")[1]
+        else:
+            mykey = change.new
+   
+        try:
+           data = self.MA.surfaces[mykey]
+        except Exception as e:
+            print(f"{e}")
+            return      
+   
+        if np.abs(np.max(data) - np.min(data)) < 100:
             self.block0.children[2].readout_format = '.1f'
-
-        elif change.new == "RMSD":
-            try:
-                
-                data = self.MA.surfaces["Network_RMSD"]
-                #data = self.MA.surf_c.T
-            except:
-                return
-            
-            self.block0.children[2].readout_format = '.1f'
-
-
-        elif "RMSD_from_" in change.new: #== "target RMSD":
-            try:
-                data = self.MA.surfaces[change.new]
-                #data = self.MA.surf_target.T
-            except:
-                return
-            
-            self.block0.children[2].readout_format = '.1f'
-
-
-        elif change.new == "DOPE_unrefined":
-            try:
-                data = self.MA.surfaces["DOPE_unrefined"]
-                #data = self.MA.surf_dope_unrefined.T
-            except:
-                return
-            
-            self.block0.children[2].readout_format = 'd'
-
-        elif change.new == "DOPE_refined":
-            try:
-                data = self.MA.surfaces["DOPE_refined"]
-                #data = self.MA.surf_dope_refined.T
-            except:
-                return
-            
+        else:         
             self.block0.children[2].readout_format = 'd'
         
-        elif change.new == "Ramachandran_favored":
-            try:
-                data = self.MA.surfaces["Ramachandran_favoured"]
-                #data = self.MA.surf_ramachandran_favored.T
-            except:
-                return
-            
-            self.block0.children[2].readout_format = '.1f'
-
-        elif change.new == "Ramachandran_allowed":
-            try:
-                data = self.MA.surfaces["Ramachandran_allowed"]
-                #data = self.MA.surf_ramachandran_allowed.T
-            except:
-                return
-            
-            self.block0.children[2].readout_format = '.1f'
-            
-        elif change.new == "Ramachandran_outliers":
-            try:
-                data = self.MA.surfaces["DOPE_outliers"]
-                #data = self.MA.surf_ramachandran_outliers.T
-            except:
-                return
-            
-            self.block0.children[2].readout_format = '.1f'
-            
-        elif "custom" in change.new:
-            mykey = change.new.split(":")[1]
-            try:
-                data = self.MA.surfaces[mykey]
-                #data = self.MA.custom_data[mykey].T
-            except Exception:
-                return      
-            
-            if np.abs(np.max(data) - np.min(data)) < 100:
-                self.block0.children[2].readout_format = '.1f'
-            else:         
-                self.block0.children[2].readout_format = 'd'
-                 
         self.latent.data[0].z = data
         
         # step below necessary to avoid situations whereby temporarily min>max
@@ -407,7 +409,7 @@ class MolearnGUI(object):
         
         # surface representation menu
         options = []
-        for f in list(self.MA):
+        for f in list(self.MA.surfaces):
             options.append(f)
         
         #if hasattr(self.MA, "surf_z"):

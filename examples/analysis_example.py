@@ -21,6 +21,10 @@ MA.set_network(net)
 # but more memory demanding
 MA.batch_size = 4
 
+# increasing processes makes DOPE and Ramachandran scores calculations faster,
+# but more more memory demanding
+MA.processes = 2
+
 # what follows is a method to re-create the training and test set
 # by defining the manual see and loading the dataset in the same order as when
 #the neural network was trained, the same train-test split will be obtained

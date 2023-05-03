@@ -35,6 +35,7 @@ class MolearnAnalysis(object):
         self._decoded = {}
         self.surfaces = {}
         self.batch_size = 1
+        self.processes = 1
 
     def set_network(self, network):
         '''
@@ -163,17 +164,16 @@ class MolearnAnalysis(object):
         return np.array(err)
 
 
-    def get_dope(self, key, refined=True, processes=-1):
+    def get_dope(self, key, refined=True):
         '''
         :param key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
         :param refined: if True (default), return DOPE score of input and output structure both before and after refinement
-        :param processes: number of processes to spawn (parallel evaluation)
         '''
         dataset = self.get_dataset(key)
         decoded = self.get_decoded(key)
         
-        dope_dataset = self.get_all_dope_score(dataset, processes=-1)
-        dope_decoded = self.get_all_dope_score(decoded, processes=-1)
+        dope_dataset = self.get_all_dope_score(dataset)
+        dope_decoded = self.get_all_dope_score(decoded)
 
         if refined:
             return dict(dataset_dope_unrefined = dope_dataset[0], 
@@ -184,17 +184,16 @@ class MolearnAnalysis(object):
             return dict(dataset_dope_unrefined = dope_dataset, 
                         decoded_dope_unrefined = dope_decoded,)
 
-    def get_ramachandran(self, key, processes=-1):
+    def get_ramachandran(self, key):
         '''
         :param key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
-        :param processes: number of processes to spawn (parallel evaluation)
         '''
         
         dataset = self.get_dataset(key)
         decoded = self.get_decoded(key)
 
-        ramachandran = {f'dataset_{key}':value for key, value in self.get_all_ramachandran_score(dataset, processes=processes).items()}
-        ramachandran.update({f'decoded_{key}':value for key, value in self.get_all_ramachandran_score(decoded, processes=processes).items()})
+        ramachandran = {f'dataset_{key}':value for key, value in self.get_all_ramachandran_score(dataset).items()}
+        ramachandran.update({f'decoded_{key}':value for key, value in self.get_all_ramachandran_score(decoded).items()})
         return ramachandran
 
     def setup_grid(self, samples=64, bounds_from=None, bounds=None, padding=0.1):
@@ -292,13 +291,13 @@ class MolearnAnalysis(object):
             self.surfaces[z_key] = z_drift.reshape(self.n_samples, self.n_samples).numpy()
         return self.surfaces[s_key], self.surfaces[z_key], self.xvals, self.yvals
 
-    def _ramachandran_score(self, frame, processes=-1):
+    def _ramachandran_score(self, frame):
         '''
         returns multiprocessing AsyncResult
         AsyncResult.get() will return the result
         '''
         if not hasattr(self, 'ramachandran_score_class'):
-            self.ramachandran_score_class = Parallel_Ramachandran_Score(self.mol, processes=processes) #Parallel_Ramachandran_Score(self.mol)
+            self.ramachandran_score_class = Parallel_Ramachandran_Score(self.mol, self.processes) #Parallel_Ramachandran_Score(self.mol)
         assert len(frame.shape) == 2, f'We wanted 2D data but got {len(frame.shape)} dimensions'
         if frame.shape[0] == 3:
             f = frame.permute(1,0)
@@ -313,13 +312,13 @@ class MolearnAnalysis(object):
         #return {'favored':nf, 'allowed':na, 'outliers':no, 'total':nt}
 
 
-    def _dope_score(self, frame, refine=True, processes=-1):
+    def _dope_score(self, frame, refine=True):
         '''
         returns multiprocessing AsyncResult
         AsyncResult.get() will return the result
         '''
         if not hasattr(self, 'dope_score_class'):
-            self.dope_score_class = Parallel_DOPE_Score(self.mol, processes=processes)
+            self.dope_score_class = Parallel_DOPE_Score(self.mol, self.processes)
 
         assert len(frame.shape) == 2, f'We wanted 2D data but got {len(frame.shape)} dimensions'
         if frame.shape[0] == 3:
@@ -333,16 +332,16 @@ class MolearnAnalysis(object):
         return self.dope_score_class.get_score(f*self.stdval, refine = refine)
 
 
-    def get_all_ramachandran_score(self, tensor, processes=-1):
+    def get_all_ramachandran_score(self, tensor):
         '''
         Calculate Ramachandran score of an ensemble of atomic conrdinates
         
-        :param processes: number of processes to spawn (parallel evaluation)
+        :param tensor:
         '''
         rama = dict(favored=[], allowed=[], outliers=[], total=[])
         results = []
         for f in tensor:
-            results.append(self._ramachandran_score(f, processes=processes))
+            results.append(self._ramachandran_score(f))
         for r in results:
             favored, allowed, outliers, total = r.get()
             rama['favored'].append(favored)
@@ -351,15 +350,15 @@ class MolearnAnalysis(object):
             rama['total'].append(total)
         return {key:np.array(value) for key, value in rama.items()}       
 
-    def get_all_dope_score(self, tensor, refine=True, processes=-1):
+    def get_all_dope_score(self, tensor, refine=True):
         '''
         Calculate DOPE score of an ensemble of atom coordinates
 
-        :param processes: number of processes to spawn (parallel evaluation)
+        :param tensor:
         '''
         results = []
         for f in tensor:
-            results.append(self._dope_score(f, refine=refine, processes=processes))
+            results.append(self._dope_score(f, refine=refine))
         results = np.array([r.get() for r in results])
         if refine:
             return results[:,0], results[:,1]
@@ -380,35 +379,31 @@ class MolearnAnalysis(object):
         score = atmsel.assess_dope()
         return score
 
-    def scan_dope(self, processes=-1, **kwargs):
+    def scan_dope(self, u_key='DOPE_unrefined', r_key='DOPE_refined', **kwargs):
         '''
         Calculate DOPE score on a grid sampling the latent space.
         Requires a grid system to be defined via a prior call to :func:`set_dataset <molearn.analysis.MolearnAnalysis.setup_grid>`.
-
-        :param processes: number of processes to spawn (parallel evaluation)
+        :param u_key: label for unrefined DOPE score surface
+        :param r_key: label for unrefined DOPE score surface
         '''
-        u_key = 'DOPE_unrefined'
-        r_key = 'DOPE_refined'
         if u_key not in self.surfaces:
             assert 'grid' in self._encoded, 'make sure to call MolearnAnalysis.setup_grid first'
             decoded = self.get_decoded('grid')
-            unrefined, refined = self.get_all_dope_score(decoded, processes=processes, **kwargs)
+            unrefined, refined = self.get_all_dope_score(decoded, **kwargs)
             self.surfaces[u_key] = as_numpy(unrefined.reshape(self.n_samples, self.n_samples))
             self.surfaces[r_key] = as_numpy(refined.reshape(self.n_samples, self.n_samples))
         return self.surfaces[u_key], self.surfaces[r_key], self.xvals, self.yvals
 
-    def scan_ramachandran(self, processes=-1):
+    def scan_ramachandran(self):
         '''
         Calculate Ramachandran scores on a grid sampling the latent space.
         Requires a grid system to be defined via a prior call to :func:`set_dataset <molearn.analysis.MolearnAnalysis.setup_grid>`.
-        
-        :param processes: number of processes to spawn (parallel evaluation)
         '''
         keys = {i:f'Ramachandran_{i}' for i in ('favored', 'allowed', 'outliers', 'total')}
         if list(keys.values())[0] not in self.surfaces:
             assert 'grid' in self._encoded, 'make sure to call MolearnAnalysis.setup_grid first'
             decoded = self.get_decoded('grid')
-            rama = self.get_all_ramachandran_score(decoded, processes=processes)
+            rama = self.get_all_ramachandran_score(decoded)
             for key, value in rama.items():
                 self.surfaces[keys[key]] = value
 
