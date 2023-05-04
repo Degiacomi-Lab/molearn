@@ -365,7 +365,7 @@ class MolearnAnalysis(object):
         :return: DOPE score
         '''
         self.mol.coordinates = deepcopy(frame)
-        self.mol.write_pdb('tmp.pdb')
+        self.mol.write_pdb('tmp.pdb', split_struc = False)
         env = Environ()
         env.libs.topology.read(file='$(LIB)/top_heav.lib')
         env.libs.parameters.read(file='$(LIB)/par.lib')

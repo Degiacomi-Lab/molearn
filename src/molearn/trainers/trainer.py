@@ -243,7 +243,7 @@ class Trainer():
             _name = f'{checkpoint_folder}/last.ckpt'
         else:
             _name = f'{checkpoint_folder}/{checkpoint_name}'
-        checkpoint = torch.load(_name)
+        checkpoint = torch.load(_name, map_location = self.device)
         if not hasattr(self, 'autoencoder'):
             raise NotImplementedError('self.autoencoder does not exist, I have no way of knowing what network you want to load checkoint weights into yet, please set the network first')
 

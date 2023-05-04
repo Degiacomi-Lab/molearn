@@ -26,7 +26,7 @@ class DOPE_Score:
         atoms = ' '.join(list(_mol.data['name'].unique()))
         #tmp_file = f'tmp{np.random.randint(1e10)}.pdb'
         tmp_file = f'tmp{random_string()}.pdb'
-        _mol.write_pdb(tmp_file, conformations=[0])
+        _mol.write_pdb(tmp_file, conformations=[0], split_struc = False)
         log.level(0,0,0,0,0)
         env = environ()
         env.libs.topology.read(file='$(LIB)/top_heav.lib')

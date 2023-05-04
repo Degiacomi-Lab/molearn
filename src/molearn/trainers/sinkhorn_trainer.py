@@ -191,7 +191,7 @@ class Sinkhorn_Trainer():
                 interp_structures = self.decoder(zinterp)[:,:,:data.shape[2]]
             mol = deepcopy(self.mol)
             mol.coordinates = (interp_structures.permute(0,2,1)*self.std).detach().cpu().numpy()
-            mol.write_pdb('sample_interp.pdb')
+            mol.write_pdb('sample_interp.pdb', split_struc = False)
             self.save_time = time()
 
         

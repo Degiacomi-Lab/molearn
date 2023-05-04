@@ -89,7 +89,6 @@ class CustomTrainer(OpenMM_Physics_Trainer):
             results['valid_DOPE_interp'] = idope[:,0].mean()
             results['valid_DOPE_interp_refined'] = idope[:,1].mean()
             results['valid_DOPE_time'] = time()-t1 # extra time taken to calculate DOPE
-        results['lr'] = self._lr
         return results
 
 

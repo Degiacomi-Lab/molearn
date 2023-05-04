@@ -13,7 +13,7 @@ import os
 class Ramachandran_Score():
     def __init__(self, mol, threshold=1e-3):
         tmp_file = f'rama_tmp{random_string()}.pdb'
-        mol.write_pdb(tmp_file)#'rama_tmp.pdb')
+        mol.write_pdb(tmp_file, split_struc = False)#'rama_tmp.pdb')
         filename = tmp_file#'rama_tmp.pdb'
         self.mol = mol
         self.dm = DataManager(datatypes = ['model'])

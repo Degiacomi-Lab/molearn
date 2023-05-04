@@ -117,7 +117,7 @@ class OpenmmPluginScore():
             #self.mol.data.loc[lambda df: df['resname']==key, key]=value
         tmp_file = f'tmp{np.random.randint(1e10)}.pdb'
         self.atoms = atoms
-        self.mol.write_pdb(tmp_file)
+        self.mol.write_pdb(tmp_file, split_struc = False)
         self.pdb = PDBFile(tmp_file)
         if soft:
             print('attempting soft forcefield')
@@ -269,7 +269,7 @@ class OpenMMPluginScoreSoftForceField(OpenmmPluginScore):
         self.mol = mol
         tmp_file = 'tmp.pdb'
         self.atoms = atoms
-        self.mol.write_pdb(tmp_file)
+        self.mol.write_pdb(tmp_file, split_struc = False)
         self.pdb = PDBFile(tmp_file)
         from pdbfixer import PDBFixer
         f = PDBFixer(tmp_file)
