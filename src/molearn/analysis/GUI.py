@@ -29,6 +29,7 @@ import nglview as nv
 
 from .analyser import MolearnAnalysis
 from .path import oversample, get_path_aggregate
+from ..utils import as_numpy
 
 
 class MolearnGUI(object):
@@ -60,11 +61,11 @@ class MolearnGUI(object):
 
         # update latent space plot
         if self.samples == []:
-            self.latent.data[3].x = self.waypoints[:, 0]
-            self.latent.data[3].y = self.waypoints[:, 1]
+            self.latent.data[2].x = self.waypoints[:, 0]
+            self.latent.data[2].y = self.waypoints[:, 1]
         else:
-            self.latent.data[3].x = self.samples[:, 0]
-            self.latent.data[3].y = self.samples[:, 1]
+            self.latent.data[2].x = self.samples[:, 0]
+            self.latent.data[2].y = self.samples[:, 1]
         
         self.latent.update()
 
@@ -204,20 +205,22 @@ class MolearnGUI(object):
         '''
         control which dataset is displayed
         '''        
-        
+
         if change.new == "none":
             self.latent.data[1].x = []
             self.latent.data[1].y = []
             
         else:
             try:
-               data = self.MA.get_encoded(change.new)
+               data = as_numpy(self.MA.get_encoded(change.new).squeeze(2))
             except Exception as e:
                 print(f"{e}")
                 return      
        
             self.latent.data[1].x = data[:, 0]
             self.latent.data[1].y = data[:, 1]
+
+            self.latent.data[1].visible = True
         
         self.latent.update()
 
@@ -372,6 +375,8 @@ class MolearnGUI(object):
 
         if len(options2) == 1:
             self.drop_dataset.disabled = True
+        else:
+            self.drop_dataset.disabled = False
         
         self.drop_dataset.observe(self.drop_dataset_event, names='value')
 
@@ -469,8 +474,7 @@ class MolearnGUI(object):
         # dataset
         if self.MA is not None and len(list(self.MA._datasets))>0:
                   
-            mydata = self.MA.get_encoded(options2[1])
-            
+            mydata = as_numpy(self.MA.get_encoded(options2[1]).squeeze(2))
             color = "white" if len(sc)>0 else "black"
             plot2 = go.Scatter(x=mydata[:, 0].flatten(),
                               y=mydata[:, 1].flatten(),

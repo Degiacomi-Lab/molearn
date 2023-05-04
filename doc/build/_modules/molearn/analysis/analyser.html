@@ -288,6 +288,8 @@
 <div class="viewcode-block" id="MolearnAnalysis.scan_error_from_target"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.MolearnAnalysis.scan_error_from_target">[docs]</a>    <span class="k">def</span> <span class="nf">scan_error_from_target</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Calculate landscape of RMSD vs single target structure. Target should be a Tensor of a single protein stucture  </span>
+<span class="sd">  </span>
+<span class="sd">        :param key: key pointing to a dataset previously loaded with :func:`set_dataset &lt;molearn.analysis.MolearnAnalysis.set_dataset&gt;`</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">s_key</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;RMSD_from_</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">if</span> <span class="n">index</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="sa">f</span><span class="s1">&#39;RMSD_from_</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s1">_index_</span><span class="si">{</span><span class="n">index</span><span class="si">}</span><span class="s1">&#39;</span>
         <span class="k">if</span> <span class="n">s_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">surfaces</span><span class="p">:</span>
@@ -297,6 +299,7 @@
             <span class="n">decoded</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_decoded</span><span class="p">(</span><span class="s1">&#39;grid&#39;</span><span class="p">)</span>
             <span class="n">rmsd</span> <span class="o">=</span> <span class="p">(((</span><span class="n">decoded</span><span class="o">-</span><span class="n">target</span><span class="p">)</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">stdval</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">sqrt</span><span class="p">()</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">surfaces</span><span class="p">[</span><span class="n">s_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">rmsd</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_samples</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_samples</span><span class="p">)</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+            
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">surfaces</span><span class="p">[</span><span class="n">s_key</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">xvals</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">yvals</span></div>
 
 <div class="viewcode-block" id="MolearnAnalysis.scan_error"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.MolearnAnalysis.scan_error">[docs]</a>    <span class="k">def</span> <span class="nf">scan_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">s_key</span><span class="o">=</span><span class="s1">&#39;Network_RMSD&#39;</span><span class="p">,</span> <span class="n">z_key</span><span class="o">=</span><span class="s1">&#39;Network_z_drift&#39;</span><span class="p">):</span>
@@ -304,8 +307,8 @@
 <span class="sd">        Calculate RMSD and z-drift on a grid sampling the latent space.</span>
 <span class="sd">        Requires a grid system to be defined via a prior call to :func:`set_dataset &lt;molearn.analysis.MolearnAnalysis.setup_grid&gt;`.</span>
 <span class="sd">        </span>
-<span class="sd">        :param s_key: sting, label for RMSD dataset</span>
-<span class="sd">        :param z_key: sting, label for z-drift dataset</span>
+<span class="sd">        :param s_key: string, label for RMSD dataset</span>
+<span class="sd">        :param z_key: string, label for z-drift dataset</span>
 <span class="sd">        :return: NxN RMSD grid, NxN z-drift grid, x-axis values, y-axis values</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">s_key</span> <span class="o">=</span> <span class="s1">&#39;Network_RMSD&#39;</span>
@@ -453,8 +456,10 @@
   
 <div class="viewcode-block" id="MolearnAnalysis.scan_custom"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.MolearnAnalysis.scan_custom">[docs]</a>    <span class="k">def</span> <span class="nf">scan_custom</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fct</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        :param fct: function taking atomic coordinates as input, an optional list of parameters. Returns a single value.</span>
-<span class="sd">        :param params: parameters to be passed to function f</span>
+<span class="sd">        Generate a surface coloured as a function of a user-defined function.</span>
+<span class="sd">        </span>
+<span class="sd">        :param fct: function taking atomic coordinates as input, an optional list of parameters, and returning a single value.</span>
+<span class="sd">        :param params: parameters to be passed to function f. If no parameter is needed, pass an empty list.</span>
 <span class="sd">        :param key: name of the dataset generated by this function scan</span>
 <span class="sd">        :return: grid scanning of latent space according to provided function, x, and y grid axes</span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -475,8 +480,9 @@
 <span class="sd">        :return: collection of protein conformations in the Cartesian space (NxMx3, where M is the number of atoms in the protein)</span>
 <span class="sd">        &#39;&#39;&#39;</span> 
         <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
-            <span class="n">z</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">crd</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span><span class="o">.</span><span class="n">float</span><span class="p">()</span>   
-            <span class="n">s</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">network</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">z</span><span class="p">)[:,</span> <span class="p">:,</span> <span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">training_set</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]]</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">z</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">crd</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span><span class="o">.</span><span class="n">float</span><span class="p">()</span>
+            <span class="n">key</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_datasets</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">s</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">network</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">z</span><span class="p">)[:,</span> <span class="p">:,</span> <span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">_datasets</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]]</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">s</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">stdval</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">meanval</span></div></div>
 

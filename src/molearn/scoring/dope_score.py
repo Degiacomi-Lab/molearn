@@ -77,8 +77,7 @@ class DOPE_Score:
         
     def get_all_dope(self, coords, refine=False):
         # expect coords to be shape [B, N, 3] use .cpu().numpy().copy() before passing here and make sure it is scaled correctly
-        dope_scores_unrefined = []
-        dope_scores_refined = []
+        dope_scores = []
         for frame in coords:
             frame = frame.astype(float)
             self.fast_fs.unbuild()
@@ -86,13 +85,13 @@ class DOPE_Score:
                 if i+1<frame.shape[0]:
                     j.x, j.y, j.z = frame[self.fast_atom_order[i], :]
             self.fast_mdl.build(build_method='INTERNAL_COORDINATES', initialize_xyz=False)
-            dope_scores_unrefined.append(self.fast_fs.assess_dope())
+
             if refine:
                 self.cg.optimize(self.fast_fs, max_iterations=50)
-                dope_scores_refined.append(self.fast_fs.assess_dope())
-        if refine:
-            return np.array(dope_scores_unrefined), np.array(dope_scores_refined)
-        return np.array(dope_scores_unrefined)
+                
+            dope_scores.append(self.fast_fs.assess_dope())
+            
+        return np.array(dope_scores)
 
 def set_global_score(score, kwargs):
     '''
@@ -134,4 +133,3 @@ class Parallel_DOPE_Score():
         '''
         #is copy necessary?
         return self.pool.apply_async(self.process_function, (coords.copy(), kwargs))
-
