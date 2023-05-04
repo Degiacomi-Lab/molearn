@@ -68,16 +68,19 @@
 <span class="kn">import</span> <span class="nn">plotly.graph_objects</span> <span class="k">as</span> <span class="nn">go</span>
 <span class="kn">import</span> <span class="nn">nglview</span> <span class="k">as</span> <span class="nn">nv</span>
 
-<span class="kn">from</span> <span class="nn">..utils</span> <span class="kn">import</span> <span class="n">as_numpy</span>
 <span class="kn">from</span> <span class="nn">.analyser</span> <span class="kn">import</span> <span class="n">MolearnAnalysis</span>
 <span class="kn">from</span> <span class="nn">.path</span> <span class="kn">import</span> <span class="n">oversample</span><span class="p">,</span> <span class="n">get_path_aggregate</span>
+<span class="kn">from</span> <span class="nn">..utils</span> <span class="kn">import</span> <span class="n">as_numpy</span>
 
 
 <div class="viewcode-block" id="MolearnGUI"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.MolearnGUI">[docs]</a><span class="k">class</span> <span class="nc">MolearnGUI</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">MA</span><span class="o">=</span><span class="p">[]):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">MA</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        :param MA: :func:`MolearnAnalysis &lt;molearn.analysis.MolearnAnalysis&gt;` instance</span>
+<span class="sd">        &#39;&#39;&#39;</span>
         
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">MA</span><span class="p">,</span> <span class="n">MolearnAnalysis</span><span class="p">)</span> <span class="ow">and</span> <span class="n">MA</span> <span class="o">!=</span> <span class="p">[]:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">MA</span><span class="p">,</span> <span class="n">MolearnAnalysis</span><span class="p">)</span> <span class="ow">and</span> <span class="n">MA</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Expecting an MolearnAnalysis instance, </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">MA</span><span class="p">)</span><span class="si">}</span><span class="s1"> found&#39;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">MA</span> <span class="o">=</span> <span class="n">MA</span>
@@ -99,16 +102,16 @@
 
         <span class="c1"># update latent space plot</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">samples</span> <span class="o">==</span> <span class="p">[]:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">latent</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">waypoints</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">latent</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">waypoints</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">latent</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">waypoints</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">latent</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">waypoints</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">latent</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">samples</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">latent</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">samples</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">latent</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">samples</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">latent</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">samples</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span>
         
         <span class="bp">self</span><span class="o">.</span><span class="n">latent</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
 
     
-<div class="viewcode-block" id="MolearnGUI.on_click"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.MolearnGUI.on_click">[docs]</a>    <span class="k">def</span> <span class="nf">on_click</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trace</span><span class="p">,</span> <span class="n">points</span><span class="p">,</span> <span class="n">selector</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">on_click</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trace</span><span class="p">,</span> <span class="n">points</span><span class="p">,</span> <span class="n">selector</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        control display of training set</span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -131,7 +134,7 @@
         <span class="k">except</span><span class="p">:</span>
             <span class="k">return</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">update_trails</span><span class="p">()</span>    </div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update_trails</span><span class="p">()</span>    
         
 
     <span class="k">def</span> <span class="nf">get_samples</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mybox</span><span class="p">,</span> <span class="n">samplebox</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
@@ -168,7 +171,7 @@
         <span class="k">return</span> <span class="n">crd</span>
 
         
-<div class="viewcode-block" id="MolearnGUI.interact_3D"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.MolearnGUI.interact_3D">[docs]</a>    <span class="k">def</span> <span class="nf">interact_3D</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mybox</span><span class="p">,</span> <span class="n">samplebox</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">interact_3D</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mybox</span><span class="p">,</span> <span class="n">samplebox</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        generate and display proteins according to latent space trail</span>
 <span class="sd">        &#39;&#39;&#39;</span> 
@@ -197,92 +200,29 @@
         <span class="c1">#view.add_representation(&quot;cartoon&quot;)</span>
         <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">view</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">button_pdb</span><span class="o">.</span><span class="n">disabled</span> <span class="o">=</span> <span class="kc">False</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">button_pdb</span><span class="o">.</span><span class="n">disabled</span> <span class="o">=</span> <span class="kc">False</span>
 
 
-<div class="viewcode-block" id="MolearnGUI.drop_background_event"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.MolearnGUI.drop_background_event">[docs]</a>    <span class="k">def</span> <span class="nf">drop_background_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">change</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">drop_background_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">change</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        control colouring style of latent space surface</span>
-<span class="sd">        &#39;&#39;&#39;</span>
-
-        <span class="k">if</span> <span class="n">change</span><span class="o">.</span><span class="n">new</span> <span class="o">==</span> <span class="s2">&quot;drift&quot;</span><span class="p">:</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="o">.</span><span class="n">surf_z</span><span class="o">.</span><span class="n">T</span>
-            <span class="k">except</span><span class="p">:</span>
-                <span class="k">return</span>
-            
+<span class="sd">        &#39;&#39;&#39;</span>        
+        <span class="k">if</span> <span class="s2">&quot;custom&quot;</span> <span class="ow">in</span> <span class="n">change</span><span class="o">.</span><span class="n">new</span><span class="p">:</span>
+            <span class="n">mykey</span> <span class="o">=</span> <span class="n">change</span><span class="o">.</span><span class="n">new</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">mykey</span> <span class="o">=</span> <span class="n">change</span><span class="o">.</span><span class="n">new</span>
+   
+        <span class="k">try</span><span class="p">:</span>
+           <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="o">.</span><span class="n">surfaces</span><span class="p">[</span><span class="n">mykey</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span>      
+   
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">data</span><span class="p">))</span> <span class="o">&lt;</span> <span class="mi">100</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">block0</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">readout_format</span> <span class="o">=</span> <span class="s1">&#39;.1f&#39;</span>
-
-        <span class="k">elif</span> <span class="n">change</span><span class="o">.</span><span class="n">new</span> <span class="o">==</span> <span class="s2">&quot;RMSD&quot;</span><span class="p">:</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="o">.</span><span class="n">surf_c</span><span class="o">.</span><span class="n">T</span>
-            <span class="k">except</span><span class="p">:</span>
-                <span class="k">return</span>
-            
-            <span class="bp">self</span><span class="o">.</span><span class="n">block0</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">readout_format</span> <span class="o">=</span> <span class="s1">&#39;.1f&#39;</span>
-
-
-        <span class="k">elif</span> <span class="n">change</span><span class="o">.</span><span class="n">new</span> <span class="o">==</span> <span class="s2">&quot;target RMSD&quot;</span><span class="p">:</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="o">.</span><span class="n">surf_target</span><span class="o">.</span><span class="n">T</span>
-            <span class="k">except</span><span class="p">:</span>
-                <span class="k">return</span>
-            
-            <span class="bp">self</span><span class="o">.</span><span class="n">block0</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">readout_format</span> <span class="o">=</span> <span class="s1">&#39;.1f&#39;</span>
-
-
-        <span class="k">elif</span> <span class="n">change</span><span class="o">.</span><span class="n">new</span> <span class="o">==</span> <span class="s2">&quot;DOPE_unrefined&quot;</span><span class="p">:</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="o">.</span><span class="n">surf_dope_unrefined</span><span class="o">.</span><span class="n">T</span>
-            <span class="k">except</span><span class="p">:</span>
-                <span class="k">return</span>
-            
-            <span class="bp">self</span><span class="o">.</span><span class="n">block0</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">readout_format</span> <span class="o">=</span> <span class="s1">&#39;d&#39;</span>
-
-        <span class="k">elif</span> <span class="n">change</span><span class="o">.</span><span class="n">new</span> <span class="o">==</span> <span class="s2">&quot;DOPE_refined&quot;</span><span class="p">:</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="o">.</span><span class="n">surf_dope_refined</span><span class="o">.</span><span class="n">T</span>
-            <span class="k">except</span><span class="p">:</span>
-                <span class="k">return</span>
-            
+        <span class="k">else</span><span class="p">:</span>         
             <span class="bp">self</span><span class="o">.</span><span class="n">block0</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">readout_format</span> <span class="o">=</span> <span class="s1">&#39;d&#39;</span>
         
-        <span class="k">elif</span> <span class="n">change</span><span class="o">.</span><span class="n">new</span> <span class="o">==</span> <span class="s2">&quot;ramachandran_favored&quot;</span><span class="p">:</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="o">.</span><span class="n">surf_ramachandran_favored</span><span class="o">.</span><span class="n">T</span>
-            <span class="k">except</span><span class="p">:</span>
-                <span class="k">return</span>
-            
-            <span class="bp">self</span><span class="o">.</span><span class="n">block0</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">readout_format</span> <span class="o">=</span> <span class="s1">&#39;.1f&#39;</span>
-
-        <span class="k">elif</span> <span class="n">change</span><span class="o">.</span><span class="n">new</span> <span class="o">==</span> <span class="s2">&quot;ramachandran_allowed&quot;</span><span class="p">:</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="o">.</span><span class="n">surf_ramachandran_allowed</span><span class="o">.</span><span class="n">T</span>
-            <span class="k">except</span><span class="p">:</span>
-                <span class="k">return</span>
-            
-            <span class="bp">self</span><span class="o">.</span><span class="n">block0</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">readout_format</span> <span class="o">=</span> <span class="s1">&#39;.1f&#39;</span>
-            
-        <span class="k">elif</span> <span class="n">change</span><span class="o">.</span><span class="n">new</span> <span class="o">==</span> <span class="s2">&quot;ramachandran_outliers&quot;</span><span class="p">:</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="o">.</span><span class="n">surf_ramachandran_outliers</span><span class="o">.</span><span class="n">T</span>
-            <span class="k">except</span><span class="p">:</span>
-                <span class="k">return</span>
-            
-            <span class="bp">self</span><span class="o">.</span><span class="n">block0</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">readout_format</span> <span class="o">=</span> <span class="s1">&#39;.1f&#39;</span>
-            
-        <span class="k">elif</span> <span class="s2">&quot;custom&quot;</span> <span class="ow">in</span> <span class="n">change</span><span class="o">.</span><span class="n">new</span><span class="p">:</span>
-            <span class="n">mykey</span> <span class="o">=</span> <span class="n">change</span><span class="o">.</span><span class="n">new</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="o">.</span><span class="n">custom_data</span><span class="p">[</span><span class="n">mykey</span><span class="p">]</span><span class="o">.</span><span class="n">T</span>
-            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
-                <span class="k">return</span>      
-            
-            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">data</span><span class="p">))</span> <span class="o">&lt;</span> <span class="mi">100</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">block0</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">readout_format</span> <span class="o">=</span> <span class="s1">&#39;.1f&#39;</span>
-            <span class="k">else</span><span class="p">:</span>         
-                <span class="bp">self</span><span class="o">.</span><span class="n">block0</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">readout_format</span> <span class="o">=</span> <span class="s1">&#39;d&#39;</span>
-                 
         <span class="bp">self</span><span class="o">.</span><span class="n">latent</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">z</span> <span class="o">=</span> <span class="n">data</span>
         
         <span class="c1"># step below necessary to avoid situations whereby temporarily min&gt;max</span>
@@ -299,10 +239,34 @@
                 
         <span class="bp">self</span><span class="o">.</span><span class="n">block0</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
         
-        <span class="bp">self</span><span class="o">.</span><span class="n">update_trails</span><span class="p">()</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update_trails</span><span class="p">()</span>
 
 
-<div class="viewcode-block" id="MolearnGUI.drop_path_event"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.MolearnGUI.drop_path_event">[docs]</a>    <span class="k">def</span> <span class="nf">drop_path_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">change</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">drop_dataset_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">change</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        control which dataset is displayed</span>
+<span class="sd">        &#39;&#39;&#39;</span>        
+
+        <span class="k">if</span> <span class="n">change</span><span class="o">.</span><span class="n">new</span> <span class="o">==</span> <span class="s2">&quot;none&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">latent</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">latent</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="p">[]</span>
+            
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+               <span class="n">data</span> <span class="o">=</span> <span class="n">as_numpy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="o">.</span><span class="n">get_encoded</span><span class="p">(</span><span class="n">change</span><span class="o">.</span><span class="n">new</span><span class="p">)</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">return</span>      
+       
+            <span class="bp">self</span><span class="o">.</span><span class="n">latent</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">data</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">latent</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">data</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">latent</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">visible</span> <span class="o">=</span> <span class="kc">True</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">latent</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
+
+
+    <span class="k">def</span> <span class="nf">drop_path_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">change</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        control way paths are looked for</span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -311,38 +275,19 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">block0</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="o">.</span><span class="n">disabled</span> <span class="o">=</span> <span class="kc">False</span>
             
-        <span class="bp">self</span><span class="o">.</span><span class="n">update_trails</span><span class="p">()</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update_trails</span><span class="p">()</span>
 
 
-<div class="viewcode-block" id="MolearnGUI.check_training_event"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.MolearnGUI.check_training_event">[docs]</a>    <span class="k">def</span> <span class="nf">check_training_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">change</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        control display of training set</span>
-<span class="sd">        &#39;&#39;&#39;</span> 
-        <span class="n">state_choice</span> <span class="o">=</span> <span class="n">change</span><span class="o">.</span><span class="n">new</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">latent</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">visible</span> <span class="o">=</span> <span class="n">state_choice</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">latent</span><span class="o">.</span><span class="n">update</span><span class="p">()</span></div>
-
-
-<div class="viewcode-block" id="MolearnGUI.check_test_event"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.MolearnGUI.check_test_event">[docs]</a>    <span class="k">def</span> <span class="nf">check_test_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">change</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        control display of test set</span>
-<span class="sd">        &#39;&#39;&#39;</span> 
-        <span class="n">state_choice</span> <span class="o">=</span> <span class="n">change</span><span class="o">.</span><span class="n">new</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">latent</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">visible</span> <span class="o">=</span> <span class="n">state_choice</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">latent</span><span class="o">.</span><span class="n">update</span><span class="p">()</span></div>
-
-
-<div class="viewcode-block" id="MolearnGUI.range_slider_event"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.MolearnGUI.range_slider_event">[docs]</a>    <span class="k">def</span> <span class="nf">range_slider_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">change</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">range_slider_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">change</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        update surface colouring upon manipulation of range slider</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">latent</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">zmin</span> <span class="o">=</span> <span class="n">change</span><span class="o">.</span><span class="n">new</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">latent</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">zmax</span> <span class="o">=</span> <span class="n">change</span><span class="o">.</span><span class="n">new</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">latent</span><span class="o">.</span><span class="n">update</span><span class="p">()</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">latent</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
 
 
-
-<div class="viewcode-block" id="MolearnGUI.trail_update_event"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.MolearnGUI.trail_update_event">[docs]</a>    <span class="k">def</span> <span class="nf">trail_update_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">change</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">trail_update_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">change</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        update trails (waypoints and way they are connected)</span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -356,10 +301,10 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">waypoints</span> <span class="o">=</span> <span class="n">crd</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">update_trails</span><span class="p">()</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update_trails</span><span class="p">()</span>
 
 
-<div class="viewcode-block" id="MolearnGUI.button_pdb_event"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.MolearnGUI.button_pdb_event">[docs]</a>    <span class="k">def</span> <span class="nf">button_pdb_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">check</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">button_pdb_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">check</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        save PDB file corresponding to the interpolation shown in the 3D view</span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -385,10 +330,10 @@
 
         <span class="k">with</span> <span class="n">mda</span><span class="o">.</span><span class="n">Writer</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">protein</span><span class="o">.</span><span class="n">n_atoms</span><span class="p">)</span> <span class="k">as</span> <span class="n">W</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">ts</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">mymol</span><span class="o">.</span><span class="n">trajectory</span><span class="p">:</span>
-                <span class="n">W</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">protein</span><span class="p">)</span></div>
+                <span class="n">W</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">protein</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="MolearnGUI.button_save_state_event"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.MolearnGUI.button_save_state_event">[docs]</a>    <span class="k">def</span> <span class="nf">button_save_state_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">check</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">button_save_state_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">check</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        save class state</span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -401,10 +346,10 @@
         <span class="k">if</span> <span class="n">fname</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
             <span class="k">return</span>
 
-        <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">waypoints</span><span class="p">],</span> <span class="nb">open</span><span class="p">(</span> <span class="n">fname</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span> <span class="p">)</span> <span class="p">)</span></div>
+        <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">waypoints</span><span class="p">],</span> <span class="nb">open</span><span class="p">(</span> <span class="n">fname</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span> <span class="p">)</span> <span class="p">)</span>
 
 
-<div class="viewcode-block" id="MolearnGUI.button_load_state_event"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.MolearnGUI.button_load_state_event">[docs]</a>    <span class="k">def</span> <span class="nf">button_load_state_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">check</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">button_load_state_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">check</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        load class state</span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -421,7 +366,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">waypoints</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span> <span class="nb">open</span><span class="p">(</span> <span class="n">fname</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span> <span class="p">)</span> <span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Cannot load state file. </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Cannot load state file. </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
     <span class="c1">#####################################################</span>
 
@@ -434,43 +379,49 @@
         
         <span class="c1">### MENU ITEMS ###</span>
         
-        <span class="c1"># surface representation menu</span>
+        <span class="c1"># surface representation dropdown menu</span>
         <span class="n">options</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="p">,</span> <span class="s2">&quot;surf_z&quot;</span><span class="p">):</span>
-            <span class="n">options</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;drift&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="p">,</span> <span class="s2">&quot;surf_c&quot;</span><span class="p">):</span>
-            <span class="n">options</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;RMSD&quot;</span><span class="p">)</span>       
-        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="p">,</span> <span class="s2">&quot;surf_dope_unrefined&quot;</span><span class="p">):</span>
-            <span class="n">options</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;DOPE_unrefined&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="p">,</span> <span class="s2">&quot;surf_dope_refined&quot;</span><span class="p">):</span>
-            <span class="n">options</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;DOPE_refined&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="p">,</span> <span class="s2">&quot;surf_target&quot;</span><span class="p">):</span> 
-            <span class="n">options</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;target RMSD&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="p">,</span> <span class="s2">&quot;surf_ramachandran_favored&quot;</span><span class="p">):</span>
-            <span class="n">options</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;ramachandran_favored&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="p">,</span> <span class="s2">&quot;surf_ramachandran_allowed&quot;</span><span class="p">):</span>
-            <span class="n">options</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;ramachandran_allowed&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="p">,</span> <span class="s2">&quot;surf_ramachandran_outliers&quot;</span><span class="p">):</span>
-            <span class="n">options</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;ramachandran_outliers&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="p">,</span> <span class="s2">&quot;custom_data&quot;</span><span class="p">):</span>
-            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="o">.</span><span class="n">custom_data</span><span class="p">):</span>
-                <span class="n">options</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;custom:</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">MA</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="o">.</span><span class="n">surfaces</span><span class="p">):</span>
+                <span class="n">options</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">options</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">options</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;none&quot;</span><span class="p">)</span>
-        
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">options</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="n">options</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;none&quot;</span><span class="p">]</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">drop_background</span> <span class="o">=</span> <span class="n">widgets</span><span class="o">.</span><span class="n">Dropdown</span><span class="p">(</span>
-            <span class="n">options</span><span class="o">=</span><span class="n">options</span><span class="p">,</span>
-            <span class="n">value</span><span class="o">=</span><span class="n">options</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+            <span class="n">options</span><span class="o">=</span><span class="n">val</span><span class="p">,</span>
+            <span class="n">value</span><span class="o">=</span><span class="n">val</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
             <span class="n">description</span><span class="o">=</span><span class="s1">&#39;Surf.:&#39;</span><span class="p">,</span>
             <span class="n">layout</span><span class="o">=</span><span class="n">Layout</span><span class="p">(</span><span class="n">flex</span><span class="o">=</span><span class="s1">&#39;1 1 0%&#39;</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">))</span>
 
-        <span class="k">if</span> <span class="s2">&quot;none&quot;</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">options</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">drop_background</span><span class="o">.</span><span class="n">disabled</span> <span class="o">=</span> <span class="kc">True</span>
         
         <span class="bp">self</span><span class="o">.</span><span class="n">drop_background</span><span class="o">.</span><span class="n">observe</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">drop_background_event</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="s1">&#39;value&#39;</span><span class="p">)</span>
 
-        <span class="c1"># dropdown menu describing pathfinding method</span>
+
+        <span class="c1"># dataset selector dropdown menu</span>
+        <span class="n">options2</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;none&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">MA</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="o">.</span><span class="n">_datasets</span><span class="p">):</span>
+                <span class="n">options2</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">drop_dataset</span> <span class="o">=</span> <span class="n">widgets</span><span class="o">.</span><span class="n">Dropdown</span><span class="p">(</span>
+            <span class="n">options</span><span class="o">=</span><span class="n">options2</span><span class="p">,</span>
+            <span class="n">value</span><span class="o">=</span><span class="n">options2</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+            <span class="n">description</span><span class="o">=</span><span class="s1">&#39;Dataset:&#39;</span><span class="p">,</span>
+            <span class="n">layout</span><span class="o">=</span><span class="n">Layout</span><span class="p">(</span><span class="n">flex</span><span class="o">=</span><span class="s1">&#39;1 1 0%&#39;</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">options2</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">drop_dataset</span><span class="o">.</span><span class="n">disabled</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">drop_dataset</span><span class="o">.</span><span class="n">disabled</span> <span class="o">=</span> <span class="kc">False</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">drop_dataset</span><span class="o">.</span><span class="n">observe</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">drop_dataset_event</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="s1">&#39;value&#39;</span><span class="p">)</span>
+
+        <span class="c1"># pathfinder method dropdown menu</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">drop_path</span> <span class="o">=</span> <span class="n">widgets</span><span class="o">.</span><span class="n">Dropdown</span><span class="p">(</span>
             <span class="n">options</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Euclidean&quot;</span><span class="p">,</span> <span class="s2">&quot;A*&quot;</span><span class="p">],</span>
             <span class="n">value</span><span class="o">=</span><span class="s2">&quot;Euclidean&quot;</span><span class="p">,</span>
@@ -479,24 +430,6 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">drop_path</span><span class="o">.</span><span class="n">observe</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">drop_path_event</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="s1">&#39;value&#39;</span><span class="p">)</span>
 
-
-        <span class="c1"># training set visualisation menu</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">check_training</span> <span class="o">=</span> <span class="n">widgets</span><span class="o">.</span><span class="n">Checkbox</span><span class="p">(</span>
-            <span class="n">value</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-            <span class="n">description</span><span class="o">=</span><span class="s1">&#39;show training&#39;</span><span class="p">,</span>
-            <span class="n">disabled</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-            <span class="n">indent</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">layout</span><span class="o">=</span><span class="n">Layout</span><span class="p">(</span><span class="n">flex</span><span class="o">=</span><span class="s1">&#39;1 1 0%&#39;</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">))</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">check_training</span><span class="o">.</span><span class="n">observe</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">check_training_event</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="s1">&#39;value&#39;</span><span class="p">)</span>
-
-        <span class="c1"># test set visualisation menu</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">check_test</span> <span class="o">=</span> <span class="n">widgets</span><span class="o">.</span><span class="n">Checkbox</span><span class="p">(</span>
-            <span class="n">value</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-            <span class="n">description</span><span class="o">=</span><span class="s1">&#39;show test&#39;</span><span class="p">,</span>
-            <span class="n">disabled</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-            <span class="n">indent</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">layout</span><span class="o">=</span><span class="n">Layout</span><span class="p">(</span><span class="n">flex</span><span class="o">=</span><span class="s1">&#39;1 1 0%&#39;</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">))</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">check_test</span><span class="o">.</span><span class="n">observe</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">check_test_event</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="s1">&#39;value&#39;</span><span class="p">)</span>
 
         <span class="c1"># text box holding current coordinates</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mybox</span> <span class="o">=</span> <span class="n">widgets</span><span class="o">.</span><span class="n">Textarea</span><span class="p">(</span><span class="n">placeholder</span><span class="o">=</span><span class="s1">&#39;coordinates&#39;</span><span class="p">,</span>
@@ -548,8 +481,7 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">range_slider</span><span class="o">.</span><span class="n">observe</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">range_slider_event</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="s1">&#39;value&#39;</span><span class="p">)</span>
 
-
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">MA</span> <span class="o">==</span> <span class="p">[]:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">MA</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">button_save_state</span><span class="o">.</span><span class="n">disabled</span> <span class="o">=</span> <span class="kc">True</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">button_pdb</span><span class="o">.</span><span class="n">disabled</span> <span class="o">=</span> <span class="kc">True</span>
             
@@ -559,27 +491,9 @@
         
         <span class="c1">### LATENT SPACE REPRESENTATION ###</span>
 
-        <span class="c1"># coloured background</span>
-        <span class="k">if</span> <span class="s2">&quot;drift&quot;</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
-            <span class="n">sc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="o">.</span><span class="n">surf_z</span>
-        <span class="k">elif</span> <span class="s2">&quot;target RMSD&quot;</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
-            <span class="n">sc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="o">.</span><span class="n">surf_target</span>
-        <span class="k">elif</span> <span class="s2">&quot;DOPE_unrefined&quot;</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
-            <span class="n">sc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="o">.</span><span class="n">surf_dope_unrefined</span>
-        <span class="k">elif</span> <span class="s2">&quot;DOPE_refined&quot;</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
-            <span class="n">sc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="o">.</span><span class="n">surf_dope_refined</span>
-        <span class="k">elif</span> <span class="s2">&quot;ramachandran_favored&quot;</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
-            <span class="n">sc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="o">.</span><span class="n">surf_ramachandran_favored</span>
-        <span class="k">elif</span> <span class="s2">&quot;ramachandran_allowed&quot;</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
-            <span class="n">sc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="o">.</span><span class="n">surf_ramachandran_allowed</span>
-        <span class="k">elif</span> <span class="s2">&quot;ramachandran_outliers&quot;</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
-            <span class="n">sc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="o">.</span><span class="n">surf_ramachandran_outliers</span>
-        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">options</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
-            <span class="k">if</span> <span class="s2">&quot;custom&quot;</span> <span class="ow">in</span> <span class="n">options</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
-                <span class="n">label</span> <span class="o">=</span> <span class="n">options</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
-                <span class="n">sc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="o">.</span><span class="n">custom_data</span><span class="p">[</span><span class="n">label</span><span class="p">]</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">sc</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="c1"># surface </span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">options</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+            <span class="n">sc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="o">.</span><span class="n">surfaces</span><span class="p">[</span><span class="n">options</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">sc</span> <span class="o">=</span> <span class="p">[]</span>
             
@@ -588,8 +502,9 @@
                                <span class="n">colorscale</span><span class="o">=</span><span class="s1">&#39;viridis&#39;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;latent_space&quot;</span><span class="p">)</span>   
         <span class="k">else</span><span class="p">:</span>
 
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="p">:</span>
-                <span class="n">xvals</span><span class="p">,</span> <span class="n">yvals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="o">.</span><span class="n">_get_sampling_ranges</span><span class="p">(</span><span class="mi">50</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">MA</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="o">.</span><span class="n">setup_grid</span><span class="p">(</span><span class="n">samples</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+                <span class="n">xvals</span><span class="p">,</span> <span class="n">yvals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="o">.</span><span class="n">xvals</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="o">.</span><span class="n">yvals</span>
             <span class="k">else</span><span class="p">:</span>               
                 <span class="n">xvals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
                 <span class="n">yvals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
@@ -597,33 +512,24 @@
             <span class="n">surf_empty</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">xvals</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">yvals</span><span class="p">)))</span>
             <span class="n">plot1</span> <span class="o">=</span> <span class="n">go</span><span class="o">.</span><span class="n">Heatmap</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">xvals</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">yvals</span><span class="p">,</span> <span class="n">z</span><span class="o">=</span><span class="n">surf_empty</span><span class="p">,</span> <span class="n">opacity</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">showscale</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;latent_space&quot;</span><span class="p">)</span>   
                       
-        <span class="c1"># training set</span>
-        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="p">,</span> <span class="s2">&quot;training_set_z&quot;</span><span class="p">):</span>
+        <span class="c1"># dataset</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">MA</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="o">.</span><span class="n">_datasets</span><span class="p">))</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+                  
+            <span class="n">mydata</span> <span class="o">=</span> <span class="n">as_numpy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="o">.</span><span class="n">get_encoded</span><span class="p">(</span><span class="n">options2</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
             <span class="n">color</span> <span class="o">=</span> <span class="s2">&quot;white&quot;</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sc</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span> <span class="k">else</span> <span class="s2">&quot;black&quot;</span>
-            <span class="n">plot2</span> <span class="o">=</span> <span class="n">go</span><span class="o">.</span><span class="n">Scatter</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">as_numpy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="o">.</span><span class="n">training_set_z</span><span class="p">)[:,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span>
-                               <span class="n">y</span><span class="o">=</span><span class="n">as_numpy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="o">.</span><span class="n">training_set_z</span><span class="p">)[:,</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span>
-                   <span class="n">showlegend</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">opacity</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;markers&quot;</span><span class="p">,</span>
-                   <span class="n">marker</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">5</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;training&quot;</span><span class="p">,</span> <span class="n">visible</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">plot2</span> <span class="o">=</span> <span class="n">go</span><span class="o">.</span><span class="n">Scatter</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">mydata</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span>
+                              <span class="n">y</span><span class="o">=</span><span class="n">mydata</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span>
+                  <span class="n">showlegend</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">opacity</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;markers&quot;</span><span class="p">,</span>
+                  <span class="n">marker</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">5</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="n">options2</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">visible</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">plot2</span> <span class="o">=</span> <span class="n">go</span><span class="o">.</span><span class="n">Scatter</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="p">[],</span> <span class="n">y</span><span class="o">=</span><span class="p">[])</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">check_training</span><span class="o">.</span><span class="n">disabled</span> <span class="o">=</span> <span class="kc">True</span>
-            
-        <span class="c1"># test set</span>
-        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="p">,</span> <span class="s2">&quot;test_set_z&quot;</span><span class="p">):</span>
-            <span class="n">plot3</span> <span class="o">=</span> <span class="n">go</span><span class="o">.</span><span class="n">Scatter</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">as_numpy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="o">.</span><span class="n">test_set_z</span><span class="p">)[:,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span>
-                               <span class="n">y</span><span class="o">=</span><span class="n">as_numpy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="o">.</span><span class="n">test_set_z</span><span class="p">)[:,</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span>
-                   <span class="n">showlegend</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">opacity</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;markers&quot;</span><span class="p">,</span>
-                   <span class="n">marker</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;silver&#39;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">5</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;test&quot;</span><span class="p">,</span> <span class="n">visible</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">plot3</span> <span class="o">=</span> <span class="n">go</span><span class="o">.</span><span class="n">Scatter</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="p">[],</span> <span class="n">y</span><span class="o">=</span><span class="p">[])</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">check_test</span><span class="o">.</span><span class="n">disabled</span> <span class="o">=</span> <span class="kc">True</span>
-      
+
         <span class="c1"># path</span>
-        <span class="n">plot4</span> <span class="o">=</span> <span class="n">go</span><span class="o">.</span><span class="n">Scatter</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([]),</span> <span class="n">y</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([]),</span>
+        <span class="n">plot3</span> <span class="o">=</span> <span class="n">go</span><span class="o">.</span><span class="n">Scatter</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([]),</span> <span class="n">y</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([]),</span>
                    <span class="n">showlegend</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">opacity</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span> <span class="n">mode</span> <span class="o">=</span> <span class="s1">&#39;lines+markers&#39;</span><span class="p">,</span>
                    <span class="n">marker</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">4</span><span class="p">))</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">latent</span> <span class="o">=</span> <span class="n">go</span><span class="o">.</span><span class="n">FigureWidget</span><span class="p">([</span><span class="n">plot1</span><span class="p">,</span> <span class="n">plot2</span><span class="p">,</span> <span class="n">plot3</span><span class="p">,</span> <span class="n">plot4</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">latent</span> <span class="o">=</span> <span class="n">go</span><span class="o">.</span><span class="n">FigureWidget</span><span class="p">([</span><span class="n">plot1</span><span class="p">,</span> <span class="n">plot2</span><span class="p">,</span> <span class="n">plot3</span><span class="p">])</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">latent</span><span class="o">.</span><span class="n">update_layout</span><span class="p">(</span><span class="n">xaxis_title</span><span class="o">=</span><span class="s2">&quot;latent vector 1&quot;</span><span class="p">,</span> <span class="n">yaxis_title</span><span class="o">=</span><span class="s2">&quot;latent vector 2&quot;</span><span class="p">,</span>
                          <span class="n">autosize</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="mi">350</span><span class="p">,</span> <span class="n">margin</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">l</span><span class="o">=</span><span class="mi">75</span><span class="p">,</span> <span class="n">r</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">t</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">latent</span><span class="o">.</span><span class="n">update_xaxes</span><span class="p">(</span><span class="n">showspikes</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
@@ -642,7 +548,7 @@
         
         <span class="c1">### WIDGETS ARRANGEMENT ###</span>
         
-        <span class="bp">self</span><span class="o">.</span><span class="n">block0</span> <span class="o">=</span> <span class="n">widgets</span><span class="o">.</span><span class="n">VBox</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">check_training</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_test</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">range_slider</span><span class="p">,</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">block0</span> <span class="o">=</span> <span class="n">widgets</span><span class="o">.</span><span class="n">VBox</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">drop_dataset</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">range_slider</span><span class="p">,</span>
                                     <span class="bp">self</span><span class="o">.</span><span class="n">drop_background</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">drop_path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">samplebox</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mybox</span><span class="p">,</span>
                                     <span class="bp">self</span><span class="o">.</span><span class="n">button_pdb</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">button_save_state</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">button_load_state</span><span class="p">],</span>
                               <span class="n">layout</span><span class="o">=</span><span class="n">Layout</span><span class="p">(</span><span class="n">flex</span><span class="o">=</span><span class="s1">&#39;1 1 2&#39;</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">border</span><span class="o">=</span><span class="s2">&quot;solid&quot;</span><span class="p">))</span>

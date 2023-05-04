@@ -1,6 +1,4 @@
 import torch
-import numpy as np
-import matplotlib.pyplot as plt
 
 from molearn.models.foldingnet import AutoEncoder
 from molearn.analysis import MolearnAnalysis
@@ -19,9 +17,13 @@ print("> Loading training data...")
 MA = MolearnAnalysis()
 MA.set_network(net)
 
-# increasing the batch size makes encoding/decoding operations
-# faster but more memory demanding
+# increasing the batch size makes encoding/decoding operations faster,
+# but more memory demanding
 MA.batch_size = 4
+
+# increasing processes makes DOPE and Ramachandran scores calculations faster,
+# but more more memory demanding
+MA.processes = 2
 
 # what follows is a method to re-create the training and test set
 # by defining the manual see and loading the dataset in the same order as when
@@ -51,6 +53,6 @@ print("> generating error landscape")
 MA.setup_grid(50)
 landscape_err_latent, landscape_err_3d, xaxis, yaxis = MA.scan_error()
 
-## to visualise the GUI, execute the code above in a Jupyter notebook, then execute:
-# import molearn.analysis import MolearnGUI
-# MolearGUI(MA)
+## to visualise the GUI, execute the code above in a Jupyter notebook, then call:
+# from molearn.analysis import MolearnGUI
+# MolearnGUI(MA)

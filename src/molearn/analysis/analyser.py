@@ -9,7 +9,7 @@
 # You should have received a copy of the GNU General Public License along with molearn ;
 # if not, write to the Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
 #
-# Author: Matteo Degiacomi
+# Authors: Matteo Degiacomi, Samuel Musson
 
 from copy import deepcopy
 import numpy as np
@@ -35,22 +35,27 @@ class MolearnAnalysis(object):
         self._decoded = {}
         self.surfaces = {}
         self.batch_size = 1
+        self.processes = 1
 
     def set_network(self, network):
+        '''
+        :param network: a trained neural network defined in :func:`molearn.models <molearn.models>`
+        '''
         self.network = network
         self.network.eval()
         self.device = next(network.parameters()).device
 
     def get_dataset(self, key):
         '''
-        :param key: key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, data)
+        :param key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
         '''
         return self._datasets[key]
 
     def set_dataset(self, key, data, atomselect="*"):
         '''
-        :param data: PDBdata object, containing atomic coordinates
+        :param data: :func:`PDBData <molearn.data.PDBData>` object, containing atomic coordinates
         :param key: string, label to be associated with data
+        :param atomselect: list of atom names to load. If '*', all atoms are loaded.
         '''
         if isinstance(data, str) and data.endswith('.pdb'):
             d = PDBData()
@@ -78,7 +83,7 @@ class MolearnAnalysis(object):
 
     def get_encoded(self, key):
         '''
-        :param key: key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, data)
+        :param key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
         :return: array containing the encoding in latent space of dataset associated with key
         '''
         if key not in self._encoded:
@@ -99,13 +104,13 @@ class MolearnAnalysis(object):
 
     def set_encoded(self, key, coords):
         '''
-        :param key: key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, data)
+        :param key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
         '''
         self._encoded[key] = torch.tensor(coords).float()
 
     def get_decoded(self, key):
         '''
-        :param key: key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, data)
+        :param key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
         '''
         if key not in self._decoded:
             with torch.no_grad():
@@ -119,18 +124,21 @@ class MolearnAnalysis(object):
 
     def set_decoded(self, key, structures):
         '''
-        :param key: key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, data)
+        :param key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
         '''
         self._decoded[key] = structures
 
     def num_trainable_params(self):
+        '''
+        :return: number of trainable parameters in the neural network previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_network>`
+        '''
         return sum(p.numel() for p in self.network.parameters() if p.requires_grad)
 
     def get_error(self, key, align=False):
         '''
         Calculate the reconstruction error of a dataset encoded and decoded by a trained neural network.
         
-        :param key: key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, data)
+        :param key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
         :param align: if True, the RMSD will be calculated by finding the optimal alignment between structures (default False)
         :return: 1D array containing the RMSD between input structures and their encoded-decoded counterparts
         '''
@@ -156,29 +164,23 @@ class MolearnAnalysis(object):
         return np.array(err)
 
 
-    def get_dope(self, key, refined=True):
+    def get_dope(self, key, refine=True):
         '''
-        :param key: key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, data)
-        :param refined: if True (default), return DOPE score of input and output structure both before and after refinement
+        :param key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
+        :param refine: if True (default), return DOPE score of input and output structure both before and after refinement
         '''
         dataset = self.get_dataset(key)
         decoded = self.get_decoded(key)
         
-        dope_dataset = self.get_all_dope_score(dataset)
-        dope_decoded = self.get_all_dope_score(decoded)
+        dope_dataset = self.get_all_dope_score(dataset, refine=refine)
+        dope_decoded = self.get_all_dope_score(decoded, refine=refine)
 
-        if refined:
-            return dict(dataset_dope_unrefined = dope_dataset[0], 
-                        dataset_dope_refined = dope_dataset[1],
-                        decoded_dope_unrefined = dope_decoded[0],
-                        decoded_dope_refined = dope_dataset[1])
-        else:
-            return dict(dataset_dope_unrefined = dope_dataset, 
-                        decoded_dope_unrefined = dope_decoded,)
+        return dict(dataset_dope = dope_dataset, 
+                    decoded_dope = dope_decoded)
 
     def get_ramachandran(self, key):
         '''
-        :param key: key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, data)
+        :param key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
         '''
         
         dataset = self.get_dataset(key)
@@ -188,12 +190,12 @@ class MolearnAnalysis(object):
         ramachandran.update({f'decoded_{key}':value for key, value in self.get_all_ramachandran_score(decoded).items()})
         return ramachandran
 
-    def setup_grid(self, samples=64, bounds_from = None, bounds = None, padding=0.1):
+    def setup_grid(self, samples=64, bounds_from=None, bounds=None, padding=0.1):
         '''
         Define a point grid regularly sampling the latent space.
         
         :param samples: grid size (build a samples x samples grid)
-        :param bounds_from: str, list of strings, or 'all'
+        :param bounds_from: str, list of strings, or 'all'. Name(s) of datasets to use as reference.
         :param bounds: tuple (xmin, xmax, ymin, ymax) or None
         :param padding: define size of extra spacing around boundary conditions (as ratio of axis dimensions, default 0.1)
         '''
@@ -219,7 +221,7 @@ class MolearnAnalysis(object):
     def _get_bounds(self, bounds_from, exclude = ['grid', 'grid_decoded']):
         '''        
         :param bounds_from: keys of datasets to be considered for identification of boundaries in latent space
-        :param eclude: keys of dataset not to consider
+        :param exclude: keys of dataset not to consider
         :return: four scalars as edges of x and y axis: xmin, xmax, ymin, ymax
         '''
         if isinstance(exclude, str):
@@ -244,10 +246,9 @@ class MolearnAnalysis(object):
 
     def scan_error_from_target(self, key, index=None):
         '''
-        Calculate landscape of RMSD vs single target structure. Target should be a Tensor of a single protein stucture
-        
-        :param key: key pointing to a dataset previously loaded with MolearnAnalysis.set_dataset(key, data)
-        :param index: Default None, if key corresponds to multiple structures then an index is required to use only one structure as target.
+        Calculate landscape of RMSD vs single target structure. Target should be a Tensor of a single protein stucture  
+  
+        :param key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
         '''
         s_key = f'RMSD_from_{key}' if index is None else f'RMSD_from_{key}_index_{index}'
         if s_key not in self.surfaces:
@@ -257,12 +258,17 @@ class MolearnAnalysis(object):
             decoded = self.get_decoded('grid')
             rmsd = (((decoded-target)*self.stdval)**2).sum(axis=1).mean(axis=-1).sqrt()
             self.surfaces[s_key] = rmsd.reshape(self.n_samples, self.n_samples).numpy()
+            
         return self.surfaces[s_key], self.xvals, self.yvals
 
-    def scan_error(self):
+    def scan_error(self, s_key='Network_RMSD', z_key='Network_z_drift'):
         '''
-        Grid sample the latent space on a samples x samples grid (64 x 64 by default).
-        Boundaries are defined by training set projections extrema, plus/minus 10%
+        Calculate RMSD and z-drift on a grid sampling the latent space.
+        Requires a grid system to be defined via a prior call to :func:`set_dataset <molearn.analysis.MolearnAnalysis.setup_grid>`.
+        
+        :param s_key: string, label for RMSD dataset
+        :param z_key: string, label for z-drift dataset
+        :return: NxN RMSD grid, NxN z-drift grid, x-axis values, y-axis values
         '''
         s_key = 'Network_RMSD'
         z_key = 'Network_z_drift'
@@ -282,13 +288,13 @@ class MolearnAnalysis(object):
             self.surfaces[z_key] = z_drift.reshape(self.n_samples, self.n_samples).numpy()
         return self.surfaces[s_key], self.surfaces[z_key], self.xvals, self.yvals
 
-    def _ramachandran_score(self, frame, processes=-1):
+    def _ramachandran_score(self, frame):
         '''
         returns multiprocessing AsyncResult
         AsyncResult.get() will return the result
         '''
         if not hasattr(self, 'ramachandran_score_class'):
-            self.ramachandran_score_class = Parallel_Ramachandran_Score(self.mol, processes=processes) #Parallel_Ramachandran_Score(self.mol)
+            self.ramachandran_score_class = Parallel_Ramachandran_Score(self.mol, self.processes) #Parallel_Ramachandran_Score(self.mol)
         assert len(frame.shape) == 2, f'We wanted 2D data but got {len(frame.shape)} dimensions'
         if frame.shape[0] == 3:
             f = frame.permute(1,0)
@@ -303,13 +309,13 @@ class MolearnAnalysis(object):
         #return {'favored':nf, 'allowed':na, 'outliers':no, 'total':nt}
 
 
-    def _dope_score(self, frame, refine = True, processes=-1):
+    def _dope_score(self, frame, refine=True):
         '''
         returns multiprocessing AsyncResult
         AsyncResult.get() will return the result
         '''
         if not hasattr(self, 'dope_score_class'):
-            self.dope_score_class = Parallel_DOPE_Score(self.mol, processes=processes)
+            self.dope_score_class = Parallel_DOPE_Score(self.mol, self.processes)
 
         assert len(frame.shape) == 2, f'We wanted 2D data but got {len(frame.shape)} dimensions'
         if frame.shape[0] == 3:
@@ -320,17 +326,18 @@ class MolearnAnalysis(object):
         if isinstance(f,torch.Tensor):
             f = f.data.cpu().numpy()
 
-        return self.dope_score_class.get_score(f*self.stdval, refine = refine)
+        return self.dope_score_class.get_score(f*self.stdval, refine=refine)
 
-
-    def get_all_ramachandran_score(self, tensor, processes = -1):
+    def get_all_ramachandran_score(self, tensor):
         '''
-        applies _ramachandran_score to an array of data
+        Calculate Ramachandran score of an ensemble of atomic conrdinates
+        
+        :param tensor:
         '''
         rama = dict(favored=[], allowed=[], outliers=[], total=[])
         results = []
         for f in tensor:
-            results.append(self._ramachandran_score(f, processes=processes))
+            results.append(self._ramachandran_score(f))
         for r in results:
             favored, allowed, outliers, total = r.get()
             rama['favored'].append(favored)
@@ -339,16 +346,17 @@ class MolearnAnalysis(object):
             rama['total'].append(total)
         return {key:np.array(value) for key, value in rama.items()}       
 
-    def get_all_dope_score(self, tensor, refine = True):
+    def get_all_dope_score(self, tensor, refine=True):
         '''
-        applies _dope_score to an array of data
+        Calculate DOPE score of an ensemble of atom coordinates
+
+        :param tensor:
+        :param refine: if True (default), return DOPE score of input and output structure both before and after refinement
         '''
         results = []
         for f in tensor:
-            results.append(self._dope_score(f, refine = refine))
+            results.append(self._dope_score(f, refine=refine))
         results = np.array([r.get() for r in results])
-        if refine:
-            return results[:,0], results[:,1]
         return results
 
     def reference_dope_score(self, frame):
@@ -366,23 +374,40 @@ class MolearnAnalysis(object):
         score = atmsel.assess_dope()
         return score
 
-    def scan_dope(self, **kwargs):
-        u_key = 'DOPE_unrefined'
-        r_key = 'DOPE_refined'
-        if u_key not in self.surfaces:
+    def scan_dope(self, key=None, refine=True, **kwargs):
+        '''
+        Calculate DOPE score on a grid sampling the latent space.
+        Requires a grid system to be defined via a prior call to :func:`set_dataset <molearn.analysis.MolearnAnalysis.setup_grid>`.
+        
+        :param key: label for unrefined DOPE score surface (default is DOPE_unrefined or DOPE_refined)
+        :param refine: if True (default) structures generated will be energy minimised before DOPE scoring
+        '''
+        
+        if key is None:
+            if refine:
+                key = "DOPE_refined"
+            else:
+                key = "DOPE_unrefined"
+        
+        if key not in self.surfaces:
             assert 'grid' in self._encoded, 'make sure to call MolearnAnalysis.setup_grid first'
             decoded = self.get_decoded('grid')
-            unrefined, refined = self.get_all_dope_score(decoded,**kwargs)
-            self.surfaces[u_key] = as_numpy(unrefined.reshape(self.n_samples, self.n_samples))
-            self.surfaces[r_key] = as_numpy(refined.reshape(self.n_samples, self.n_samples))
-        return self.surfaces[u_key], self.surfaces[r_key], self.xvals, self.yvals
+            result = self.get_all_dope_score(decoded, **kwargs)
+            
+            self.surfaces[key] = as_numpy(result.reshape(self.n_samples, self.n_samples))
+            
+        return self.surfaces[key], self.xvals, self.yvals
 
-    def scan_ramachandran(self, processes = -1):
+    def scan_ramachandran(self):
+        '''
+        Calculate Ramachandran scores on a grid sampling the latent space.
+        Requires a grid system to be defined via a prior call to :func:`set_dataset <molearn.analysis.MolearnAnalysis.setup_grid>`.
+        '''
         keys = {i:f'Ramachandran_{i}' for i in ('favored', 'allowed', 'outliers', 'total')}
         if list(keys.values())[0] not in self.surfaces:
             assert 'grid' in self._encoded, 'make sure to call MolearnAnalysis.setup_grid first'
             decoded = self.get_decoded('grid')
-            rama = self.get_all_ramachandran_score(decoded, processes=processes)
+            rama = self.get_all_ramachandran_score(decoded)
             for key, value in rama.items():
                 self.surfaces[keys[key]] = value
 
@@ -390,8 +415,10 @@ class MolearnAnalysis(object):
   
     def scan_custom(self, fct, params, key):
         '''
-        :param fct: function taking atomic coordinates as input, an optional list of parameters. Returns a single value.
-        :param params: parameters to be passed to function f
+        Generate a surface coloured as a function of a user-defined function.
+        
+        :param fct: function taking atomic coordinates as input, an optional list of parameters, and returning a single value.
+        :param params: parameters to be passed to function f. If no parameter is needed, pass an empty list.
         :param key: name of the dataset generated by this function scan
         :return: grid scanning of latent space according to provided function, x, and y grid axes
         '''
@@ -402,7 +429,7 @@ class MolearnAnalysis(object):
             results.append(fct(s, *params))
         self.surfaces[key] = np.array(results).reshape(self.n_samples, self.n_samples)
         
-        return self.surfaces[key],self.xvals, self.yvals
+        return self.surfaces[key], self.xvals, self.yvals
 
     def generate(self, crd):
         '''
@@ -412,8 +439,9 @@ class MolearnAnalysis(object):
         :return: collection of protein conformations in the Cartesian space (NxMx3, where M is the number of atoms in the protein)
         ''' 
         with torch.no_grad():
-            z = torch.tensor(crd.transpose(1, 2, 0)).float()   
-            s = self.network.decode(z)[:, :, :self.training_set.shape[2]].numpy().transpose(0, 2, 1)
+            z = torch.tensor(crd.transpose(1, 2, 0)).float()
+            key = list(self._datasets)[0]
+            s = self.network.decode(z)[:, :, :self._datasets[key].shape[2]].numpy().transpose(0, 2, 1)
 
         return s*self.stdval + self.meanval
 

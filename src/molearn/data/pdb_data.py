@@ -5,10 +5,17 @@ import biobox as bb
 #import os
 
 class PDBData:
+    
     def __init__(self):
         pass
 
     def import_pdb(self, filename):
+        '''
+        Load multiPDB file.
+        This command can be called multiple times to load many datasets, if these feature the same number of atoms
+        
+        :param filename: path to multiPDB file.
+        '''
         if not hasattr(self, '_mol'):
             self._mol = bb.Molecule()
         self._mol.import_pdb(filename)
@@ -17,6 +24,9 @@ class PDBData:
         self.filename.append(filename)
 
     def fix_terminal(self):
+        '''
+        Rename N-terminal Oxygens (OT1, OT2, OXT) as O 
+        '''
         ot1 = np.where(self._mol.data['name']=='OT1')[0]
         ot2 = np.where(self._mol.data['name']=='OT2')[0]
         oxt = np.where(self._mol.data['name']=='OXT')[0]
@@ -34,7 +44,14 @@ class PDBData:
             #resname = self._mol.data['resname'][resid]
             #if len(resname)==3:
             #    self._mol.data.loc[self._mol.data.resid.eq(resid), 'resname']=f'C{resname}'
+    
     def atomselect(self, atoms, ignore_atoms=[]):
+        '''
+        From imported PDBs, cut out only atoms of interest.
+        :func:`import_pdb <molearn.data.PDBData.import_pdb>` must have been called at least once.
+        
+        :param atoms: list of atom names, or "no_hydrogen".
+        '''
         if atoms == "*":
             _atoms = list(np.unique(self._mol.data["name"].values))
             for to_remove in ignore_atoms:
@@ -57,7 +74,10 @@ class PDBData:
         _, self._idxs = self._mol.atomselect("*", "*", _atoms, get_index=True)
         self._mol = self._mol.get_subset(self._idxs)
 
-    def prepare_dataset(self, ):
+    def prepare_dataset(self):
+        '''
+        Once all datasets have been loaded, normalise data and convert into `torch.Tensor` (ready for training)
+        '''
         if not hasattr(self, 'dataset'):
             assert hasattr(self, '_mol'), 'You need to call import_pdb before preparing the dataset'
             self.dataset = self._mol.coordinates.copy()
@@ -74,12 +94,18 @@ class PDBData:
         print(f'mean: {str(self.mean)}, std: {str(self.std)}')
 
     def get_atominfo(self):
+        '''
+        generate list of all atoms in dataset, where every line contains [atom name, residue name, resid]
+        '''
         if not hasattr(self, 'atominfo'):
             assert hasattr(self, '_mol'), 'You need to call import_pdb before getting atom info'
             self.atominfo = self._mol.get_data(columns=['name', 'resname', 'resid'])
         return self.atominfo
 
     def frame(self):
+        '''
+        return `biobox.Molecule` object with loaded data
+        '''
         M = bb.Molecule()
         M.coordinates = self._mol.coordinates[[0]]
         M.data = self._mol.data
@@ -89,7 +115,18 @@ class PDBData:
         M.properties['center'] = M.get_center()
         return deepcopy(M)
 
-    def get_dataloader(self, batch_size, validation_split=0.1, pin_memory=True, dataset_sample_size=-1, manual_seed=None,shuffle=True, sampler=None):
+    def get_dataloader(self, batch_size, validation_split=0.1, pin_memory=True, dataset_sample_size=-1, manual_seed=None, shuffle=True, sampler=None):
+        '''
+        :param batch_size:
+        :param validation_split:
+        :param pin_memory:
+        :param dataset_sample_size:
+        :param manual_seed:
+        :param shuffle:
+        :param sampler:
+        :return: `torch.utils.data.DataLoader` for training set
+        :return: `torch.utils.data.DataLoader` for validation set
+        '''
         if not hasattr(self, 'dataset'):
             self.prepare_dataset()
         valid_size = int(len(self.dataset)*validation_split)
@@ -107,13 +144,14 @@ class PDBData:
     
     def split(self, *args, **kwargs):
         '''
-        Split this PDBData into two other PDBData objects corresponding to train and valid sets
+        Split `PDBData <molearn.data.PDBData>` into two other `PDBData <molearn.data.PDBData>` objects corresponding to train and valid sets.
+        
         :param manual_seed: manual seed used to split dataset
         :param validation_split: default 0.1 ratio of valid to train structures data points
         :param train_size: default None, specify number of train structures to be returned
         :param valid_size: default None, speficy number of valid structures to be returned
-        :returns: PDBData object corresponding to train set
-        :returns: PDBData object corresponding to validation set
+        :return: `PDBData <molearn.data.PDBData>` object corresponding to train set
+        :return: `PDBData <molearn.data.PDBData>` object corresponding to validation set
         '''
         #validation_split=0.1, valid_size=None, train_size=None, manual_seed = None):
         train_dataset, valid_dataset = self.get_datasets(*args, **kwargs)
@@ -126,10 +164,13 @@ class PDBData:
         valid.dataset = valid_dataset
         return train, valid
 
-
     def get_datasets(self, validation_split=0.1, valid_size=None, train_size=None, manual_seed = None):
         '''
-            returns torch.Tensor for training and validation structures.
+        :param validation_split:
+        :param valid_size:
+        :param train_size:
+        :param manual_seed:
+        :Return: two `torch.Tensor`, for training and validation structures.
         '''
         if not hasattr(self, 'dataset'):
             self.prepare_dataset()
@@ -151,8 +192,6 @@ class PDBData:
         train_dataset = dataset[indices[:_train_size]]
         valid_dataset = dataset[indices[_train_size:_train_size+_valid_size]]
         return train_dataset, valid_dataset
-        
-
 
     @property
     def atoms(self):
