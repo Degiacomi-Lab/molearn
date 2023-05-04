@@ -409,8 +409,9 @@ class MolearnGUI(object):
         
         # surface representation menu
         options = []
-        for f in list(self.MA.surfaces):
-            options.append(f)
+        if self.MA is not None:
+            for f in list(self.MA.surfaces):
+                options.append(f)
         
         #if hasattr(self.MA, "surf_z"):
         #    options.append("drift")
@@ -432,16 +433,18 @@ class MolearnGUI(object):
         #    for k in list(self.MA.custom_data):
         #        options.append(f'custom:{k}')
 
-        if len(options) == 0:
-            options.append("none")
-        
+        if len(options)>0:
+            val = options
+        else:
+            val = ["none"]
+
         self.drop_background = widgets.Dropdown(
-            options=options,
-            value=options[0],
+            options=val,
+            value=val[0],
             description='Surf.:',
             layout=Layout(flex='1 1 0%', width='auto'))
 
-        if "none" in options:
+        if len(options) == 0:
             self.drop_background.disabled = True
         
         self.drop_background.observe(self.drop_background_event, names='value')
@@ -576,7 +579,7 @@ class MolearnGUI(object):
             plot1 = go.Heatmap(x=xvals, y=yvals, z=surf_empty, opacity=0.0, showscale=False, name="latent_space")   
                       
         # training set
-        if "train" or "training" in list(self._datasets):
+        if self.MA is not None and ("train" in list(self.MA._datasets) or "training" in list(self.MA._datasets)):
             mydata = self.MA.get_encoded("train")
             
             color = "white" if len(sc)>0 else "black"
@@ -588,7 +591,7 @@ class MolearnGUI(object):
             plot2 = go.Scatter(x=[], y=[])
             self.check_training.disabled = True
 
-        if "test" in list(self._datasets):
+        if self.MA is not None and "test" in list(self.MA._datasets):
             mydata = self.MA.get_encoded("test")
             
             color = "white" if len(sc)>0 else "black"
