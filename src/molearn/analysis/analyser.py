@@ -164,25 +164,19 @@ class MolearnAnalysis(object):
         return np.array(err)
 
 
-    def get_dope(self, key, refined=True):
+    def get_dope(self, key, refine=True):
         '''
         :param key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
-        :param refined: if True (default), return DOPE score of input and output structure both before and after refinement
+        :param refine: if True (default), return DOPE score of input and output structure both before and after refinement
         '''
         dataset = self.get_dataset(key)
         decoded = self.get_decoded(key)
         
-        dope_dataset = self.get_all_dope_score(dataset)
-        dope_decoded = self.get_all_dope_score(decoded)
+        dope_dataset = self.get_all_dope_score(dataset, refine=refine)
+        dope_decoded = self.get_all_dope_score(decoded, refine=refine)
 
-        if refined:
-            return dict(dataset_dope_unrefined = dope_dataset[0], 
-                        dataset_dope_refined = dope_dataset[1],
-                        decoded_dope_unrefined = dope_decoded[0],
-                        decoded_dope_refined = dope_dataset[1])
-        else:
-            return dict(dataset_dope_unrefined = dope_dataset, 
-                        decoded_dope_unrefined = dope_decoded,)
+        return dict(dataset_dope = dope_dataset, 
+                    decoded_dope = dope_decoded)
 
     def get_ramachandran(self, key):
         '''
@@ -329,8 +323,7 @@ class MolearnAnalysis(object):
         if isinstance(f,torch.Tensor):
             f = f.data.cpu().numpy()
 
-        return self.dope_score_class.get_score(f*self.stdval, refine = refine)
-
+        return self.dope_score_class.get_score(f*self.stdval, refine=refine)
 
     def get_all_ramachandran_score(self, tensor):
         '''
@@ -355,13 +348,12 @@ class MolearnAnalysis(object):
         Calculate DOPE score of an ensemble of atom coordinates
 
         :param tensor:
+        :param refine: if True (default), return DOPE score of input and output structure both before and after refinement
         '''
         results = []
         for f in tensor:
             results.append(self._dope_score(f, refine=refine))
         results = np.array([r.get() for r in results])
-        if refine:
-            return results[:,0], results[:,1]
         return results
 
     def reference_dope_score(self, frame):
@@ -379,20 +371,29 @@ class MolearnAnalysis(object):
         score = atmsel.assess_dope()
         return score
 
-    def scan_dope(self, u_key='DOPE_unrefined', r_key='DOPE_refined', **kwargs):
+    def scan_dope(self, key=None, refine=True, **kwargs):
         '''
         Calculate DOPE score on a grid sampling the latent space.
         Requires a grid system to be defined via a prior call to :func:`set_dataset <molearn.analysis.MolearnAnalysis.setup_grid>`.
-        :param u_key: label for unrefined DOPE score surface
-        :param r_key: label for unrefined DOPE score surface
+        
+        :param key: label for unrefined DOPE score surface (default is DOPE_unrefined or DOPE_refined)
+        :param refine: if True (default) structures generated will be energy minimised before DOPE scoring
         '''
-        if u_key not in self.surfaces:
+        
+        if key is None:
+            if refine:
+                key = "DOPE_unrefined"
+            else:
+                key = "DOPE_refined"
+        
+        if key not in self.surfaces:
             assert 'grid' in self._encoded, 'make sure to call MolearnAnalysis.setup_grid first'
             decoded = self.get_decoded('grid')
-            unrefined, refined = self.get_all_dope_score(decoded, **kwargs)
-            self.surfaces[u_key] = as_numpy(unrefined.reshape(self.n_samples, self.n_samples))
-            self.surfaces[r_key] = as_numpy(refined.reshape(self.n_samples, self.n_samples))
-        return self.surfaces[u_key], self.surfaces[r_key], self.xvals, self.yvals
+            result = self.get_all_dope_score(decoded, **kwargs)
+            
+            self.surfaces[key] = as_numpy(result.reshape(self.n_samples, self.n_samples))
+            
+        return self.surfaces[key], self.xvals, self.yvals
 
     def scan_ramachandran(self):
         '''

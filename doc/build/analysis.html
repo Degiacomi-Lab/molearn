@@ -63,22 +63,25 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="molearn.analysis.MolearnAnalysis.get_all_dope_score">
-<span class="sig-name descname"><span class="pre">get_all_dope_score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">refine</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">processes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/analysis/analyser.html#MolearnAnalysis.get_all_dope_score"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.MolearnAnalysis.get_all_dope_score" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">get_all_dope_score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">refine</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/analysis/analyser.html#MolearnAnalysis.get_all_dope_score"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.MolearnAnalysis.get_all_dope_score" title="Permalink to this definition">¶</a></dt>
 <dd><p>Calculate DOPE score of an ensemble of atom coordinates</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>processes</strong> – number of processes to spawn (parallel evaluation)</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tensor</strong> – </p></li>
+<li><p><strong>refine</strong> – if True (default), return DOPE score of input and output structure both before and after refinement</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="molearn.analysis.MolearnAnalysis.get_all_ramachandran_score">
-<span class="sig-name descname"><span class="pre">get_all_ramachandran_score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">processes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/analysis/analyser.html#MolearnAnalysis.get_all_ramachandran_score"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.MolearnAnalysis.get_all_ramachandran_score" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">get_all_ramachandran_score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tensor</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/analysis/analyser.html#MolearnAnalysis.get_all_ramachandran_score"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.MolearnAnalysis.get_all_ramachandran_score" title="Permalink to this definition">¶</a></dt>
 <dd><p>Calculate Ramachandran score of an ensemble of atomic conrdinates</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>processes</strong> – number of processes to spawn (parallel evaluation)</p>
+<dd class="field-odd"><p><strong>tensor</strong> – </p>
 </dd>
 </dl>
 </dd></dl>
@@ -105,13 +108,12 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="molearn.analysis.MolearnAnalysis.get_dope">
-<span class="sig-name descname"><span class="pre">get_dope</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">refined</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">processes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/analysis/analyser.html#MolearnAnalysis.get_dope"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.MolearnAnalysis.get_dope" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">get_dope</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">refine</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/analysis/analyser.html#MolearnAnalysis.get_dope"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.MolearnAnalysis.get_dope" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>key</strong> – key pointing to a dataset previously loaded with <a class="reference internal" href="#molearn.analysis.MolearnAnalysis.set_dataset" title="molearn.analysis.MolearnAnalysis.set_dataset"><code class="xref py py-func docutils literal notranslate"><span class="pre">set_dataset</span></code></a></p></li>
-<li><p><strong>refined</strong> – if True (default), return DOPE score of input and output structure both before and after refinement</p></li>
-<li><p><strong>processes</strong> – number of processes to spawn (parallel evaluation)</p></li>
+<li><p><strong>refine</strong> – if True (default), return DOPE score of input and output structure both before and after refinement</p></li>
 </ul>
 </dd>
 </dl>
@@ -149,13 +151,10 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="molearn.analysis.MolearnAnalysis.get_ramachandran">
-<span class="sig-name descname"><span class="pre">get_ramachandran</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">processes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/analysis/analyser.html#MolearnAnalysis.get_ramachandran"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.MolearnAnalysis.get_ramachandran" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">get_ramachandran</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/analysis/analyser.html#MolearnAnalysis.get_ramachandran"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.MolearnAnalysis.get_ramachandran" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>key</strong> – key pointing to a dataset previously loaded with <a class="reference internal" href="#molearn.analysis.MolearnAnalysis.set_dataset" title="molearn.analysis.MolearnAnalysis.set_dataset"><code class="xref py py-func docutils literal notranslate"><span class="pre">set_dataset</span></code></a></p></li>
-<li><p><strong>processes</strong> – number of processes to spawn (parallel evaluation)</p></li>
-</ul>
+<dd class="field-odd"><p><strong>key</strong> – key pointing to a dataset previously loaded with <a class="reference internal" href="#molearn.analysis.MolearnAnalysis.set_dataset" title="molearn.analysis.MolearnAnalysis.set_dataset"><code class="xref py py-func docutils literal notranslate"><span class="pre">set_dataset</span></code></a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -202,12 +201,15 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="molearn.analysis.MolearnAnalysis.scan_dope">
-<span class="sig-name descname"><span class="pre">scan_dope</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">processes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/analysis/analyser.html#MolearnAnalysis.scan_dope"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.MolearnAnalysis.scan_dope" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">scan_dope</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">refine</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/analysis/analyser.html#MolearnAnalysis.scan_dope"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.MolearnAnalysis.scan_dope" title="Permalink to this definition">¶</a></dt>
 <dd><p>Calculate DOPE score on a grid sampling the latent space.
 Requires a grid system to be defined via a prior call to <a class="reference internal" href="#molearn.analysis.MolearnAnalysis.setup_grid" title="molearn.analysis.MolearnAnalysis.setup_grid"><code class="xref py py-func docutils literal notranslate"><span class="pre">set_dataset</span></code></a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>processes</strong> – number of processes to spawn (parallel evaluation)</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> – label for unrefined DOPE score surface (default is DOPE_unrefined or DOPE_refined)</p></li>
+<li><p><strong>refine</strong> – if True (default) structures generated will be energy minimised before DOPE scoring</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
@@ -238,14 +240,9 @@ Requires a grid system to be defined via a prior call to <a class="reference int
 
 <dl class="py method">
 <dt class="sig sig-object py" id="molearn.analysis.MolearnAnalysis.scan_ramachandran">
-<span class="sig-name descname"><span class="pre">scan_ramachandran</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">processes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/analysis/analyser.html#MolearnAnalysis.scan_ramachandran"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.MolearnAnalysis.scan_ramachandran" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">scan_ramachandran</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/analysis/analyser.html#MolearnAnalysis.scan_ramachandran"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.MolearnAnalysis.scan_ramachandran" title="Permalink to this definition">¶</a></dt>
 <dd><p>Calculate Ramachandran scores on a grid sampling the latent space.
 Requires a grid system to be defined via a prior call to <a class="reference internal" href="#molearn.analysis.MolearnAnalysis.setup_grid" title="molearn.analysis.MolearnAnalysis.setup_grid"><code class="xref py py-func docutils literal notranslate"><span class="pre">set_dataset</span></code></a>.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>processes</strong> – number of processes to spawn (parallel evaluation)</p>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="py method">

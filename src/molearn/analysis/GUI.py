@@ -164,82 +164,7 @@ class MolearnGUI(object):
     def drop_background_event(self, change):
         '''
         control colouring style of latent space surface
-        '''
-
-        #if change.new == 'drift':
-        #    try:
-        #        data = self.MA.surfaces['Network_z_drift']
-        #        #data = self.MA.surf_z.T
-        #    except:
-        #        return
-        #    
-        #    self.block0.children[2].readout_format = '.1f'
-        #
-        #elif change.new == "RMSD":
-        #    try:
-        #        
-        #        data = self.MA.surfaces["Network_RMSD"]
-        #        #data = self.MA.surf_c.T
-        #    except:
-        #        return
-        #    
-        #    self.block0.children[2].readout_format = '.1f'
-        #
-        #
-        #elif "RMSD_from_" in change.new: #== "target RMSD":
-        #    try:
-        #        data = self.MA.surfaces[change.new]
-        #        #data = self.MA.surf_target.T
-        #    except:
-        #        return
-        #   
-        #    self.block0.children[2].readout_format = '.1f'
-        #
-        #elif change.new == "DOPE_unrefined":
-        #    try:
-        #        data = self.MA.surfaces["DOPE_unrefined"]
-        #        #data = self.MA.surf_dope_unrefined.T
-        #    except:
-        #        return
-        #    
-        #    self.block0.children[2].readout_format = 'd'
-        #
-        #elif change.new == "DOPE_refined":
-        #    try:
-        #        data = self.MA.surfaces["DOPE_refined"]
-        #        #data = self.MA.surf_dope_refined.T
-        #    except:
-        #        return
-        #    
-        #    self.block0.children[2].readout_format = 'd'
-        #
-        #elif change.new == "Ramachandran_favored":
-        #    try:
-        #        data = self.MA.surfaces["Ramachandran_favoured"]
-        #        #data = self.MA.surf_ramachandran_favored.T
-        #    except:
-        #        return
-        #    
-        #    self.block0.children[2].readout_format = '.1f'
-        #
-        #elif change.new == "Ramachandran_allowed":
-        #    try:
-        #        data = self.MA.surfaces["Ramachandran_allowed"]
-        #        #data = self.MA.surf_ramachandran_allowed.T
-        #    except:
-        #        return
-        #    
-        #    self.block0.children[2].readout_format = '.1f'
-        #    
-        #elif change.new == "Ramachandran_outliers":
-        #    try:
-        #        data = self.MA.surfaces["DOPE_outliers"]
-        #        #data = self.MA.surf_ramachandran_outliers.T
-        #    except:
-        #        return
-        #    
-        #    self.block0.children[2].readout_format = '.1f'
-        
+        '''        
         if "custom" in change.new:
             mykey = change.new.split(":")[1]
         else:
@@ -275,6 +200,28 @@ class MolearnGUI(object):
         self.update_trails()
 
 
+    def drop_dataset_event(self, change):
+        '''
+        control which dataset is displayed
+        '''        
+        
+        if change.new == "none":
+            self.latent.data[1].x = []
+            self.latent.data[1].y = []
+            
+        else:
+            try:
+               data = self.MA.get_encoded(change.new)
+            except Exception as e:
+                print(f"{e}")
+                return      
+       
+            self.latent.data[1].x = data[:, 0]
+            self.latent.data[1].y = data[:, 1]
+        
+        self.latent.update()
+
+
     def drop_path_event(self, change):
         '''
         control way paths are looked for
@@ -287,24 +234,6 @@ class MolearnGUI(object):
         self.update_trails()
 
 
-    def check_training_event(self, change):
-        '''
-        control display of training set
-        ''' 
-        state_choice = change.new
-        self.latent.data[1].visible = state_choice
-        self.latent.update()
-
-
-    def check_test_event(self, change):
-        '''
-        control display of test set
-        ''' 
-        state_choice = change.new
-        self.latent.data[2].visible = state_choice
-        self.latent.update()
-
-
     def range_slider_event(self, change):
         '''
         update surface colouring upon manipulation of range slider
@@ -312,7 +241,6 @@ class MolearnGUI(object):
         self.latent.data[0].zmin = change.new[0]
         self.latent.data[0].zmax = change.new[1]
         self.latent.update()
-
 
 
     def trail_update_event(self, change):
@@ -407,31 +335,11 @@ class MolearnGUI(object):
         
         ### MENU ITEMS ###
         
-        # surface representation menu
+        # surface representation dropdown menu
         options = []
         if self.MA is not None:
             for f in list(self.MA.surfaces):
                 options.append(f)
-        
-        #if hasattr(self.MA, "surf_z"):
-        #    options.append("drift")
-        #if hasattr(self.MA, "surf_c"):
-        #    options.append("RMSD")       
-        #if hasattr(self.MA, "surf_dope_unrefined"):
-        #    options.append("DOPE_unrefined")
-        #if hasattr(self.MA, "surf_dope_refined"):
-        #    options.append("DOPE_refined")
-        #if hasattr(self.MA, "surf_target"): 
-        #    options.append("target RMSD")
-        #if hasattr(self.MA, "surf_ramachandran_favored"):
-        #    options.append("ramachandran_favored")
-        #if hasattr(self.MA, "surf_ramachandran_allowed"):
-        #    options.append("ramachandran_allowed")
-        #if hasattr(self.MA, "surf_ramachandran_outliers"):
-        #    options.append("ramachandran_outliers")
-        #if hasattr(self.MA, "custom_data"):
-        #    for k in list(self.MA.custom_data):
-        #        options.append(f'custom:{k}')
 
         if len(options)>0:
             val = options
@@ -449,7 +357,25 @@ class MolearnGUI(object):
         
         self.drop_background.observe(self.drop_background_event, names='value')
 
-        # dropdown menu describing pathfinding method
+
+        # dataset selector dropdown menu
+        options2 = ["none"]
+        if self.MA is not None:
+            for f in list(self.MA._datasets):
+                options2.append(f)
+
+        self.drop_dataset = widgets.Dropdown(
+            options=options2,
+            value=options2[0],
+            description='Dataset:',
+            layout=Layout(flex='1 1 0%', width='auto'))
+
+        if len(options2) == 1:
+            self.drop_dataset.disabled = True
+        
+        self.drop_dataset.observe(self.drop_dataset_event, names='value')
+
+        # pathfinder method dropdown menu
         self.drop_path = widgets.Dropdown(
             options=["Euclidean", "A*"],
             value="Euclidean",
@@ -458,24 +384,6 @@ class MolearnGUI(object):
 
         self.drop_path.observe(self.drop_path_event, names='value')
 
-
-        # training set visualisation menu
-        self.check_training = widgets.Checkbox(
-            value=False,
-            description='show training',
-            disabled=False,
-            indent=False, layout=Layout(flex='1 1 0%', width='auto'))
-
-        self.check_training.observe(self.check_training_event, names='value')
-
-        # test set visualisation menu
-        self.check_test = widgets.Checkbox(
-            value=False,
-            description='show test',
-            disabled=False,
-            indent=False, layout=Layout(flex='1 1 0%', width='auto'))
-
-        self.check_test.observe(self.check_test_event, names='value')
 
         # text box holding current coordinates
         self.mybox = widgets.Textarea(placeholder='coordinates',
@@ -537,27 +445,7 @@ class MolearnGUI(object):
         
         ### LATENT SPACE REPRESENTATION ###
 
-        # coloured background
-        #if "drift" in options:
-        #    sc = self.MA.surf_z
-        #elif "target RMSD" in options:
-        #    sc = self.MA.surf_target
-        #elif "DOPE_unrefined" in options:
-        #    sc = self.MA.surf_dope_unrefined
-        #elif "DOPE_refined" in options:
-        #    sc = self.MA.surf_dope_refined
-        #elif "ramachandran_favored" in options:
-        #    sc = self.MA.surf_ramachandran_favored
-        #elif "ramachandran_allowed" in options:
-        #    sc = self.MA.surf_ramachandran_allowed
-        #elif "ramachandran_outliers" in options:
-        #    sc = self.MA.surf_ramachandran_outliers
-        #elif len(options)>0:
-        #    if "custom" in options[0]:
-        #        label = options[0].split(":")[1]
-        #        sc = self.MA.custom_data[label]
-        #    else:
-        #        sc = []
+        # surface 
         if len(options)>0:
             sc = self.MA.surfaces[options[0]]
         else:
@@ -568,9 +456,9 @@ class MolearnGUI(object):
                                colorscale='viridis', name="latent_space")   
         else:
 
-            if self.MA:
-                xvals, yvals = self.MA.setup_grid(samples=50)
-                #xvals, yvals = self.MA.setup_get_sampling_ranges(50)
+            if self.MA is not None:
+                self.MA.setup_grid(samples=50)
+                xvals, yvals = self.MA.xvals, self.MA.yvals
             else:               
                 xvals = np.linspace(0, 1, 10)
                 yvals = np.linspace(0, 1, 10)
@@ -578,57 +466,25 @@ class MolearnGUI(object):
             surf_empty = np.zeros((len(xvals), len(yvals)))
             plot1 = go.Heatmap(x=xvals, y=yvals, z=surf_empty, opacity=0.0, showscale=False, name="latent_space")   
                       
-        # training set
-        if self.MA is not None and ("train" in list(self.MA._datasets) or "training" in list(self.MA._datasets)):
-            mydata = self.MA.get_encoded("train")
+        # dataset
+        if self.MA is not None and len(list(self.MA._datasets))>0:
+                  
+            mydata = self.MA.get_encoded(options2[1])
             
             color = "white" if len(sc)>0 else "black"
             plot2 = go.Scatter(x=mydata[:, 0].flatten(),
                               y=mydata[:, 1].flatten(),
                   showlegend=False, opacity=0.9, mode="markers",
-                  marker=dict(color=color, size=5), name="training", visible=False)
+                  marker=dict(color=color, size=5), name=options2[1], visible=False)
         else:
             plot2 = go.Scatter(x=[], y=[])
-            self.check_training.disabled = True
 
-        if self.MA is not None and "test" in list(self.MA._datasets):
-            mydata = self.MA.get_encoded("test")
-            
-            color = "white" if len(sc)>0 else "black"
-            plot3 = go.Scatter(x=mydata[:, 0].flatten(),
-                              y=mydata[:, 1].flatten(),
-                  showlegend=False, opacity=0.9, mode="markers",
-                  marker=dict(color=color, size=5), name="training", visible=False)
-        else:
-            plot3 = go.Scatter(x=[], y=[])
-            self.check_training.disabled = True
-            
-        #if hasattr(self.MA, "training_set_z"):
-        #    color = "white" if len(sc)>0 else "black"
-        #    plot2 = go.Scatter(x=as_numpy(self.MA.training_set_z)[:, 0].flatten(),
-        #                       y=as_numpy(self.MA.training_set_z)[:, 1].flatten(),
-        #           showlegend=False, opacity=0.9, mode="markers",
-        #           marker=dict(color=color, size=5), name="training", visible=False)
-        #else:
-        #    plot2 = go.Scatter(x=[], y=[])
-        #    self.check_training.disabled = True
-            
-        # test set
-        #if hasattr(self.MA, "test_set_z"):
-         #   plot3 = go.Scatter(x=as_numpy(self.MA.test_set_z)[:, 0].flatten(),
-         #                      y=as_numpy(self.MA.test_set_z)[:, 1].flatten(),
-         #          showlegend=False, opacity=0.9, mode="markers",
-         #          marker=dict(color='silver', size=5), name="test", visible=False)
-        #else:
-        #    plot3 = go.Scatter(x=[], y=[])
-        #    self.check_test.disabled = True
-      
         # path
-        plot4 = go.Scatter(x=np.array([]), y=np.array([]),
+        plot3 = go.Scatter(x=np.array([]), y=np.array([]),
                    showlegend=False, opacity=0.9, mode = 'lines+markers',
                    marker=dict(color='red', size=4))
 
-        self.latent = go.FigureWidget([plot1, plot2, plot3, plot4])
+        self.latent = go.FigureWidget([plot1, plot2, plot3])
         self.latent.update_layout(xaxis_title="latent vector 1", yaxis_title="latent vector 2",
                          autosize=True, width=400, height=350, margin=dict(l=75, r=0, t=25, b=0))
         self.latent.update_xaxes(showspikes=False)
@@ -647,7 +503,7 @@ class MolearnGUI(object):
         
         ### WIDGETS ARRANGEMENT ###
         
-        self.block0 = widgets.VBox([self.check_training, self.check_test, self.range_slider,
+        self.block0 = widgets.VBox([self.drop_dataset, self.range_slider,
                                     self.drop_background, self.drop_path, self.samplebox, self.mybox,
                                     self.button_pdb, self.button_save_state, self.button_load_state],
                               layout=Layout(flex='1 1 2', width='auto', border="solid"))

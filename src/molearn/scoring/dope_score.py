@@ -64,16 +64,16 @@ class DOPE_Score:
                 if i+1<frame.shape[0]:
                     j.x, j.y, j.z = frame[self.fast_atom_order[i], :]
             self.fast_mdl.build(build_method='INTERNAL_COORDINATES', initialize_xyz=False)
+            
             with ShutUp():
-                dope_unrefined = self.fast_fs.assess_dope()
                 if refine:
                     self.cg.optimize(self.fast_fs, max_iterations=50)
-                    dope_refined = self.fast_fs.assess_dope()
-            if refine:
-                return dope_unrefined, dope_refined
-            return dope_unrefined
+                    
+                dope_score = self.fast_fs.assess_dope()
+
+            return dope_score
         except:
-            return 1e10, 1e10 if refine else 1e10
+            return 1e10
         
     def get_all_dope(self, coords, refine=False):
         # expect coords to be shape [B, N, 3] use .cpu().numpy().copy() before passing here and make sure it is scaled correctly
