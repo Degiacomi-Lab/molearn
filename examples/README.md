@@ -25,3 +25,5 @@ An example output generated when a neural network is trained is saved in the fol
 
 * `bb_foldingnet_basic.py`: minimal example demonstrating how to load data, setup foldingnet, and train it.
 * `analysis_example.py`: minimal example of analysis of trained neural network. By default, this script will load the content of the `data` and `xbb_foldingnet_checkpoints` folders.
+* `bb_example_subclassing_trainer.py`: An example of subclassing molearn trainers and adding features. This script should be functional as it is.
+* `bb_many_subclassing_examples.py`: Several classes that subclass molearn trainers and implement various features. These classes are not intended to be used as they are. The classes are designed as inspiration for creating your own trainer.
