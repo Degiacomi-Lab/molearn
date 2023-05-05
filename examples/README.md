@@ -1,9 +1,10 @@
-# TRAINING EXAMPLES
+# Training Examples
 
 This folder contains example data and scripts demonstrating the usage of *molearn*.
 
 ## Dataset
-The folder `data` contains a dataset of the MurD protein. Please see *molearn*'s main publication (see main page of Github repo) for details.
+The folder `data` contains a dataset of the MurD protein. For details, please see [this publication](
+https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.011052).
 
 #### Training data
 
@@ -18,12 +19,17 @@ The files `5A5E_full.pdb` and `5A5E_full.pdb` are experimentally determined stru
 
 ## Neural network parameters
 
-An example output generated when a neural network is trained is saved in the folder `xbb_foldingnet_checkpoints`. This includes a chekpoint file (containing neural network parameters) and a logfile, tracking the performance of the neural network during training.
+In `xbb_foldingnet_checkpoints`, an example output generated when the *foldingnet* neural network is trained on the files in `data` is provided. This includes a chekpoint file (containing neural network parameters) and a logfile, tracking the performance of the neural network during training.
 
 
 ## Scripts
 
-* `bb_foldingnet_basic.py`: minimal example demonstrating how to load data, setup foldingnet, and train it.
-* `analysis_example.py`: minimal example of analysis of trained neural network. By default, this script will load the content of the `data` and `xbb_foldingnet_checkpoints` folders.
-* `bb_example_subclassing_trainer.py`: An example of subclassing molearn trainers and adding features. This script should be functional as it is.
-* `bb_many_subclassing_examples.py`: Several classes that subclass molearn trainers and implement various features. These classes are not intended to be used as they are. The classes are designed as inspiration for creating your own trainer.
+#### Training examples
+
+* `bb_foldingnet_basic.py`: minimal example demonstrating how to load data, setup *foldingnet*, and train it. This script operates on training examples in the `data` folder and can be executed as-is (after training multiPDB files are extracted). This script will generate output similar to that provided in `xbb_foldingnet_checkpoints`.
+* `bb_example_subclassing_trainer.py`: example of subclassing molearn Trainer and adding features to it. This script features a modification of `bb_foldingnet_basic.py`, and can also be run as-is.
+* `bb_many_subclassing_examples.py`: several examples of Trainer subclasses, implementing various features. This script is not intended to be used as is, and is instead thought as an inspiration for creating your own Trainers.
+
+#### Analysis examples
+
+* `analysis_example.py`: minimal example of analysis of trained neural network. This script operates on the content of the `data` and `xbb_foldingnet_checkpoints` folders. Note that more detailed explanations on analysis are available out our [molearn notebooks](https://github.com/Degiacomi-Lab/molearn_notebook)
