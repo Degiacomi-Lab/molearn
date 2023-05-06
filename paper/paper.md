@@ -41,6 +41,7 @@ Generative Neural Networks (GNNs) have been shown to be effective predictors of 
 # Package Description
 
  Classes available provide support for the following tasks:
+ 
 *	*Data loading*. `molearn` provides methods to parse molecular conformers and convert them in a pyTorch [@paszke2019pytorch] tensor format suitable for training.
 *	*Model design*. `molearn` comes with a range of pre-implemented models, ready to be trained on any desired datasets or being subclassed to create custom models.
 *	*Loss function definition*. While the classical loss function in a generative model typically builds upon a mean square error between input and output, here we provide the capability of directly interacting with the OpenMM molecular dynamics engine [@eastman2017openmm]. Specifically, we have implemented means of transferring pyTorch Tensor data directly into OpenMM's backend on GPU (without data transfer via the CPU). This enables quickly evaluating the energy of a generated model according to any force field accepted by OpenMM. This also enables directly running MD simulations with generated conformers while the model trains.
