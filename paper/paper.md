@@ -60,7 +60,7 @@ Results obtanable via `molearn` are exemplified in [@Ramaswamy2021]. Here, we de
 
 # Acknowledgements
 
-We thank the first users of `molearn`, Lucy Vost, Louis Sayer, Cameron Stewart, Ryan Zhu, and Marco Mattia for their feedback.
+We thank the first users of `molearn`, Cameron Stewart, Ryan Zhu, and Marco Mattia for their feedback.
 Matteo T. Degiacomi acknowledges support from the Engineering and Physical Sciences Research Council (EP/P016499/1).
 
 
