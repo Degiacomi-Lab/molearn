@@ -178,9 +178,9 @@ class MolearnGUI(object):
             return      
    
         if np.abs(np.max(data) - np.min(data)) < 100:
-            self.block0.children[2].readout_format = '.1f'
+            self.block0.children[1].readout_format = '.1f'
         else:         
-            self.block0.children[2].readout_format = 'd'
+            self.block0.children[1].readout_format = 'd'
         
         self.latent.data[0].z = data
         
@@ -188,15 +188,15 @@ class MolearnGUI(object):
         try:
             self.latent.data[0].zmin = np.min(data)
             self.latent.data[0].zmax = np.max(data)
-            self.block0.children[2].min = np.min(data)
-            self.block0.children[2].max = np.max(data)
+            self.block0.children[1].min = np.min(data)
+            self.block0.children[1].max = np.max(data)
         except:
             self.latent.data[0].zmax = np.max(data)
             self.latent.data[0].zmin = np.min(data)
-            self.block0.children[2].max = np.max(data)
-            self.block0.children[2].min = np.min(data)
+            self.block0.children[1].max = np.max(data)
+            self.block0.children[1].min = np.min(data)
                 
-        self.block0.children[2].value = (np.min(data), np.max(data))
+        self.block0.children[1].value = (np.min(data), np.max(data))
         
         self.update_trails()
 
@@ -230,9 +230,9 @@ class MolearnGUI(object):
         control way paths are looked for
         '''
         if change.new == "A*":
-            self.block0.children[5].disabled = True
+            self.block0.children[4].disabled = True
         else:
-            self.block0.children[5].disabled = False
+            self.block0.children[4].disabled = False
             
         self.update_trails()
 
@@ -457,7 +457,7 @@ class MolearnGUI(object):
             sc = []
             
         if len(sc)>0:
-            plot1 = go.Heatmap(x=self.MA.xvals, y=self.MA.yvals, z=sc.T, zmin=np.min(sc), zmax=np.max(sc),
+            plot1 = go.Heatmap(x=self.MA.xvals, y=self.MA.yvals, z=sc, zmin=np.min(sc), zmax=np.max(sc),
                                colorscale='viridis', name="latent_space")   
         else:
 
