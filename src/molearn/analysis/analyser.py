@@ -28,6 +28,10 @@ warnings.filterwarnings("ignore")
 
 
 class MolearnAnalysis(object):
+    '''
+    This class provides methods dedicated to the quality analysis of a
+    trained model.
+    '''
     
     def __init__(self):
         self._datasets = {}

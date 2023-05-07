@@ -69,6 +69,10 @@
 
 
 <div class="viewcode-block" id="MolearnAnalysis"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.MolearnAnalysis">[docs]</a><span class="k">class</span> <span class="nc">MolearnAnalysis</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    This class provides methods dedicated to the quality analysis of a</span>
+<span class="sd">    trained model.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
     
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_datasets</span> <span class="o">=</span> <span class="p">{}</span>
@@ -406,7 +410,7 @@
 <span class="sd">        :return: DOPE score</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mol</span><span class="o">.</span><span class="n">coordinates</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">frame</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">mol</span><span class="o">.</span><span class="n">write_pdb</span><span class="p">(</span><span class="s1">&#39;tmp.pdb&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mol</span><span class="o">.</span><span class="n">write_pdb</span><span class="p">(</span><span class="s1">&#39;tmp.pdb&#39;</span><span class="p">,</span> <span class="n">split_struc</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
         <span class="n">env</span> <span class="o">=</span> <span class="n">Environ</span><span class="p">()</span>
         <span class="n">env</span><span class="o">.</span><span class="n">libs</span><span class="o">.</span><span class="n">topology</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">file</span><span class="o">=</span><span class="s1">&#39;$(LIB)/top_heav.lib&#39;</span><span class="p">)</span>
         <span class="n">env</span><span class="o">.</span><span class="n">libs</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">file</span><span class="o">=</span><span class="s1">&#39;$(LIB)/par.lib&#39;</span><span class="p">)</span>
@@ -426,9 +430,9 @@
         
         <span class="k">if</span> <span class="n">key</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">refine</span><span class="p">:</span>
-                <span class="n">key</span> <span class="o">=</span> <span class="s2">&quot;DOPE_unrefined&quot;</span>
-            <span class="k">else</span><span class="p">:</span>
                 <span class="n">key</span> <span class="o">=</span> <span class="s2">&quot;DOPE_refined&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">key</span> <span class="o">=</span> <span class="s2">&quot;DOPE_unrefined&quot;</span>
         
         <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">surfaces</span><span class="p">:</span>
             <span class="k">assert</span> <span class="s1">&#39;grid&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_encoded</span><span class="p">,</span> <span class="s1">&#39;make sure to call MolearnAnalysis.setup_grid first&#39;</span>

@@ -1,0 +1,353 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>molearn.analysis.path &#8212; molearn 1.3.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/classic.css" />
+    
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">molearn 1.3.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">molearn.analysis.path</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for molearn.analysis.path</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">heapq</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">.. module:: path</span>
+<span class="sd">   :synopsis: Tools for linking waypoints with paths in latent space</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="k">class</span> <span class="nc">PriorityQueue</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Queue for shortest path algorithms.</span>
+<span class="sd">    </span>
+<span class="sd">    :meta private:</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">elements</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">def</span> <span class="nf">empty</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        clear priority queue</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">elements</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span>
+
+    <span class="k">def</span> <span class="nf">put</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">,</span> <span class="n">priority</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        add element in priority queue.</span>
+<span class="sd">        </span>
+<span class="sd">        :param item: item to add in queue</span>
+<span class="sd">        :param priority: item&#39;s priority</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">heapq</span><span class="o">.</span><span class="n">heappush</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">elements</span><span class="p">,</span> <span class="p">(</span><span class="n">priority</span><span class="p">,</span> <span class="n">item</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        :return: pop top priority element from queue</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="n">heapq</span><span class="o">.</span><span class="n">heappop</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">elements</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+
+    
+<span class="k">def</span> <span class="nf">_heuristic</span><span class="p">(</span><span class="n">pt1</span><span class="p">,</span> <span class="n">pt2</span><span class="p">,</span> <span class="n">graph</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">euclidean</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    :param pt1: 2D coordinate of starting point</span>
+<span class="sd">    :param pt2: 2D coordinate of end point</span>
+<span class="sd">    :param euclidean: if True, evaluate value of graph at regularly spaced points on a straight line between pt1 and pt2</span>
+<span class="sd">    :param graph: only used if euclidean=False, graph for euclidean penalty evaluation</span>
+<span class="sd">    :return: penalty associated with the distance between points</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">euclidean</span><span class="p">:</span>
+        <span class="n">pts</span> <span class="o">=</span> <span class="n">oversample</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">pt1</span><span class="p">,</span> <span class="n">pt2</span><span class="p">]),</span> <span class="mi">1000</span><span class="p">)</span><span class="o">.</span><span class="n">round</span><span class="p">()</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+        <span class="n">pts2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">({</span><span class="nb">tuple</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">pts</span><span class="p">})</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">pts2</span><span class="p">:</span>
+            <span class="n">h</span> <span class="o">+=</span> <span class="n">graph</span><span class="p">[</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">pt2</span><span class="o">-</span><span class="n">pt1</span><span class="p">,</span> <span class="n">pt2</span><span class="o">-</span><span class="n">pt1</span><span class="p">))</span>
+    
+    <span class="k">return</span> <span class="n">h</span>
+    
+    
+<span class="k">def</span> <span class="nf">_neighbors</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">gridshape</span><span class="p">,</span> <span class="n">flattened</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    :param idx: index of point in a grid. Can be either a flattened index or a 2D coordinate.</span>
+<span class="sd">    :param gridshape: tuple defining grid shape</span>
+<span class="sd">    :param flattened: if False, return 2D coordinates, flattened index otherwise (default) </span>
+<span class="sd">    :return: coordinates of gridpoints adjacent to a given point in a grid</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">int</span><span class="p">:</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unravel_index</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">gridshape</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Expecting 2D coordinates&quot;</span><span class="p">)</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;idx should be either integer or an iterable&quot;</span><span class="p">)</span>
+
+    <span class="c1"># generate neighbour list</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">idx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">idx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">idx</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">idx</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
+
+            <span class="k">if</span> <span class="n">x</span><span class="o">==</span><span class="n">idx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">and</span> <span class="n">y</span><span class="o">==</span><span class="n">idx</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+                <span class="k">continue</span>
+
+            <span class="c1"># apply boundary conditions</span>
+            <span class="k">if</span> <span class="n">x</span><span class="o">&gt;=</span><span class="n">gridshape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">or</span> <span class="n">y</span><span class="o">&gt;=</span><span class="n">gridshape</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+                <span class="k">continue</span>
+
+            <span class="k">if</span> <span class="n">x</span><span class="o">&lt;</span><span class="mi">0</span> <span class="ow">or</span> <span class="n">y</span><span class="o">&lt;</span><span class="mi">0</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="k">if</span> <span class="n">flattened</span><span class="p">:</span>
+                <span class="n">n</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ravel_multi_index</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">]),</span> <span class="n">gridshape</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">n</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+
+    
+<span class="k">def</span> <span class="nf">_cost</span><span class="p">(</span><span class="n">pt</span><span class="p">,</span> <span class="n">graph</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    :return: scalar value, reporting on the cost of moving onto a grid cell</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="c1"># separate function for clarity, and in case in the future we want to alter this</span>
+    <span class="k">return</span> <span class="n">graph</span><span class="p">[</span><span class="n">pt</span><span class="p">]</span>
+    
+    
+<span class="k">def</span> <span class="nf">_astar</span><span class="p">(</span><span class="n">start_2d</span><span class="p">,</span> <span class="n">goal_2d</span><span class="p">,</span> <span class="n">in_graph</span><span class="p">,</span> <span class="n">euclidean</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    A* algorithm, find path connecting two points in a landscape.</span>
+<span class="sd">    </span>
+<span class="sd">    :param start: starting point</span>
+<span class="sd">    :param goal: end point</span>
+<span class="sd">    :param in_graph: 2D landscape</span>
+<span class="sd">    :return: connectivity dictionary, total path cost (same type as graph)</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    
+    <span class="n">graph</span> <span class="o">=</span> <span class="n">in_graph</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">graph</span> <span class="o">-=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">graph</span><span class="p">)</span> 
+    <span class="n">graphshape</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">shape</span>
+
+    <span class="n">start</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ravel_multi_index</span><span class="p">(</span><span class="n">start_2d</span><span class="p">,</span> <span class="n">graphshape</span><span class="p">)</span>
+    <span class="n">goal</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ravel_multi_index</span><span class="p">(</span><span class="n">goal_2d</span><span class="p">,</span> <span class="n">graphshape</span><span class="p">)</span>
+    
+    <span class="n">frontier</span> <span class="o">=</span> <span class="n">PriorityQueue</span><span class="p">()</span>
+    <span class="n">frontier</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">came_from</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">cost_so_far</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">came_from</span><span class="p">[</span><span class="n">start</span><span class="p">]</span> <span class="o">=</span> <span class="n">start</span>
+    <span class="n">cost_so_far</span><span class="p">[</span><span class="n">start</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">while</span> <span class="ow">not</span> <span class="n">frontier</span><span class="o">.</span><span class="n">empty</span><span class="p">():</span>
+        <span class="n">current</span> <span class="o">=</span> <span class="n">frontier</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">current</span> <span class="o">==</span> <span class="n">goal</span><span class="p">:</span>
+            <span class="k">break</span>
+
+        <span class="k">for</span> <span class="n">thenext</span> <span class="ow">in</span> <span class="n">_neighbors</span><span class="p">(</span><span class="n">current</span><span class="p">,</span> <span class="n">graphshape</span><span class="p">,</span> <span class="kc">True</span><span class="p">):</span>
+
+            <span class="n">thenext_2d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unravel_index</span><span class="p">(</span><span class="n">thenext</span><span class="p">,</span> <span class="n">graphshape</span><span class="p">)</span>            
+            <span class="n">new_cost</span> <span class="o">=</span> <span class="n">cost_so_far</span><span class="p">[</span><span class="n">current</span><span class="p">]</span> <span class="o">+</span> <span class="n">_cost</span><span class="p">(</span><span class="n">thenext_2d</span><span class="p">,</span> <span class="n">graph</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="n">thenext</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cost_so_far</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">new_cost</span> <span class="o">&lt;</span> <span class="n">cost_so_far</span><span class="p">[</span><span class="n">thenext</span><span class="p">]):</span>
+                <span class="n">cost_so_far</span><span class="p">[</span><span class="n">thenext</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_cost</span>
+                                
+                <span class="n">h</span> <span class="o">=</span> <span class="n">_heuristic</span><span class="p">(</span><span class="n">goal_2d</span><span class="p">,</span> <span class="n">thenext_2d</span><span class="p">,</span> <span class="n">graph</span><span class="o">=</span><span class="n">graph</span><span class="p">,</span> <span class="n">euclidean</span><span class="o">=</span><span class="n">euclidean</span><span class="p">)</span>
+                <span class="n">priority</span> <span class="o">=</span> <span class="n">new_cost</span> <span class="o">+</span> <span class="n">h</span>
+                <span class="n">frontier</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">thenext</span><span class="p">,</span> <span class="n">priority</span><span class="p">)</span>
+                <span class="n">came_from</span><span class="p">[</span><span class="n">thenext</span><span class="p">]</span> <span class="o">=</span> <span class="n">current</span>
+
+    <span class="k">return</span> <span class="n">came_from</span><span class="p">,</span> <span class="n">cost_so_far</span>
+
+
+<div class="viewcode-block" id="get_path"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.path.get_path">[docs]</a><span class="k">def</span> <span class="nf">get_path</span><span class="p">(</span><span class="n">idx_start</span><span class="p">,</span> <span class="n">idx_end</span><span class="p">,</span> <span class="n">landscape</span><span class="p">,</span> <span class="n">xvals</span><span class="p">,</span> <span class="n">yvals</span><span class="p">,</span> <span class="n">smooth</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Find shortest path between two points on a weighted grid</span>
+<span class="sd">    </span>
+<span class="sd">    :param idx_start: index on a 2D grid, as start point for a path</span>
+<span class="sd">    :param idx_end: index on a 2D grid, as end point for a path</span>
+<span class="sd">    :param landscape: 2D grid</span>
+<span class="sd">    :param xvals: x-axis values, to yield actual coordinates</span>
+<span class="sd">    :param yvals: y-axis values, to yield actual coordinates</span>
+<span class="sd">    :param smooth: size of kernel for running average (must be &gt;=1, default 3)</span>
+<span class="sd">    :return: array of 2D coordinates each with an associated value on lanscape</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">smooth</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">int</span> <span class="ow">or</span> <span class="n">smooth</span><span class="o">&lt;</span><span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Smooth parameter should be an integer number &gt;=1&quot;</span><span class="p">)</span>
+
+    <span class="c1"># get raw A* data</span>
+    <span class="n">mypath</span><span class="p">,</span> <span class="n">mycost</span> <span class="o">=</span> <span class="n">_astar</span><span class="p">(</span><span class="n">idx_start</span><span class="p">,</span> <span class="n">idx_end</span><span class="p">,</span> <span class="n">landscape</span><span class="p">)</span> 
+
+    <span class="c1"># extract path and cost</span>
+    <span class="n">cnt</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">coords</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">score</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">idx_flat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ravel_multi_index</span><span class="p">(</span><span class="n">idx_end</span><span class="p">,</span> <span class="n">landscape</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="k">while</span> <span class="n">cnt</span><span class="o">&lt;</span><span class="mi">1000</span><span class="p">:</span> <span class="c1">#safeguad for (unlikely) unfinished paths</span>
+
+        <span class="k">if</span> <span class="n">idx_flat</span> <span class="o">==</span> <span class="n">mypath</span><span class="p">[</span><span class="n">idx_flat</span><span class="p">]:</span>
+            <span class="k">break</span>
+
+        <span class="n">idx_flat</span> <span class="o">=</span> <span class="n">mypath</span><span class="p">[</span><span class="n">idx_flat</span><span class="p">]</span>
+        <span class="n">crd</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unravel_index</span><span class="p">(</span><span class="n">idx_flat</span><span class="p">,</span> <span class="n">landscape</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="n">coords</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">xvals</span><span class="p">[</span><span class="n">crd</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span> <span class="n">yvals</span><span class="p">[</span><span class="n">crd</span><span class="p">[</span><span class="mi">1</span><span class="p">]]])</span>
+        <span class="n">score</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">landscape</span><span class="p">[</span><span class="n">crd</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">crd</span><span class="p">[</span><span class="mi">1</span><span class="p">]])</span>
+        
+        <span class="n">cnt</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="k">if</span> <span class="n">smooth</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">coords</span><span class="p">)[::</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">score</span><span class="p">)[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    
+    <span class="k">else</span><span class="p">:</span>
+    
+        <span class="n">traj</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">coords</span><span class="p">)[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>    
+        <span class="n">x_ave</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="n">traj</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">smooth</span><span class="p">),</span> <span class="s1">&#39;valid&#39;</span><span class="p">)</span> <span class="o">/</span> <span class="n">smooth</span>
+        <span class="n">y_ave</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="n">traj</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">smooth</span><span class="p">),</span> <span class="s1">&#39;valid&#39;</span><span class="p">)</span> <span class="o">/</span> <span class="n">smooth</span>
+        <span class="n">traj_smooth</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">x_ave</span><span class="p">,</span> <span class="n">y_ave</span><span class="p">])</span><span class="o">.</span><span class="n">T</span>
+        
+        <span class="n">traj_smooth</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">traj</span><span class="p">[</span><span class="mi">0</span><span class="p">]]),</span> <span class="n">traj_smooth</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">traj</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]])))</span>
+        <span class="k">return</span> <span class="n">traj_smooth</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">score</span><span class="p">)[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span></div>
+
+
+
+<span class="k">def</span> <span class="nf">_get_point_index</span><span class="p">(</span><span class="n">crd</span><span class="p">,</span> <span class="n">xvals</span><span class="p">,</span> <span class="n">yvals</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Extract index (of 2D surface) closest to a given real value coordinate</span>
+<span class="sd">    </span>
+<span class="sd">    :param crd: coordinate</span>
+<span class="sd">    :param xvals: x-axis of surface</span>
+<span class="sd">    :param yvals: y-axis of surface</span>
+<span class="sd">    :return: 1D array with x,y coordinates</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="n">my_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">xvals</span> <span class="o">-</span> <span class="n">crd</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+    <span class="n">my_y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">yvals</span> <span class="o">-</span> <span class="n">crd</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">my_x</span><span class="p">,</span> <span class="n">my_y</span><span class="p">])</span>
+
+
+<div class="viewcode-block" id="get_path_aggregate"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.path.get_path_aggregate">[docs]</a><span class="k">def</span> <span class="nf">get_path_aggregate</span><span class="p">(</span><span class="n">crd</span><span class="p">,</span> <span class="n">landscape</span><span class="p">,</span> <span class="n">xvals</span><span class="p">,</span> <span class="n">yvals</span><span class="p">,</span> <span class="n">input_is_index</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Create a chain of shortest paths via give waypoints</span>
+<span class="sd">    </span>
+<span class="sd">    :param crd: waypoints coordinates (Nx2 array)</span>
+<span class="sd">    :param landscape: 2D grid</span>
+<span class="sd">    :param xvals: x-axis values, to yield actual coordinates</span>
+<span class="sd">    :param yvals: y-axis values, to yield actual coordinates</span>
+<span class="sd">    :param input_is_index: if False (default), assume crd contains actual coordinates, graph indexing otherwise</span>
+<span class="sd">    :return: array of 2D coordinates each with an associated value on lanscape</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">crd</span><span class="p">)</span><span class="o">&lt;</span><span class="mi">2</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">crd</span>
+    
+    <span class="n">crd2</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">crd</span><span class="p">)):</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">input_is_index</span><span class="p">:</span>
+            <span class="n">idx_start</span> <span class="o">=</span> <span class="n">_get_point_index</span><span class="p">(</span><span class="n">crd</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">xvals</span><span class="p">,</span> <span class="n">yvals</span><span class="p">)</span>
+            <span class="n">idx_end</span> <span class="o">=</span> <span class="n">_get_point_index</span><span class="p">(</span><span class="n">crd</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">xvals</span><span class="p">,</span> <span class="n">yvals</span><span class="p">)</span>      
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">idx_start</span> <span class="o">=</span> <span class="n">crd</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">idx_end</span> <span class="o">=</span> <span class="n">crd</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        
+        <span class="n">crdtmp</span> <span class="o">=</span> <span class="n">get_path</span><span class="p">(</span><span class="n">idx_start</span><span class="p">,</span> <span class="n">idx_end</span><span class="p">,</span> <span class="n">landscape</span><span class="p">,</span> <span class="n">xvals</span><span class="p">,</span> <span class="n">yvals</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">crd2</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">crdtmp</span><span class="p">))</span>
+        
+    <span class="n">crd</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">crd2</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">crd</span></div>
+
+
+<div class="viewcode-block" id="oversample"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.path.oversample">[docs]</a><span class="k">def</span> <span class="nf">oversample</span><span class="p">(</span><span class="n">crd</span><span class="p">,</span> <span class="n">pts</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Add extra equally spaced points between a list of points.</span>
+<span class="sd">    </span>
+<span class="sd">    :param crd: Nx2 numpy array</span>
+<span class="sd">    :param pts: int number of extra points to add in each interval</span>
+<span class="sd">    :return: Mx2 numpy array, with M&gt;=N.</span>
+<span class="sd">    &#39;&#39;&#39;</span> 
+    <span class="n">pts</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="n">steps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="n">pts</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">pts</span><span class="p">)</span>
+    <span class="n">pts</span> <span class="o">=</span> <span class="p">[</span><span class="n">crd</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">crd</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">steps</span><span class="p">:</span>
+            <span class="n">newpt</span> <span class="o">=</span> <span class="n">crd</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span><span class="n">crd</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">-</span><span class="n">crd</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">*</span><span class="n">j</span>
+            <span class="n">pts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">newpt</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">pts</span><span class="p">)</span></div>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">molearn 1.3.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">molearn.analysis.path</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2021, V. K. Ramaswamy, S. C. Musson, M. T. Degiacomi.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.0.2.
+    </div>
+  </body>
+</html>

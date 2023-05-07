@@ -185,14 +185,14 @@
     
 <div class="viewcode-block" id="PDBData.split"><a class="viewcode-back" href="../../../data.html#molearn.data.PDBData.split">[docs]</a>    <span class="k">def</span> <span class="nf">split</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        Split `PDBData &lt;molearn.data.PDBData&gt;` into two other `PDBData &lt;molearn.data.PDBData&gt;` objects corresponding to train and valid sets.</span>
+<span class="sd">        Split :func:`PDBData &lt;molearn.data.PDBData&gt;` into two other :func:`PDBData &lt;molearn.data.PDBData&gt;` objects corresponding to train and valid sets.</span>
 <span class="sd">        </span>
 <span class="sd">        :param manual_seed: manual seed used to split dataset</span>
 <span class="sd">        :param validation_split: default 0.1 ratio of valid to train structures data points</span>
 <span class="sd">        :param train_size: default None, specify number of train structures to be returned</span>
 <span class="sd">        :param valid_size: default None, speficy number of valid structures to be returned</span>
-<span class="sd">        :return: `PDBData &lt;molearn.data.PDBData&gt;` object corresponding to train set</span>
-<span class="sd">        :return: `PDBData &lt;molearn.data.PDBData&gt;` object corresponding to validation set</span>
+<span class="sd">        :return: :func:`PDBData &lt;molearn.data.PDBData&gt;` object corresponding to train set</span>
+<span class="sd">        :return: :func:`PDBData &lt;molearn.data.PDBData&gt;` object corresponding to validation set</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="c1">#validation_split=0.1, valid_size=None, train_size=None, manual_seed = None):</span>
         <span class="n">train_dataset</span><span class="p">,</span> <span class="n">valid_dataset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_datasets</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>

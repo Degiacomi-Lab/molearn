@@ -74,12 +74,17 @@
 
 
 <div class="viewcode-block" id="MolearnGUI"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.MolearnGUI">[docs]</a><span class="k">class</span> <span class="nc">MolearnGUI</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    This class produces an interactive visualisation for data stored in a</span>
+<span class="sd">    :func:`MolearnAnalysis &lt;molearn.analysis.MolearnAnalysis&gt;` object,</span>
+<span class="sd">    viewable within a Jupyter notebook.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
     
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">MA</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        :param MA: :func:`MolearnAnalysis &lt;molearn.analysis.MolearnAnalysis&gt;` instance</span>
+<span class="sd">        :param MA: Either :func:`MolearnAnalysis &lt;molearn.analysis.MolearnAnalysis&gt;` instance, or None (default). If None an empty GUI will be produced.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
-        
+ 
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">MA</span><span class="p">,</span> <span class="n">MolearnAnalysis</span><span class="p">)</span> <span class="ow">and</span> <span class="n">MA</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Expecting an MolearnAnalysis instance, </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">MA</span><span class="p">)</span><span class="si">}</span><span class="s1"> found&#39;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
@@ -92,7 +97,10 @@
 
      
     <span class="k">def</span> <span class="nf">update_trails</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        update latent space representation with interpolation points</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
         <span class="k">try</span><span class="p">:</span>
             <span class="n">crd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_samples</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mybox</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">samplebox</span><span class="o">.</span><span class="n">value</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">drop_path</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">samples</span> <span class="o">=</span> <span class="n">crd</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
@@ -138,6 +146,10 @@
         
 
     <span class="k">def</span> <span class="nf">get_samples</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mybox</span><span class="p">,</span> <span class="n">samplebox</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        provide a trail of point between list of waypoints, either connected</span>
+<span class="sd">        on a straight line or via a shortest path calculated with the A* algorithm</span>
+<span class="sd">        &#39;&#39;&#39;</span>
 
         <span class="k">if</span> <span class="n">path</span> <span class="o">==</span> <span class="s2">&quot;A*&quot;</span><span class="p">:</span>
             <span class="n">use_path</span> <span class="o">=</span> <span class="kc">True</span>
@@ -206,7 +218,8 @@
     <span class="k">def</span> <span class="nf">drop_background_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">change</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        control colouring style of latent space surface</span>
-<span class="sd">        &#39;&#39;&#39;</span>        
+<span class="sd">        &#39;&#39;&#39;</span> 
+        
         <span class="k">if</span> <span class="s2">&quot;custom&quot;</span> <span class="ow">in</span> <span class="n">change</span><span class="o">.</span><span class="n">new</span><span class="p">:</span>
             <span class="n">mykey</span> <span class="o">=</span> <span class="n">change</span><span class="o">.</span><span class="n">new</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
         <span class="k">else</span><span class="p">:</span>
@@ -219,9 +232,9 @@
             <span class="k">return</span>      
    
         <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">data</span><span class="p">))</span> <span class="o">&lt;</span> <span class="mi">100</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">block0</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">readout_format</span> <span class="o">=</span> <span class="s1">&#39;.1f&#39;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">block0</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">readout_format</span> <span class="o">=</span> <span class="s1">&#39;.1f&#39;</span>
         <span class="k">else</span><span class="p">:</span>         
-            <span class="bp">self</span><span class="o">.</span><span class="n">block0</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">readout_format</span> <span class="o">=</span> <span class="s1">&#39;d&#39;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">block0</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">readout_format</span> <span class="o">=</span> <span class="s1">&#39;d&#39;</span>
         
         <span class="bp">self</span><span class="o">.</span><span class="n">latent</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">z</span> <span class="o">=</span> <span class="n">data</span>
         
@@ -229,15 +242,15 @@
         <span class="k">try</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">latent</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">zmin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">latent</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">zmax</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">block0</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">min</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">block0</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">block0</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">min</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">block0</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
         <span class="k">except</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">latent</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">zmax</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">latent</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">zmin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">block0</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">block0</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">min</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">block0</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">block0</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">min</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
                 
-        <span class="bp">self</span><span class="o">.</span><span class="n">block0</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">block0</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
         
         <span class="bp">self</span><span class="o">.</span><span class="n">update_trails</span><span class="p">()</span>
 
@@ -270,10 +283,11 @@
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        control way paths are looked for</span>
 <span class="sd">        &#39;&#39;&#39;</span>
+        
         <span class="k">if</span> <span class="n">change</span><span class="o">.</span><span class="n">new</span> <span class="o">==</span> <span class="s2">&quot;A*&quot;</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">block0</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="o">.</span><span class="n">disabled</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">block0</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">.</span><span class="n">disabled</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">block0</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="o">.</span><span class="n">disabled</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">block0</span><span class="o">.</span><span class="n">children</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">.</span><span class="n">disabled</span> <span class="o">=</span> <span class="kc">False</span>
             
         <span class="bp">self</span><span class="o">.</span><span class="n">update_trails</span><span class="p">()</span>
 
@@ -282,6 +296,7 @@
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        update surface colouring upon manipulation of range slider</span>
 <span class="sd">        &#39;&#39;&#39;</span>
+        
         <span class="bp">self</span><span class="o">.</span><span class="n">latent</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">zmin</span> <span class="o">=</span> <span class="n">change</span><span class="o">.</span><span class="n">new</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">latent</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">zmax</span> <span class="o">=</span> <span class="n">change</span><span class="o">.</span><span class="n">new</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">latent</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
@@ -374,7 +389,7 @@
 
         <span class="c1"># create an MDAnalysis instance of input protein (for viewing purposes)</span>
         <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="p">,</span> <span class="s2">&quot;mol&quot;</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="o">.</span><span class="n">mol</span><span class="o">.</span><span class="n">write_pdb</span><span class="p">(</span><span class="s2">&quot;tmp.pdb&quot;</span><span class="p">,</span> <span class="n">conformations</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="o">.</span><span class="n">mol</span><span class="o">.</span><span class="n">write_pdb</span><span class="p">(</span><span class="s2">&quot;tmp.pdb&quot;</span><span class="p">,</span> <span class="n">conformations</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">split_struc</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">mymol</span> <span class="o">=</span> <span class="n">mda</span><span class="o">.</span><span class="n">Universe</span><span class="p">(</span><span class="s1">&#39;tmp.pdb&#39;</span><span class="p">)</span>
         
         <span class="c1">### MENU ITEMS ###</span>
@@ -498,7 +513,7 @@
             <span class="n">sc</span> <span class="o">=</span> <span class="p">[]</span>
             
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sc</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
-            <span class="n">plot1</span> <span class="o">=</span> <span class="n">go</span><span class="o">.</span><span class="n">Heatmap</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="o">.</span><span class="n">xvals</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="o">.</span><span class="n">yvals</span><span class="p">,</span> <span class="n">z</span><span class="o">=</span><span class="n">sc</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">zmin</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">sc</span><span class="p">),</span> <span class="n">zmax</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">sc</span><span class="p">),</span>
+            <span class="n">plot1</span> <span class="o">=</span> <span class="n">go</span><span class="o">.</span><span class="n">Heatmap</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="o">.</span><span class="n">xvals</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">MA</span><span class="o">.</span><span class="n">yvals</span><span class="p">,</span> <span class="n">z</span><span class="o">=</span><span class="n">sc</span><span class="p">,</span> <span class="n">zmin</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">sc</span><span class="p">),</span> <span class="n">zmax</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">sc</span><span class="p">),</span>
                                <span class="n">colorscale</span><span class="o">=</span><span class="s1">&#39;viridis&#39;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;latent_space&quot;</span><span class="p">)</span>   
         <span class="k">else</span><span class="p">:</span>
 

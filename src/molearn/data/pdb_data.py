@@ -144,14 +144,14 @@ class PDBData:
     
     def split(self, *args, **kwargs):
         '''
-        Split `PDBData <molearn.data.PDBData>` into two other `PDBData <molearn.data.PDBData>` objects corresponding to train and valid sets.
+        Split :func:`PDBData <molearn.data.PDBData>` into two other :func:`PDBData <molearn.data.PDBData>` objects corresponding to train and valid sets.
         
         :param manual_seed: manual seed used to split dataset
         :param validation_split: default 0.1 ratio of valid to train structures data points
         :param train_size: default None, specify number of train structures to be returned
         :param valid_size: default None, speficy number of valid structures to be returned
-        :return: `PDBData <molearn.data.PDBData>` object corresponding to train set
-        :return: `PDBData <molearn.data.PDBData>` object corresponding to validation set
+        :return: :func:`PDBData <molearn.data.PDBData>` object corresponding to train set
+        :return: :func:`PDBData <molearn.data.PDBData>` object corresponding to validation set
         '''
         #validation_split=0.1, valid_size=None, train_size=None, manual_seed = None):
         train_dataset, valid_dataset = self.get_datasets(*args, **kwargs)

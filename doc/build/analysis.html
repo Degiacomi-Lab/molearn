@@ -47,7 +47,9 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="molearn.analysis.MolearnAnalysis">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">MolearnAnalysis</span></span><a class="reference internal" href="_modules/molearn/analysis/analyser.html#MolearnAnalysis"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.MolearnAnalysis" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="py method">
+<dd><p>This class provides methods dedicated to the quality analysis of a
+trained model.</p>
+<dl class="py method">
 <dt class="sig sig-object py" id="molearn.analysis.MolearnAnalysis.generate">
 <span class="sig-name descname"><span class="pre">generate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">crd</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/analysis/analyser.html#MolearnAnalysis.generate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.MolearnAnalysis.generate" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generate a collection of protein conformations, given coordinates in the latent space.</p>
@@ -316,9 +318,70 @@ Requires a grid system to be defined via a prior call to <a class="reference int
 <dl class="py class">
 <dt class="sig sig-object py" id="molearn.analysis.MolearnGUI">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">MolearnGUI</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">MA</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/analysis/GUI.html#MolearnGUI"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.MolearnGUI" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
+<dd><p>This class produces an interactive visualisation for data stored in a
+<a class="reference internal" href="#molearn.analysis.MolearnAnalysis" title="molearn.analysis.MolearnAnalysis"><code class="xref py py-func docutils literal notranslate"><span class="pre">MolearnAnalysis</span></code></a> object,
+viewable within a Jupyter notebook.</p>
+<dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>MA</strong> – <a class="reference internal" href="#molearn.analysis.MolearnAnalysis" title="molearn.analysis.MolearnAnalysis"><code class="xref py py-func docutils literal notranslate"><span class="pre">MolearnAnalysis</span></code></a> instance</p>
+<dd class="field-odd"><p><strong>MA</strong> – Either <a class="reference internal" href="#molearn.analysis.MolearnAnalysis" title="molearn.analysis.MolearnAnalysis"><code class="xref py py-func docutils literal notranslate"><span class="pre">MolearnAnalysis</span></code></a> instance, or None (default). If None an empty GUI will be produced.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<span class="target" id="module-molearn.analysis.path"></span><dl class="py function">
+<dt class="sig sig-object py" id="molearn.analysis.path.get_path">
+<span class="sig-name descname"><span class="pre">get_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">idx_start</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">idx_end</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">landscape</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xvals</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">yvals</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">smooth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/analysis/path.html#get_path"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.path.get_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find shortest path between two points on a weighted grid</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>idx_start</strong> – index on a 2D grid, as start point for a path</p></li>
+<li><p><strong>idx_end</strong> – index on a 2D grid, as end point for a path</p></li>
+<li><p><strong>landscape</strong> – 2D grid</p></li>
+<li><p><strong>xvals</strong> – x-axis values, to yield actual coordinates</p></li>
+<li><p><strong>yvals</strong> – y-axis values, to yield actual coordinates</p></li>
+<li><p><strong>smooth</strong> – size of kernel for running average (must be &gt;=1, default 3)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>array of 2D coordinates each with an associated value on lanscape</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="molearn.analysis.path.get_path_aggregate">
+<span class="sig-name descname"><span class="pre">get_path_aggregate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">crd</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">landscape</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xvals</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">yvals</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_is_index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/analysis/path.html#get_path_aggregate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.path.get_path_aggregate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a chain of shortest paths via give waypoints</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>crd</strong> – waypoints coordinates (Nx2 array)</p></li>
+<li><p><strong>landscape</strong> – 2D grid</p></li>
+<li><p><strong>xvals</strong> – x-axis values, to yield actual coordinates</p></li>
+<li><p><strong>yvals</strong> – y-axis values, to yield actual coordinates</p></li>
+<li><p><strong>input_is_index</strong> – if False (default), assume crd contains actual coordinates, graph indexing otherwise</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>array of 2D coordinates each with an associated value on lanscape</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="molearn.analysis.path.oversample">
+<span class="sig-name descname"><span class="pre">oversample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">crd</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pts</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/analysis/path.html#oversample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.path.oversample" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add extra equally spaced points between a list of points.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>crd</strong> – Nx2 numpy array</p></li>
+<li><p><strong>pts</strong> – int number of extra points to add in each interval</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Mx2 numpy array, with M&gt;=N.</p>
 </dd>
 </dl>
 </dd></dl>

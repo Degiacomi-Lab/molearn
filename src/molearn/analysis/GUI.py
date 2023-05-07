@@ -33,12 +33,17 @@ from ..utils import as_numpy
 
 
 class MolearnGUI(object):
+    '''
+    This class produces an interactive visualisation for data stored in a
+    :func:`MolearnAnalysis <molearn.analysis.MolearnAnalysis>` object,
+    viewable within a Jupyter notebook.
+    '''
     
     def __init__(self, MA=None):
         '''
-        :param MA: :func:`MolearnAnalysis <molearn.analysis.MolearnAnalysis>` instance
+        :param MA: Either :func:`MolearnAnalysis <molearn.analysis.MolearnAnalysis>` instance, or None (default). If None an empty GUI will be produced.
         '''
-        
+ 
         if not isinstance(MA, MolearnAnalysis) and MA is not None:
             raise Exception(f'Expecting an MolearnAnalysis instance, {type(MA)} found')
         else:
@@ -51,7 +56,10 @@ class MolearnGUI(object):
 
      
     def update_trails(self):
-        
+        '''
+        update latent space representation with interpolation points
+        '''
+
         try:
             crd = self.get_samples(self.mybox.value, int(self.samplebox.value), self.drop_path.value)
             self.samples = crd.copy()
@@ -97,6 +105,10 @@ class MolearnGUI(object):
         
 
     def get_samples(self, mybox, samplebox, path):
+        '''
+        provide a trail of point between list of waypoints, either connected
+        on a straight line or via a shortest path calculated with the A* algorithm
+        '''
 
         if path == "A*":
             use_path = True
@@ -165,7 +177,8 @@ class MolearnGUI(object):
     def drop_background_event(self, change):
         '''
         control colouring style of latent space surface
-        '''        
+        ''' 
+        
         if "custom" in change.new:
             mykey = change.new.split(":")[1]
         else:
@@ -229,6 +242,7 @@ class MolearnGUI(object):
         '''
         control way paths are looked for
         '''
+        
         if change.new == "A*":
             self.block0.children[4].disabled = True
         else:
@@ -241,6 +255,7 @@ class MolearnGUI(object):
         '''
         update surface colouring upon manipulation of range slider
         '''
+        
         self.latent.data[0].zmin = change.new[0]
         self.latent.data[0].zmax = change.new[1]
         self.latent.update()
