@@ -19,7 +19,7 @@ authors:
 affiliations:
  - name: Department of Physics, Durham University, UK
    index: 1
-date: 24 August 2023
+date: 09 May 2023
 bibliography: paper.bib
 
 ---
@@ -45,23 +45,21 @@ Generative Neural Networks (GNNs) have been shown to be effective predictors of 
 *	*Data loading*. `molearn` provides methods to parse molecular conformers and convert them in a pyTorch [@paszke2019pytorch] tensor format suitable for training.
 *	*Model design*. `molearn` comes with a range of pre-implemented models, ready to be trained on any desired datasets or being subclassed to create custom models.
 *	*Loss function definition*. While the classical loss function in a generative model typically builds upon a mean square error between input and output, here we provide the capability of directly interacting with the OpenMM molecular dynamics engine [@eastman2017openmm]. Specifically, we have implemented means of transferring pyTorch Tensor data directly into OpenMM's backend on GPU (without data transfer via the CPU). This enables quickly evaluating the energy of a generated model according to any force field accepted by OpenMM. This also enables directly running MD simulations with generated conformers while the model trains.
-*	*Model analysis*. Once a model is trained, it is important to gather metrics defining the quality of its models. We provide tools to quickly quantify the  the quality of models in terms of root mean square deviation between input and output, DOPE score [@shen2006statistical], Ramachandran plot, and user-defined functions. We also provide a graphical user interface, enabling the visualisation of neural network latent space, and generation of interpolations between states visualised in 3D via nglview [@nguyen2018nglview].
+*	*Model analysis*. Once a model is trained, it is important to gather metrics defining the quality of its models. We provide tools to quickly quantify the  quality of models in terms of root mean square deviation between input and output structures, DOPE score [@shen2006statistical], Ramachandran plot, and user-defined functions. We also provide a graphical user interface, enabling the visualisation of neural network latent space, and generation of interpolations between states visualised in 3D via nglview [@nguyen2018nglview].
 
 ![`molearn` analysis tools include a graphical user interface, enabling the on-demand generation of protein conformations. The panel on the left controls how the neural network latent space is presented, the central panel is a plotly interactive panel, the panel on the right is a representation of an interpolation through the latent space supported by nglview\label{fig:gui}](gui.png)
 
 
 # Usage
 
-We advise training the model on GPU. `molearn` comes with a series of examples, also usable as-is to train and analyse a neural network.
-Tutorials on neural network analysis are also available, including a GUI to directly interact with a trained neural network \autoref{fig:gui}.
+`molearn` comes with a series of examples, also usable as-is to train and analyse a neural network. Tutorials on neural network analysis are also available, including a GUI to directly interact with a trained neural network \autoref{fig:gui}.
 
-Results obtanable via `molearn` are exemplified in [@Ramaswamy2021]. Here, we designed and trained a 1D convolutional autoencoder against protein molecular dynamics simulation data. The GNN was trained via a loss function directing the neural network to both faithfully reconstruct training data, and produce low-energy interpolations between them, whereby energy is assessed according to an MD force field.
+Results obtainable via `molearn` are exemplified in [@Ramaswamy2021]. There, we designed and trained a 1D convolutional autoencoder against protein molecular dynamics simulation data. The GNN was trained via a loss function directing the neural network to both faithfully reconstruct training data, and produce low-energy interpolations between them, whereby the internal energy of produced models is assessed according to the Amber ff14SB force field [@maier2015ff14sb].
 
 
 # Acknowledgements
 
-We thank Cameron Stewart, Ryan Zhu, and Marco Mattia for their feedback.
-Matteo T. Degiacomi acknowledges support from the Engineering and Physical Sciences Research Council (EP/P016499/1).
+We thank Cameron Stewart, Ryan Zhu, and Marco Mattia for their feedback. Matteo T. Degiacomi acknowledges support from the Engineering and Physical Sciences Research Council (EP/P016499/1).
 
 
 # References
