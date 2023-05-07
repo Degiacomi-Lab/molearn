@@ -333,7 +333,7 @@ class MolearnGUI(object):
 
         # create an MDAnalysis instance of input protein (for viewing purposes)
         if hasattr(self.MA, "mol"):
-            self.MA.mol.write_pdb("tmp.pdb", conformations=[0])
+            self.MA.mol.write_pdb("tmp.pdb", conformations=[0], split_struc = False)
             self.mymol = mda.Universe('tmp.pdb')
         
         ### MENU ITEMS ###

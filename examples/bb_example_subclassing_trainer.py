@@ -37,7 +37,7 @@ class CustomTrainer(OpenMM_Physics_Trainer):
 #        results = self.common_step(batch)
 #        results.update(self.common_physics_step(batch, self._internal['encoded']))
 #        scale = (self.psf*results['mse_loss'])/(results['physics_loss'] +1e-5)
-#        final_loss = results['mse_loss']+scale*results['physics_loss']
+#        final_loss = torch.log(results['mse_loss'])+scale*torch.log(results['physics_loss']
 #        results['loss'] = final_loss
 #        return results
 
@@ -66,6 +66,7 @@ class CustomTrainer(OpenMM_Physics_Trainer):
                 if np.isfinite(f).all():
                     self.interp_dope_scores.append(self.dope_score_class.get_score(f,refine=True))
             # These will calculate in the background, synchronize at the end of the epoch.
+        return results
 
     def valid_epoch(self, *args, **kwargs):
         self.first_valid_step = self.epoch%5==0
@@ -87,8 +88,7 @@ class CustomTrainer(OpenMM_Physics_Trainer):
             results['valid_DOPE_refined'] = dope[:,1].mean()
             results['valid_DOPE_interp'] = idope[:,0].mean()
             results['valid_DOPE_interp_refined'] = idope[:,1].mean()
-            results['valid_DOPE_time'] = time()-t1 # extra time taken to calculate this
-        results['lr'] = self._lr
+            results['valid_DOPE_time'] = time()-t1 # extra time taken to calculate DOPE
         return results
 
 
@@ -104,7 +104,7 @@ if __name__ == '__main__':
 
     ##### Prepare Trainer #####
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    trainer = OpenMM_Physics_Trainer(device=device)
+    trainer = CustomTrainer(device=device)
 
     trainer.set_data(data, batch_size=8, validation_split=0.1, manual_seed = 25)
     trainer.prepare_physics(remove_NB = True)
