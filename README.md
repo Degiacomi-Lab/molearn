@@ -2,8 +2,7 @@
 
 *molecular conformational spaces meet machine learning*
 
-This software trains a generative neural network on an ensemble of molecular conformations (typically obtained by molecular dynamics).
-The trained model can be used to generate new, plausible conformations repesentative of poorly sampled transition states.
+mlolearn is a Python package streamlining the implementation of machine learning models dedicated to the generation of protein conformations from example data obtained via experiment or molecular simulation.
 
 Included in this repository are the following:
 * Source code is in the `molearn` folder
