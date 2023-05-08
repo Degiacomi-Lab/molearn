@@ -4,14 +4,13 @@ from torch import nn
 import torch.nn.functional as F
 
 def index_points(point_clouds, index):
-    """
+    '''
     Given a batch of tensor and index, select sub-tensor.
-    Input:
-        points: input points data, [B, N, C]
-        idx: sample index data, [B, N, k]
-    Return:
-        new_points:, indexed points data, [B, N, k, C]
-    """
+    
+    :param points_clouds: input points data, [B, N, C]
+    :param index: sample index data, [B, N, k]
+    :return: indexed points data, [B, N, k, C]
+    '''
     device = point_clouds.device
     batch_size = point_clouds.shape[0]
     view_shape = list(index.shape)
@@ -24,17 +23,13 @@ def index_points(point_clouds, index):
 
 
 def knn(x, k):
-    """
+    '''
     K nearest neighborhood.
-    Parameters
-    ----------
-        x: a tensor with size of (B, C, N)
-        k: the number of nearest neighborhoods
-
-    Returns
-    -------
-        idx: indices of the k nearest neighborhoods with size of (B, N, k)
-    """
+    
+    :param x: a tensor with size of (B, C, N)
+    :param k: the number of nearest neighborhoods
+    :return: indices of the k nearest neighborhoods with size of (B, N, k)
+    '''
     inner = -2 * torch.matmul(x.transpose(2, 1), x)  # (B, N, N)
     xx = torch.sum(x ** 2, dim=1, keepdim=True)  # (B, 1, N)
     pairwise_distance = -xx - inner - xx.transpose(2, 1)  # (B, 1, N), (B, N, N), (B, N, 1) -> (B, N, N)
@@ -44,11 +39,11 @@ def knn(x, k):
 
 
 class GraphLayer(nn.Module):
-    """
+    '''
     Graph layer.
     in_channel: it depends on the input of this network.
     out_channel: given by ourselves.
-    """
+    '''
     def __init__(self, in_channel, out_channel, k=16):
         super(GraphLayer, self).__init__()
         self.k = k
@@ -56,11 +51,9 @@ class GraphLayer(nn.Module):
         self.bn = nn.BatchNorm1d(out_channel)
 
     def forward(self, x):
-        """
-        Parameters
-        ----------
-            x: tensor with size of (B, C, N)
-        """
+        '''
+        :param x: tensor with size of (B, C, N)
+        '''
         # KNN
         knn_idx = knn(x, k=self.k)  # (B, N, k)
         knn_x = index_points(x.permute(0, 2, 1), knn_idx)  # (B, N, k, C)
@@ -74,9 +67,9 @@ class GraphLayer(nn.Module):
 
 
 class Encoder(nn.Module):
-    """
-    Graph based encoder.
-    """
+    '''
+    Graph based encoder
+    '''
     def __init__(self, **kwargs):
         super(Encoder, self).__init__()
 
@@ -125,9 +118,9 @@ class Encoder(nn.Module):
 
 
 class FoldingLayer(nn.Module):
-    """
+    '''
     The folding operation of FoldingNet
-    """
+    '''
 
     def __init__(self, in_channel: int, out_channels: list):
         super(FoldingLayer, self).__init__()
@@ -164,9 +157,9 @@ class FoldingLayer(nn.Module):
         return x
 
 class Decoder_Layer(nn.Module):
-    """
+    '''
     Decoder Module of FoldingNet
-    """
+    '''
 
     def __init__(self, in_points, out_points, in_channel, out_channel,**kwargs):
         super(Decoder_Layer, self).__init__()
@@ -186,9 +179,9 @@ class Decoder_Layer(nn.Module):
         self.fold2 = FoldingLayer(in_channel + out_channel+1, [512, 512, out_channel])
 
     def forward(self, x):
-        """
-        x: (B, C)
-        """
+        '''
+        :param x: (B, C)
+        '''
         batch_size = x.shape[0]
 
         # repeat grid for batch operation
@@ -203,10 +196,11 @@ class Decoder_Layer(nn.Module):
         recon2 = recon1+self.fold2(grid,x, recon1)
 
         return recon2
+
 class Decoder(nn.Module):
-    """
+    '''
     Decoder Module of FoldingNet
-    """
+    '''
 
     def __init__(self, out_points, in_channel=2, **kwargs):
         super(Decoder, self).__init__()
@@ -226,9 +220,9 @@ class Decoder(nn.Module):
         self.layer4 = Decoder_Layer(start_out*32,start_out*128,3*4,       3)
 
     def forward(self, x):
-        """
+        '''
         x: (B, C)
-        """
+        '''
         x = x.view(-1, 2, 1)
         x = self.layer1(x)
         x = self.layer2(x)
@@ -239,6 +233,9 @@ class Decoder(nn.Module):
 
 
 class AutoEncoder(nn.Module):
+    '''
+    autoencoder architecture derived from FoldingNet.
+    '''
     
     def __init__(self, *args, **kwargs):
         super().__init__()

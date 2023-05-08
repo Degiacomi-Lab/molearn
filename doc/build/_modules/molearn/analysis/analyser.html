@@ -184,7 +184,7 @@
 <span class="sd">        Calculate the reconstruction error of a dataset encoded and decoded by a trained neural network.</span>
 <span class="sd">        </span>
 <span class="sd">        :param key: key pointing to a dataset previously loaded with :func:`set_dataset &lt;molearn.analysis.MolearnAnalysis.set_dataset&gt;`</span>
-<span class="sd">        :param align: if True, the RMSD will be calculated by finding the optimal alignment between structures (default False)</span>
+<span class="sd">        :param align: if True, the RMSD will be calculated by finding the optimal alignment between structures</span>
 <span class="sd">        :return: 1D array containing the RMSD between input structures and their encoded-decoded counterparts</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">dataset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_dataset</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
@@ -212,7 +212,8 @@
 <div class="viewcode-block" id="MolearnAnalysis.get_dope"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.MolearnAnalysis.get_dope">[docs]</a>    <span class="k">def</span> <span class="nf">get_dope</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">refine</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        :param key: key pointing to a dataset previously loaded with :func:`set_dataset &lt;molearn.analysis.MolearnAnalysis.set_dataset&gt;`</span>
-<span class="sd">        :param refine: if True (default), return DOPE score of input and output structure both before and after refinement</span>
+<span class="sd">        :param refine: if True, refine structures before calculating DOPE score</span>
+<span class="sd">        :return: dictionary containing DOPE score of dataset, and its decoded counterpart</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">dataset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_dataset</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
         <span class="n">decoded</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_decoded</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
@@ -237,12 +238,12 @@
 
 <div class="viewcode-block" id="MolearnAnalysis.setup_grid"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.MolearnAnalysis.setup_grid">[docs]</a>    <span class="k">def</span> <span class="nf">setup_grid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">samples</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">bounds_from</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="mf">0.1</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        Define a point grid regularly sampling the latent space.</span>
+<span class="sd">        Define a NxN point grid regularly sampling the latent space.</span>
 <span class="sd">        </span>
 <span class="sd">        :param samples: grid size (build a samples x samples grid)</span>
 <span class="sd">        :param bounds_from: str, list of strings, or &#39;all&#39;. Name(s) of datasets to use as reference.</span>
 <span class="sd">        :param bounds: tuple (xmin, xmax, ymin, ymax) or None</span>
-<span class="sd">        :param padding: define size of extra spacing around boundary conditions (as ratio of axis dimensions, default 0.1)</span>
+<span class="sd">        :param padding: define size of extra spacing around boundary conditions (as ratio of axis dimensions)</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         
         <span class="n">key</span> <span class="o">=</span> <span class="s1">&#39;grid&#39;</span>
@@ -291,9 +292,12 @@
 
 <div class="viewcode-block" id="MolearnAnalysis.scan_error_from_target"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.MolearnAnalysis.scan_error_from_target">[docs]</a>    <span class="k">def</span> <span class="nf">scan_error_from_target</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        Calculate landscape of RMSD vs single target structure. Target should be a Tensor of a single protein stucture  </span>
+<span class="sd">        Calculate landscape of RMSD vs single target structure. Target should be previously loaded datset containing a single conformation.  </span>
 <span class="sd">  </span>
 <span class="sd">        :param key: key pointing to a dataset previously loaded with :func:`set_dataset &lt;molearn.analysis.MolearnAnalysis.set_dataset&gt;`</span>
+<span class="sd">        :return: RMSD lantent space NxN surface</span>
+<span class="sd">        :return: x-axis values</span>
+<span class="sd">        :return: y-axis values</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">s_key</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;RMSD_from_</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">if</span> <span class="n">index</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="sa">f</span><span class="s1">&#39;RMSD_from_</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s1">_index_</span><span class="si">{</span><span class="n">index</span><span class="si">}</span><span class="s1">&#39;</span>
         <span class="k">if</span> <span class="n">s_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">surfaces</span><span class="p">:</span>
@@ -313,7 +317,10 @@
 <span class="sd">        </span>
 <span class="sd">        :param s_key: string, label for RMSD dataset</span>
 <span class="sd">        :param z_key: string, label for z-drift dataset</span>
-<span class="sd">        :return: NxN RMSD grid, NxN z-drift grid, x-axis values, y-axis values</span>
+<span class="sd">        :return: input-to-decoded RMSD lantent space NxN surface</span>
+<span class="sd">        :return: z-drift lantent space NxN surface</span>
+<span class="sd">        :return: x-axis values</span>
+<span class="sd">        :return: y-axis values</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">s_key</span> <span class="o">=</span> <span class="s1">&#39;Network_RMSD&#39;</span>
         <span class="n">z_key</span> <span class="o">=</span> <span class="s1">&#39;Network_z_drift&#39;</span>
@@ -396,7 +403,7 @@
 <span class="sd">        Calculate DOPE score of an ensemble of atom coordinates</span>
 
 <span class="sd">        :param tensor:</span>
-<span class="sd">        :param refine: if True (default), return DOPE score of input and output structure both before and after refinement</span>
+<span class="sd">        :param refine: if True, return DOPE score of input and output structure after refinement</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">tensor</span><span class="p">:</span>
@@ -425,7 +432,10 @@
 <span class="sd">        Requires a grid system to be defined via a prior call to :func:`set_dataset &lt;molearn.analysis.MolearnAnalysis.setup_grid&gt;`.</span>
 <span class="sd">        </span>
 <span class="sd">        :param key: label for unrefined DOPE score surface (default is DOPE_unrefined or DOPE_refined)</span>
-<span class="sd">        :param refine: if True (default) structures generated will be energy minimised before DOPE scoring</span>
+<span class="sd">        :param refine: if True, structures generated will be energy minimised before DOPE scoring</span>
+<span class="sd">        :return: DOPE score lantent space NxN surface</span>
+<span class="sd">        :return: x-axis values</span>
+<span class="sd">        :return: y-axis values</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         
         <span class="k">if</span> <span class="n">key</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -447,6 +457,11 @@
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Calculate Ramachandran scores on a grid sampling the latent space.</span>
 <span class="sd">        Requires a grid system to be defined via a prior call to :func:`set_dataset &lt;molearn.analysis.MolearnAnalysis.setup_grid&gt;`.</span>
+<span class="sd">        Saves four surfaces in memory, with keys &#39;Ramachandran_favored&#39;, &#39;Ramachandran_allowed&#39;, &#39;Ramachandran_outliers&#39;, and &#39;Ramachandran_total&#39;.</span>
+
+<span class="sd">        :return: Ramachandran_favoured lantent space NxN surface (ratio of residues in favourable conformation)</span>
+<span class="sd">        :return: x-axis values</span>
+<span class="sd">        :return: y-axis values</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">keys</span> <span class="o">=</span> <span class="p">{</span><span class="n">i</span><span class="p">:</span><span class="sa">f</span><span class="s1">&#39;Ramachandran_</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;favored&#39;</span><span class="p">,</span> <span class="s1">&#39;allowed&#39;</span><span class="p">,</span> <span class="s1">&#39;outliers&#39;</span><span class="p">,</span> <span class="s1">&#39;total&#39;</span><span class="p">)}</span>
         <span class="k">if</span> <span class="nb">list</span><span class="p">(</span><span class="n">keys</span><span class="o">.</span><span class="n">values</span><span class="p">())[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">surfaces</span><span class="p">:</span>
@@ -465,7 +480,9 @@
 <span class="sd">        :param fct: function taking atomic coordinates as input, an optional list of parameters, and returning a single value.</span>
 <span class="sd">        :param params: parameters to be passed to function f. If no parameter is needed, pass an empty list.</span>
 <span class="sd">        :param key: name of the dataset generated by this function scan</span>
-<span class="sd">        :return: grid scanning of latent space according to provided function, x, and y grid axes</span>
+<span class="sd">        :return: lantent space NxN surface, evaluated according to input function</span>
+<span class="sd">        :return: x-axis values</span>
+<span class="sd">        :return: y-axis values</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">decoded</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_decoded</span><span class="p">(</span><span class="s1">&#39;grid&#39;</span><span class="p">)</span>
         <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>

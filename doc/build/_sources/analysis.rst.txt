@@ -7,6 +7,5 @@ Analysis
 
 .. autoclass:: molearn.analysis.MolearnGUI
 
-
 .. automodule:: molearn.analysis.path
    :members:

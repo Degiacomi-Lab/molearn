@@ -2,6 +2,5 @@
 Models
 ------
 
-.. automodule:: molearn.models
+.. automodule:: molearn.models.foldingnet.AutoEncoder
    :members:
-   :show-inheritance:

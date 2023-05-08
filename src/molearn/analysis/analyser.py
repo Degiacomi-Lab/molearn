@@ -143,7 +143,7 @@ class MolearnAnalysis(object):
         Calculate the reconstruction error of a dataset encoded and decoded by a trained neural network.
         
         :param key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
-        :param align: if True, the RMSD will be calculated by finding the optimal alignment between structures (default False)
+        :param align: if True, the RMSD will be calculated by finding the optimal alignment between structures
         :return: 1D array containing the RMSD between input structures and their encoded-decoded counterparts
         '''
         dataset = self.get_dataset(key)
@@ -171,7 +171,8 @@ class MolearnAnalysis(object):
     def get_dope(self, key, refine=True):
         '''
         :param key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
-        :param refine: if True (default), return DOPE score of input and output structure both before and after refinement
+        :param refine: if True, refine structures before calculating DOPE score
+        :return: dictionary containing DOPE score of dataset, and its decoded counterpart
         '''
         dataset = self.get_dataset(key)
         decoded = self.get_decoded(key)
@@ -196,12 +197,12 @@ class MolearnAnalysis(object):
 
     def setup_grid(self, samples=64, bounds_from=None, bounds=None, padding=0.1):
         '''
-        Define a point grid regularly sampling the latent space.
+        Define a NxN point grid regularly sampling the latent space.
         
         :param samples: grid size (build a samples x samples grid)
         :param bounds_from: str, list of strings, or 'all'. Name(s) of datasets to use as reference.
         :param bounds: tuple (xmin, xmax, ymin, ymax) or None
-        :param padding: define size of extra spacing around boundary conditions (as ratio of axis dimensions, default 0.1)
+        :param padding: define size of extra spacing around boundary conditions (as ratio of axis dimensions)
         '''
         
         key = 'grid'
@@ -250,9 +251,12 @@ class MolearnAnalysis(object):
 
     def scan_error_from_target(self, key, index=None):
         '''
-        Calculate landscape of RMSD vs single target structure. Target should be a Tensor of a single protein stucture  
+        Calculate landscape of RMSD vs single target structure. Target should be previously loaded datset containing a single conformation.  
   
         :param key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
+        :return: RMSD lantent space NxN surface
+        :return: x-axis values
+        :return: y-axis values
         '''
         s_key = f'RMSD_from_{key}' if index is None else f'RMSD_from_{key}_index_{index}'
         if s_key not in self.surfaces:
@@ -272,7 +276,10 @@ class MolearnAnalysis(object):
         
         :param s_key: string, label for RMSD dataset
         :param z_key: string, label for z-drift dataset
-        :return: NxN RMSD grid, NxN z-drift grid, x-axis values, y-axis values
+        :return: input-to-decoded RMSD lantent space NxN surface
+        :return: z-drift lantent space NxN surface
+        :return: x-axis values
+        :return: y-axis values
         '''
         s_key = 'Network_RMSD'
         z_key = 'Network_z_drift'
@@ -355,7 +362,7 @@ class MolearnAnalysis(object):
         Calculate DOPE score of an ensemble of atom coordinates
 
         :param tensor:
-        :param refine: if True (default), return DOPE score of input and output structure both before and after refinement
+        :param refine: if True, return DOPE score of input and output structure after refinement
         '''
         results = []
         for f in tensor:
@@ -384,7 +391,10 @@ class MolearnAnalysis(object):
         Requires a grid system to be defined via a prior call to :func:`set_dataset <molearn.analysis.MolearnAnalysis.setup_grid>`.
         
         :param key: label for unrefined DOPE score surface (default is DOPE_unrefined or DOPE_refined)
-        :param refine: if True (default) structures generated will be energy minimised before DOPE scoring
+        :param refine: if True, structures generated will be energy minimised before DOPE scoring
+        :return: DOPE score lantent space NxN surface
+        :return: x-axis values
+        :return: y-axis values
         '''
         
         if key is None:
@@ -406,6 +416,11 @@ class MolearnAnalysis(object):
         '''
         Calculate Ramachandran scores on a grid sampling the latent space.
         Requires a grid system to be defined via a prior call to :func:`set_dataset <molearn.analysis.MolearnAnalysis.setup_grid>`.
+        Saves four surfaces in memory, with keys 'Ramachandran_favored', 'Ramachandran_allowed', 'Ramachandran_outliers', and 'Ramachandran_total'.
+
+        :return: Ramachandran_favoured lantent space NxN surface (ratio of residues in favourable conformation)
+        :return: x-axis values
+        :return: y-axis values
         '''
         keys = {i:f'Ramachandran_{i}' for i in ('favored', 'allowed', 'outliers', 'total')}
         if list(keys.values())[0] not in self.surfaces:
@@ -424,7 +439,9 @@ class MolearnAnalysis(object):
         :param fct: function taking atomic coordinates as input, an optional list of parameters, and returning a single value.
         :param params: parameters to be passed to function f. If no parameter is needed, pass an empty list.
         :param key: name of the dataset generated by this function scan
-        :return: grid scanning of latent space according to provided function, x, and y grid axes
+        :return: lantent space NxN surface, evaluated according to input function
+        :return: x-axis values
+        :return: y-axis values
         '''
         decoded = self.get_decoded('grid')
         results = []
