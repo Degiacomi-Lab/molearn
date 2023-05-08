@@ -2,7 +2,7 @@
 
 *molecular conformational spaces meet machine learning*
 
-mlolearn is a Python package streamlining the implementation of machine learning models dedicated to the generation of protein conformations from example data obtained via experiment or molecular simulation.
+molearn is a Python package streamlining the implementation of machine learning models dedicated to the generation of protein conformations from example data obtained via experiment or molecular simulation.
 
 Included in this repository are the following:
 * Source code is in the `molearn` folder
@@ -38,7 +38,7 @@ The most recent release can also be obtained through Anaconda: `conda install mo
 
 ## Usage ##
 
-* See example scripts in the `examples` and documentation in the `doc` folder.
+* See example scripts in the `examples` folder, and documentation in the `doc` folder.
 * Jupyter notebook tutorials describing the usage of a trained neural network are available [here](https://github.com/Degiacomi-Lab/molearn_notebook).
 
 ## Reference ##
