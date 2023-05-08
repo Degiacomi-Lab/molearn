@@ -6,8 +6,23 @@ import biobox as bb
 
 class PDBData:
     
-    def __init__(self):
-        pass
+    def __init__(self, filename = None, fix_terminal = False, atoms = None, ):
+        '''
+        Create PDBData object. 
+        :param filename: str or list of strings, self.import_pdb(file) is called on each
+        :param fix_terminal: default False, if true calles self.fix_terminal after import, before atomselect
+        :param atoms: calls self.atomselect(atoms=atoms)
+        '''
+        if isinstance(filename, str):
+            self.import_pdb(filename)
+        elif filename is not None:
+            for _filename in filename:
+                self.import_pdb(_filename)
+        
+        if fix_terminal:
+            self.fix_terminal()
+        if atoms is not None:
+            self.atomselect(atoms = atoms)
 
     def import_pdb(self, filename):
         '''
@@ -25,26 +40,13 @@ class PDBData:
 
     def fix_terminal(self):
         '''
-        Rename N-terminal Oxygens (OT1, OT2, OXT) as O 
+        Rename OT1 N-terminal Oxygen to O if terminal oxygens are named OT1 and OT2 otherwise no oxygen will be selected during an atomselect using atoms = ['CA', 'C','N','O','CB']. No template will be found for terminal residue in openmm_loss. Alternative solution is to use atoms = ['CA', 'C', 'N', 'O', 'CB', 'OT1']. instead.
         '''
         ot1 = np.where(self._mol.data['name']=='OT1')[0]
         ot2 = np.where(self._mol.data['name']=='OT2')[0]
-        oxt = np.where(self._mol.data['name']=='OXT')[0]
-        resids = []
         if len(ot1)!=0 and len(ot2)!=0:
             self._mol.data.loc[ot1,'name']='O'
-        if len(ot1)!=0:
-            for i in ot1:
-                resids.append((self._mol.data['resid'][i], self._mol.data['resname'][i]))
-        if len(oxt)!=0:
-            for i in oxt:
-                resids.append((self._mol.data['resid'][i], self._mol.data['resname'][i]))
 
-        #for resid, resname in resids:
-            #resname = self._mol.data['resname'][resid]
-            #if len(resname)==3:
-            #    self._mol.data.loc[self._mol.data.resid.eq(resid), 'resname']=f'C{resname}'
-    
     def atomselect(self, atoms, ignore_atoms=[]):
         '''
         From imported PDBs, cut out only atoms of interest.
@@ -189,6 +191,8 @@ class PDBData:
             indices = randperm(len(self.dataset), generator = torch.Generator().manual_seed(manual_seed))
         else:
             indices = randperm(len(self.dataset))
+
+        self.indices = indices
         train_dataset = dataset[indices[:_train_size]]
         valid_dataset = dataset[indices[_train_size:_train_size+_valid_size]]
         return train_dataset, valid_dataset
