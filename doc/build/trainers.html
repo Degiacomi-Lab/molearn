@@ -52,18 +52,488 @@
 <dt class="sig sig-object py" id="molearn.trainers.trainer.Trainer">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Trainer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_filename</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'log_file.dat'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/trainers/trainer.html#Trainer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.trainers.trainer.Trainer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Trainer class that defines a number of useful methods for training an autoencoder.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Variables<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>autoencoder</strong> – any torch.nn.module network that has methods <code class="docutils literal notranslate"><span class="pre">autoencoder.encode</span></code> and <code class="docutils literal notranslate"><span class="pre">autoencoder.decode</span></code> with the weights associated with these operations accessible via <code class="docutils literal notranslate"><span class="pre">autoencoder.encoder</span></code> and <code class="docutils literal notranslate"><span class="pre">autoencoder.decoder</span></code>. This can be set using set_autoencoder</p></li>
+<li><p><strong>_autoencoder_kwargs</strong> – kwargs used to initialise the network. Saved in every checkpoint under the key ‘kwargs’</p></li>
+<li><p><strong>optimiser</strong> (<em>torch.optim.optimiser</em>) – pytorch optimiser with access to self.autoencoder.parameters()</p></li>
+<li><p><strong>device</strong> (<em>torch.Device</em>) – The device used for all operations.</p></li>
+<li><p><strong>epoch</strong> (<em>int</em>) – the current epoch</p></li>
+<li><p><strong>best</strong> (<em>float</em>) – The best validation score corresponding to the current best checkpoint</p></li>
+<li><p><strong>best_name</strong> (<em>float</em>) – the filename corresponding to self.best</p></li>
+<li><p><strong>std</strong> (<em>float</em>) – Standard deviation of the training dataset. Can be used to unscale structures produced by the network.</p></li>
+<li><p><strong>mol</strong> (<em>float</em>) – Biobox molecule containing a single example frame of the protein being trained on. This can be used to save examples during training. It is also used to save a temporary pdb that may be used to initialise thirdparty packages.</p></li>
+<li><p><strong>train_dataloader</strong> (<em>torch.Dataloader</em>) – Training data</p></li>
+<li><p><strong>valid_dataloader</strong> (<em>torch.Dataloader</em>) – Validation data</p></li>
+<li><p><strong>_data</strong> – (<code class="xref py py-func docutils literal notranslate"><span class="pre">molearn.data</span></code> Data object given to <code class="xref py py-func docutils literal notranslate"><span class="pre">set_data</span></code></p></li>
+</ul>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>device</strong> (<em>torch.Device</em>) – if not given will be determinined automatically based on torch.cuda.is_available()</p></li>
+<li><p><strong>log_filename</strong> (<em>str</em>) – (default: ‘default_log_filename.json’) file used to log outputs to</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="molearn.trainers.trainer.Trainer.checkpoint">
+<span class="sig-name descname"><span class="pre">checkpoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">epoch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">valid_logs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpoint_folder</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'valid_loss'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/trainers/trainer.html#Trainer.checkpoint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.trainers.trainer.Trainer.checkpoint" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checkpoint the current network. The checkpoint will be saved as <code class="docutils literal notranslate"><span class="pre">'last.ckpt'</span></code>.
+If valid_logs[loss_key] is better than self.best then this checkpoint will replace self.best and <code class="docutils literal notranslate"><span class="pre">'last.ckpt'</span></code> will be renamed to <code class="docutils literal notranslate"><span class="pre">f'{checkpoint_folder}/checkpoint_epoch{epoch}_loss{valid_loss}.ckpt'</span></code> and the former best (filename saved as <code class="docutils literal notranslate"><span class="pre">self.best_name</span></code>) will be deleted</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>epoch</strong> (<em>int</em>) – current epoch, will be saved within the ckpt. Current epoch can usually be obtained with <code class="docutils literal notranslate"><span class="pre">self.epoch</span></code></p></li>
+<li><p><strong>valid_logs</strong> (<em>dict</em>) – results dictionary containing loss_key.</p></li>
+<li><p><strong>checkpoint_folder</strong> (<em>str</em>) – The folder in which to save the checkpoint.</p></li>
+<li><p><strong>loss_key</strong> (<em>str</em>) – (default: ‘valid_loss’) The key with which to get loss from valid_logs.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="molearn.trainers.trainer.Trainer.common_step">
+<span class="sig-name descname"><span class="pre">common_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/trainers/trainer.html#Trainer.common_step"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.trainers.trainer.Trainer.common_step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called from both train_step and valid_step.
+Calculates the mean squared error loss for self.autoencoder. 
+Encoded and decoded frames are saved in self._internal under keys <code class="docutils literal notranslate"><span class="pre">encoded</span></code> and <code class="docutils literal notranslate"><span class="pre">decoded</span></code> respectively should you wish to use them elsewhere.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>batch</strong> (<em>torch.Tensor</em>) – Tensor of shape [Batch size, 3, Number of Atoms] A mini-batch of protein frames normalised. To recover original data multiple by <code class="docutils literal notranslate"><span class="pre">self.std</span></code>.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Return calculated mse_loss</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="molearn.trainers.trainer.Trainer.get_network_summary">
+<span class="sig-name descname"><span class="pre">get_network_summary</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/trainers/trainer.html#Trainer.get_network_summary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.trainers.trainer.Trainer.get_network_summary" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns a dictionary containing information about the size of the autoencoder.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="molearn.trainers.trainer.Trainer.learning_rate_sweep">
+<span class="sig-name descname"><span class="pre">learning_rate_sweep</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_lr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_lr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">number_of_iterations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpoint_folder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'checkpoint_sweep'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_on</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'mse_loss'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['loss',</span> <span class="pre">'mse_loss']</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/trainers/trainer.html#Trainer.learning_rate_sweep"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.trainers.trainer.Trainer.learning_rate_sweep" title="Permalink to this definition">¶</a></dt>
+<dd><p>Deprecated method.
+Performs a sweep of learning rate between <code class="docutils literal notranslate"><span class="pre">max_lr</span></code> and <code class="docutils literal notranslate"><span class="pre">min_lr</span></code> over <code class="docutils literal notranslate"><span class="pre">number_of_iterations</span></code>. 
+See <a class="reference external" href="https://towardsdatascience.com/finding-good-learning-rate-and-the-one-cycle-policy-7159fe1db5d6">Finding Good Learning Rate and The One Cycle Policy</a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>max_lr</strong> (<em>float</em>) – (default: 100.0) final/maximum learning rate to be used</p></li>
+<li><p><strong>min_lr</strong> (<em>float</em>) – (default: 1e-5) Starting learning rate</p></li>
+<li><p><strong>number_of_iterations</strong> (<em>int</em>) – (default: 1000) Number of steps to run sweep over.</p></li>
+<li><p><strong>train_on</strong> (<em>str</em>) – (default: ‘mse_loss’) key returned from trainer.train_step(batch) on which to train</p></li>
+<li><p><strong>save</strong> (<em>list</em>) – (default: [‘loss’, ‘mse_loss’]) what loss values to return.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>array of shape [len(save), min(number_of_iterations, iterations before NaN)] containing loss values defined in <cite>save</cite> key word.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="molearn.trainers.trainer.Trainer.load_checkpoint">
+<span class="sig-name descname"><span class="pre">load_checkpoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">checkpoint_folder</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpoint_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'best'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">load_optimiser</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/trainers/trainer.html#Trainer.load_checkpoint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.trainers.trainer.Trainer.load_checkpoint" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load checkpoint.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>checkpoint_name</strong> (<em>str</em>) – (default: <code class="docutils literal notranslate"><span class="pre">'best'</span></code>) if <code class="docutils literal notranslate"><span class="pre">'best'</span></code> then checkpoint_folder is searched for all files beginning with <code class="docutils literal notranslate"><span class="pre">'checkpoint_'</span></code> and loss values are extracted from the filename by assuming all characters after <code class="docutils literal notranslate"><span class="pre">'loss'</span></code> and before <code class="docutils literal notranslate"><span class="pre">'.ckpt'</span></code> are a float. The checkpoint with the lowest loss is loaded. checkpoint_name is not <code class="docutils literal notranslate"><span class="pre">'best'</span></code> we search for a checkpoint file at <code class="docutils literal notranslate"><span class="pre">f'{checkpoint_folder}/{checkpoint_name}'</span></code>.</p></li>
+<li><p><strong>checkpoint_folder</strong> (<em>str</em>) – Folder whithin which to search for checkpoints.</p></li>
+<li><p><strong>load_optimiser</strong> (<em>bool</em>) – (default: True) Should optimiser state dictionary be loaded.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="molearn.trainers.trainer.Trainer.log">
+<span class="sig-name descname"><span class="pre">log</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">log_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/trainers/trainer.html#Trainer.log"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.trainers.trainer.Trainer.log" title="Permalink to this definition">¶</a></dt>
+<dd><p>Then contents of log_dict are dumped using <code class="docutils literal notranslate"><span class="pre">json.dumps(log_dict)</span></code> and printed and/or appended to <code class="docutils literal notranslate"><span class="pre">self.log_filename</span></code>
+This function is called from <code class="xref py py-func docutils literal notranslate"><span class="pre">self.run</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>log_dict</strong> (<em>dict</em>) – dictionary to be printed or saved</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em>) – (default: False) if True or self.verbose is true the output will be printed</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="molearn.trainers.trainer.Trainer.prepare_optimiser">
+<span class="sig-name descname"><span class="pre">prepare_optimiser</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight_decay</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0001</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">optimiser_kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/trainers/trainer.html#Trainer.prepare_optimiser"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.trainers.trainer.Trainer.prepare_optimiser" title="Permalink to this definition">¶</a></dt>
+<dd><p>The Default optimiser is <code class="docutils literal notranslate"><span class="pre">AdamW</span></code> and is saved in <code class="docutils literal notranslate"><span class="pre">self.optimiser</span></code>.
+With no optional arguments this function is the same as doing:
+<code class="docutils literal notranslate"><span class="pre">trainer.optimiser</span> <span class="pre">=</span> <span class="pre">torch.optim.AdawW(self.autoencoder.parameters(),</span> <span class="pre">lr=1e-3,</span> <span class="pre">weight_decay</span> <span class="pre">=</span> <span class="pre">0.0001)</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>lr</strong> (<em>float</em>) – (default: 1e-3) optimiser learning rate.</p></li>
+<li><p><strong>weight_decay</strong> (<em>float</em>) – (default: 0.0001) optimiser weight_decay</p></li>
+<li><p><strong>**optimiser_kwargs</strong> – other kwargs that are passed onto AdamW</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="molearn.trainers.trainer.Trainer.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_epochs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_filename</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_folder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpoint_frequency</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpoint_folder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'checkpoints'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allow_n_failures</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/trainers/trainer.html#Trainer.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.trainers.trainer.Trainer.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calls the following in a loop:</p>
+<ul class="simple">
+<li><p><code class="xref py py-func docutils literal notranslate"><span class="pre">Trainer.train_epoch</span></code></p></li>
+<li><p><code class="xref py py-func docutils literal notranslate"><span class="pre">Trainer.valid_epoch</span></code></p></li>
+<li><p><code class="xref py py-func docutils literal notranslate"><span class="pre">Trainer.scheduler_step</span></code></p></li>
+<li><p><code class="xref py py-func docutils literal notranslate"><span class="pre">Trainer.checkpoint</span></code></p></li>
+<li><p><code class="xref py py-func docutils literal notranslate"><span class="pre">Trainer.checkpoint</span></code></p></li>
+<li><p><code class="xref py py-func docutils literal notranslate"><span class="pre">Trainer.log</span></code></p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>max_epochs</strong> (<em>int</em>) – (default: 100). run until <code class="docutils literal notranslate"><span class="pre">self.epoch</span></code> matches max_epochs</p></li>
+<li><p><strong>log_filename</strong> (<em>str</em>) – (default: None) If log_filename already exists, all logs are appended to the existing file. Else new log file file is created.</p></li>
+<li><p><strong>log_folder</strong> (<em>str</em>) – (default: None) If not None log_folder directory is created and the log file is saved within this folder</p></li>
+<li><p><strong>checkpoint_frequency</strong> (<em>int</em>) – (default: 1) The frequency at which last.ckpt is saved. A checkpoint is saved every epoch if <code class="docutils literal notranslate"><span class="pre">'valid_loss'</span></code> is lower else when <code class="docutils literal notranslate"><span class="pre">self.epoch</span></code> is divisible by checkpoint_frequency.</p></li>
+<li><p><strong>checkpoint_folder</strong> (<em>str</em>) – (default: ‘checkpoints’) Where to save checkpoints.</p></li>
+<li><p><strong>allow_n_failures</strong> (<em>int</em>) – (default: 10) How many times should training be restarted on error. Each epoch is run in a try except block. If an error is raised training is continued from the best checkpoint.</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em>) – (default: None) set trainer.verbose. If True, the epoch logs will be printed as well as written to log_filename</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="molearn.trainers.trainer.Trainer.scheduler_step">
+<span class="sig-name descname"><span class="pre">scheduler_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/trainers/trainer.html#Trainer.scheduler_step"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.trainers.trainer.Trainer.scheduler_step" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function does nothing. It is called after <code class="xref py py-func docutils literal notranslate"><span class="pre">self.valid_epoch</span></code> in <code class="xref py py-func docutils literal notranslate"><span class="pre">Trainer.run()</span></code> and before <code class="xref py py-func docutils literal notranslate"><span class="pre">checkpointing</span></code>. It is designed to be overridden if you wish to use a scheduler.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>logs</strong> (<em>dict</em>) – Dictionary passed passed containing all logs returned from <code class="docutils literal notranslate"><span class="pre">self.train_epoch</span></code> and <code class="docutils literal notranslate"><span class="pre">self.valid_epoch</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="molearn.trainers.trainer.Trainer.set_autoencoder">
+<span class="sig-name descname"><span class="pre">set_autoencoder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">autoencoder</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/trainers/trainer.html#Trainer.set_autoencoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.trainers.trainer.Trainer.set_autoencoder" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>autoencoder</strong> – (<code class="xref py py-func docutils literal notranslate"><span class="pre">autoencoder</span></code>,) torch network class that implements <code class="docutils literal notranslate"><span class="pre">autoencoder.encode</span></code>, and <code class="docutils literal notranslate"><span class="pre">autoencoder.decode</span></code>. Please pass the class not the instance</p></li>
+<li><p><strong>**kwargs</strong> – any other kwargs given to this method will be used to initialise the network <code class="docutils literal notranslate"><span class="pre">self.autoencoder</span> <span class="pre">=</span> <span class="pre">autoencoder(**kwargs)</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="molearn.trainers.trainer.Trainer.set_data">
+<span class="sig-name descname"><span class="pre">set_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/trainers/trainer.html#Trainer.set_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.trainers.trainer.Trainer.set_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets up internal variables and gives trainer access to dataloaders.
+<code class="docutils literal notranslate"><span class="pre">self.train_dataloader</span></code>, <code class="docutils literal notranslate"><span class="pre">self.valid_dataloader</span></code>, <code class="docutils literal notranslate"><span class="pre">self.std</span></code>, <code class="docutils literal notranslate"><span class="pre">self.mean</span></code>, <code class="docutils literal notranslate"><span class="pre">self.mol</span></code> will all be obtained from this object.</p>
+<p>:param <a class="reference internal" href="data.html#molearn.data.PDBData" title="molearn.data.PDBData"><code class="xref py py-func docutils literal notranslate"><span class="pre">PDBData</span></code></a> data: data object to be set.
+:param **kwargs: will be passed on to <a class="reference internal" href="data.html#molearn.data.PDBData.get_dataloader" title="molearn.data.PDBData.get_dataloader"><code class="xref py py-func docutils literal notranslate"><span class="pre">data.get_dataloader(**kwargs)</span></code></a></p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="molearn.trainers.trainer.Trainer.set_dataloader">
+<span class="sig-name descname"><span class="pre">set_dataloader</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">train_dataloader</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">valid_dataloader</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/trainers/trainer.html#Trainer.set_dataloader"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.trainers.trainer.Trainer.set_dataloader" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>train_dataloader</strong> (<em>torch.DataLoader</em>) – Alternatively set using <code class="docutils literal notranslate"><span class="pre">trainer.train_dataloader</span> <span class="pre">=</span> <span class="pre">dataloader</span></code></p></li>
+<li><p><strong>valid_dataloader</strong> (<em>torch.DataLoader</em>) – Alternatively set using <code class="docutils literal notranslate"><span class="pre">trainer.valid_dataloader</span> <span class="pre">=</span> <span class="pre">dataloader</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="molearn.trainers.trainer.Trainer.train_epoch">
+<span class="sig-name descname"><span class="pre">train_epoch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">epoch</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/trainers/trainer.html#Trainer.train_epoch"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.trainers.trainer.Trainer.train_epoch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Train one epoch. Called once an epoch from <code class="xref py py-func docutils literal notranslate"><span class="pre">trainer.run</span></code>
+This method performs the following functions:
+- Sets network to train mode via <code class="docutils literal notranslate"><span class="pre">self.autoencoder.train()</span></code>
+- for each batch in self.train_dataloader implements typical pytorch training protocol:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>zero gradients with call <code class="docutils literal notranslate"><span class="pre">self.optimiser.zero_grad()</span></code></p></li>
+<li><p>Use training implemented in trainer.train_step <code class="docutils literal notranslate"><span class="pre">result</span> <span class="pre">=</span> <span class="pre">self.train_step(batch)</span></code></p></li>
+<li><p>Determine gradients using keyword <code class="docutils literal notranslate"><span class="pre">'loss'</span></code> e.g. <code class="docutils literal notranslate"><span class="pre">result['loss'].backward()</span></code></p></li>
+<li><p>Update network gradients. <code class="docutils literal notranslate"><span class="pre">self.optimiser.step</span></code></p></li>
+</ul>
+</div></blockquote>
+<ul class="simple">
+<li><p>All results are aggregated via averaging and returned with <code class="docutils literal notranslate"><span class="pre">'train_'</span></code> prepended on the dictionary key</p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>epoch</strong> (<em>int</em>) – The epoch is passed as an argument however epoch number can also be accessed from self.epoch.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Return all results from train_step averaged. These results will be printed and/or logged in <code class="xref py py-func docutils literal notranslate"><span class="pre">trainer.run()</span></code> via a call to <code class="xref py py-func docutils literal notranslate"><span class="pre">self.log(results)</span></code></p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="molearn.trainers.trainer.Trainer.train_step">
+<span class="sig-name descname"><span class="pre">train_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/trainers/trainer.html#Trainer.train_step"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.trainers.trainer.Trainer.train_step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called from <code class="xref py py-func docutils literal notranslate"><span class="pre">Trainer.train_epoch</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>batch</strong> (<em>torch.Tensor</em>) – Tensor of shape [Batch size, 3, Number of Atoms]. A mini-batch of protein frames normalised. To recover original data multiple by <code class="docutils literal notranslate"><span class="pre">self.std</span></code>.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Return loss. The dictionary must contain an entry with key <code class="docutils literal notranslate"><span class="pre">'loss'</span></code> that <code class="xref py py-func docutils literal notranslate"><span class="pre">self.train_epoch</span></code> will call <code class="docutils literal notranslate"><span class="pre">result['loss'].backwards()</span></code> to obtain gradients.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="molearn.trainers.trainer.Trainer.update_optimiser_hyperparameters">
+<span class="sig-name descname"><span class="pre">update_optimiser_hyperparameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/trainers/trainer.html#Trainer.update_optimiser_hyperparameters"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.trainers.trainer.Trainer.update_optimiser_hyperparameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update optimeser hyperparameter e.g. <code class="docutils literal notranslate"><span class="pre">trainer.update_optimiser_hyperparameters(lr</span> <span class="pre">=</span> <span class="pre">1e3)</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>**kwargs</strong> – each key value pair in **kwargs is inserted into <code class="docutils literal notranslate"><span class="pre">self.optimiser</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="molearn.trainers.trainer.Trainer.valid_epoch">
+<span class="sig-name descname"><span class="pre">valid_epoch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">epoch</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/trainers/trainer.html#Trainer.valid_epoch"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.trainers.trainer.Trainer.valid_epoch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called once an epoch from <code class="xref py py-func docutils literal notranslate"><span class="pre">trainer.run</span></code> within a no_grad context.
+This method performs the following functions:
+- Sets network to eval mode via <code class="docutils literal notranslate"><span class="pre">self.autoencoder.eval()</span></code>
+- for each batch in <code class="docutils literal notranslate"><span class="pre">self.valid_dataloader</span></code> calls <code class="xref py py-func docutils literal notranslate"><span class="pre">trainer.valid_step</span></code> to retrieve validation loss
+- All results are aggregated via averaging and returned with <code class="docutils literal notranslate"><span class="pre">'valid_'</span></code> prepended on the dictionary key</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>The loss with key <code class="docutils literal notranslate"><span class="pre">'loss'</span></code> is returned as <code class="docutils literal notranslate"><span class="pre">'valid_loss'</span></code> this will be the loss value by which the best checkpoint is determined.</p></li>
+</ul>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>epoch</strong> (<em>int</em>) – The epoch is passed as an argument however epoch number can also be accessed from self.epoch.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Return all results from valid_step averaged. These results will be printed and/or logged in <code class="xref py py-func docutils literal notranslate"><span class="pre">Trainer.run()</span></code> via a call to <code class="xref py py-func docutils literal notranslate"><span class="pre">self.log(results)</span></code></p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="molearn.trainers.trainer.Trainer.valid_step">
+<span class="sig-name descname"><span class="pre">valid_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/trainers/trainer.html#Trainer.valid_step"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.trainers.trainer.Trainer.valid_step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called from <code class="xref py py-func docutils literal notranslate"><span class="pre">Trainer.valid_epoch</span></code> on every mini-batch.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>batch</strong> (<em>torch.Tensor</em>) – Tensor of shape [Batch size, 3, Number of Atoms]. A mini-batch of protein frames normalised. To recover original data multiple by <code class="docutils literal notranslate"><span class="pre">self.std</span></code>.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Return loss. The dictionary must contain an entry with key <code class="docutils literal notranslate"><span class="pre">'loss'</span></code> that will be the score via which the best checkpoint is determined.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="molearn.trainers.openmm_physics_trainer.OpenMM_Physics_Trainer">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">OpenMM_Physics_Trainer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/trainers/openmm_physics_trainer.html#OpenMM_Physics_Trainer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.trainers.openmm_physics_trainer.OpenMM_Physics_Trainer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#molearn.trainers.trainer.Trainer" title="molearn.trainers.trainer.Trainer"><code class="xref py py-class docutils literal notranslate"><span class="pre">Trainer</span></code></a></p>
+<p>OpenMM_Physics_Trainer subclasses Trainer and replaces the valid_step and train_step.
+An extra ‘physics_loss’ is calculated using OpenMM and the forces are inserted into backwards pass.
+To use this trainer requires the additional step of calling <code class="xref py py-func docutils literal notranslate"><span class="pre">prepare_physics</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>device</strong> (<em>torch.Device</em>) – if not given will be determinined automatically based on torch.cuda.is_available()</p></li>
+<li><p><strong>log_filename</strong> (<em>str</em>) – (default: ‘default_log_filename.json’) file used to log outputs to</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="molearn.trainers.openmm_physics_trainer.OpenMM_Physics_Trainer.common_physics_step">
+<span class="sig-name descname"><span class="pre">common_physics_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">latent</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/trainers/openmm_physics_trainer.html#OpenMM_Physics_Trainer.common_physics_step"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.trainers.openmm_physics_trainer.OpenMM_Physics_Trainer.common_physics_step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called from both <code class="xref py py-func docutils literal notranslate"><span class="pre">train_step</span></code> and <code class="xref py py-func docutils literal notranslate"><span class="pre">valid_step</span></code>.
+Takes random interpolations between adjacent samples latent vectors. These are decoded (decoded structures saved as <code class="docutils literal notranslate"><span class="pre">self._internal['generated']</span> <span class="pre">=</span> <span class="pre">generated</span> <span class="pre">if</span> <span class="pre">needed</span> <span class="pre">elsewhere)</span> <span class="pre">and</span> <span class="pre">the</span> <span class="pre">energy</span> <span class="pre">terms</span> <span class="pre">calculated</span> <span class="pre">with</span> <span class="pre">``self.physics_loss</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>batch</strong> (<em>torch.Tensor</em>) – tensor of shape [batch_size, 3, n_atoms]. Give access to the mini-batch of structures. This is used to determine <code class="docutils literal notranslate"><span class="pre">n_atoms</span></code></p></li>
+<li><p><strong>latent</strong> (<em>torch.Tensor</em>) – tensor shape [batch_size, 2, 1]. Pass the encoded vectors of the mini-batch.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="molearn.trainers.openmm_physics_trainer.OpenMM_Physics_Trainer.prepare_physics">
+<span class="sig-name descname"><span class="pre">prepare_physics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">physics_scaling_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clamp_threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100000000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clamp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_physics_at</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/trainers/openmm_physics_trainer.html#OpenMM_Physics_Trainer.prepare_physics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.trainers.openmm_physics_trainer.OpenMM_Physics_Trainer.prepare_physics" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create <code class="docutils literal notranslate"><span class="pre">self.physics_loss</span></code> object from <code class="xref py py-func docutils literal notranslate"><span class="pre">loss_functions.openmm_energy</span></code>
+Needs <code class="docutils literal notranslate"><span class="pre">self.mol</span></code>, <code class="docutils literal notranslate"><span class="pre">self.std</span></code>, and <code class="docutils literal notranslate"><span class="pre">self._data.atoms</span></code> to have been set with <code class="xref py py-func docutils literal notranslate"><span class="pre">Trainer.set_data</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>physics_scaling_factor</strong> (<em>float</em>) – scaling factor saved to <code class="docutils literal notranslate"><span class="pre">self.psf</span></code> that is used in <code class="xref py py-func docutils literal notranslate"><span class="pre">train_step</span></code>. Defaults to 0.1</p></li>
+<li><p><strong>clamp_threshold</strong> (<em>float</em>) – if <code class="docutils literal notranslate"><span class="pre">clamp=True</span></code> is passed then forces will be clamped between -clamp_threshold and clamp_threshold. Default: 1e-8</p></li>
+<li><p><strong>clamp</strong> (<em>bool</em>) – Whether to clamp the forces. Defaults to False</p></li>
+<li><p><strong>start_physics_at</strong> (<em>int</em>) – As of yet unused parameter saved as <code class="docutils literal notranslate"><span class="pre">self.start_physics_at</span> <span class="pre">=</span> <span class="pre">start_physics_at</span></code>. Default: 0</p></li>
+<li><p><strong>**kwargs</strong> – All aditional kwargs will be passed to <code class="xref py py-func docutils literal notranslate"><span class="pre">openmm_energy</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="molearn.trainers.openmm_physics_trainer.OpenMM_Physics_Trainer.train_step">
+<span class="sig-name descname"><span class="pre">train_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/trainers/openmm_physics_trainer.html#OpenMM_Physics_Trainer.train_step"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.trainers.openmm_physics_trainer.OpenMM_Physics_Trainer.train_step" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method overrides <code class="xref py py-func docutils literal notranslate"><span class="pre">Trainer.train_step</span></code> and adds an additional ‘Physics_loss’ term.</p>
+<p>Mse_loss and physics loss are summed (<code class="docutils literal notranslate"><span class="pre">Mse_loss</span> <span class="pre">+</span> <span class="pre">scale*physics_loss</span></code>)with a scaling factor <code class="docutils literal notranslate"><span class="pre">self.psf*mse_loss/Physics_loss</span></code>. Mathematically this cancels out the physics_loss and the final loss is (1+self.psf)*mse_loss. However because the scaling factor is calculated within a <code class="docutils literal notranslate"><span class="pre">torch.no_grad</span></code> context manager the gradients are not computed.
+This is essentially the same as scaling the physics_loss with any arbitary scaling factor but in this case simply happens to be exactly proportional to the ration of Mse_loss and physics_loss in every step.</p>
+<p>Called from <code class="xref py py-func docutils literal notranslate"><span class="pre">Trainer.train_epoch</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>batch</strong> (<em>torch.Tensor</em>) – tensor shape [Batch size, 3, Number of Atoms]. A mini-batch of protein frames normalised. To recover original data multiple by <code class="docutils literal notranslate"><span class="pre">self.std</span></code>.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Return loss. The dictionary must contain an entry with key <code class="docutils literal notranslate"><span class="pre">'loss'</span></code> that <code class="xref py py-func docutils literal notranslate"><span class="pre">self.train_epoch</span></code> will call <code class="docutils literal notranslate"><span class="pre">result['loss'].backwards()</span></code> to obtain gradients.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="molearn.trainers.openmm_physics_trainer.OpenMM_Physics_Trainer.valid_step">
+<span class="sig-name descname"><span class="pre">valid_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/trainers/openmm_physics_trainer.html#OpenMM_Physics_Trainer.valid_step"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.trainers.openmm_physics_trainer.OpenMM_Physics_Trainer.valid_step" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method overrides <code class="xref py py-func docutils literal notranslate"><span class="pre">Trainer.valid_step</span></code> and adds an additional ‘Physics_loss’ term.</p>
+<p>Differently to <code class="xref py py-func docutils literal notranslate"><span class="pre">train_step</span></code> this method sums the logs of mse_loss and physics_loss <code class="docutils literal notranslate"><span class="pre">final_loss</span> <span class="pre">=</span> <span class="pre">torch.log(results['mse_loss'])+scale*torch.log(results['physics_loss'])</span></code></p>
+<p>Called from super class <code class="xref py py-func docutils literal notranslate"><span class="pre">Trainer.valid_epoch</span></code> on every mini-batch.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>batch</strong> (<em>torch.Tensor</em>) – Tensor of shape [Batch size, 3, Number of Atoms]. A mini-batch of protein frames normalised. To recover original data multiple by <code class="docutils literal notranslate"><span class="pre">self.std</span></code>.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Return loss. The dictionary must contain an entry with key <code class="docutils literal notranslate"><span class="pre">'loss'</span></code> that will be the score via which the best checkpoint is determined.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="molearn.trainers.torch_physics_trainer.Torch_Physics_Trainer">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Torch_Physics_Trainer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/trainers/torch_physics_trainer.html#Torch_Physics_Trainer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.trainers.torch_physics_trainer.Torch_Physics_Trainer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#molearn.trainers.trainer.Trainer" title="molearn.trainers.trainer.Trainer"><code class="xref py py-class docutils literal notranslate"><span class="pre">Trainer</span></code></a></p>
+<p>Torch_Physics_Trainer subclasses Trainer and replaces the valid_step and train_step.
+An extra ‘physics_loss’ (bonds, angles, and torsions) is calculated using pytorch.
+To use this trainer requires the additional step of calling :func: <cite>prepare_physics &lt;molearn.trainers.Torch_Physics_Trainer&gt;</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>device</strong> (<em>torch.Device</em>) – if not given will be determinined automatically based on torch.cuda.is_available()</p></li>
+<li><p><strong>log_filename</strong> (<em>str</em>) – (default: ‘default_log_filename.json’) file used to log outputs to</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="molearn.trainers.torch_physics_trainer.Torch_Physics_Trainer.common_physics_step">
+<span class="sig-name descname"><span class="pre">common_physics_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">latent</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/trainers/torch_physics_trainer.html#Torch_Physics_Trainer.common_physics_step"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.trainers.torch_physics_trainer.Torch_Physics_Trainer.common_physics_step" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called from both <code class="xref py py-func docutils literal notranslate"><span class="pre">train_step</span></code> and <code class="xref py py-func docutils literal notranslate"><span class="pre">valid_step</span></code>.
+Takes random interpolations between adjacent samples latent vectors. These are decoded (decoded structures saved as <code class="docutils literal notranslate"><span class="pre">self._internal['generated']</span> <span class="pre">=</span> <span class="pre">generated</span> <span class="pre">if</span> <span class="pre">needed</span> <span class="pre">elsewhere)</span> <span class="pre">and</span> <span class="pre">the</span> <span class="pre">energy</span> <span class="pre">terms</span> <span class="pre">calculated</span> <span class="pre">with</span> <span class="pre">``self.physics_loss</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>batch</strong> (<em>torch.Tensor</em>) – tensor of shape [batch_size, 3, n_atoms]. Give access to the mini-batch of structures. This is used to determine <code class="docutils literal notranslate"><span class="pre">n_atoms</span></code></p></li>
+<li><p><strong>latent</strong> (<em>torch.Tensor</em>) – tensor shape [batch_size, 2, 1]. Pass the encoded vectors of the mini-batch.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="molearn.trainers.torch_physics_trainer.Torch_Physics_Trainer.prepare_physics">
+<span class="sig-name descname"><span class="pre">prepare_physics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">physics_scaling_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/trainers/torch_physics_trainer.html#Torch_Physics_Trainer.prepare_physics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.trainers.torch_physics_trainer.Torch_Physics_Trainer.prepare_physics" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create <code class="docutils literal notranslate"><span class="pre">self.physics_loss</span></code> object from <code class="xref py py-func docutils literal notranslate"><span class="pre">loss_functions.TorchProteinEnergy</span></code>
+Needs <code class="docutils literal notranslate"><span class="pre">self.std</span></code>, <code class="docutils literal notranslate"><span class="pre">self._data</span></code> to have been set with <code class="xref py py-func docutils literal notranslate"><span class="pre">Trainer.set_data</span></code>
+:param float physics_scaling_factor: (default: 0.1) scaling factor saved to <code class="docutils literal notranslate"><span class="pre">self.psf</span></code> that is used in :func: <cite>train_step &lt;molearn.trainers.Torch_Physics_Trainer.train_step&gt;</cite> It will control the relative importance of mse_loss and physics_loss in training.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="molearn.trainers.torch_physics_trainer.Torch_Physics_Trainer.train_step">
+<span class="sig-name descname"><span class="pre">train_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/trainers/torch_physics_trainer.html#Torch_Physics_Trainer.train_step"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.trainers.torch_physics_trainer.Torch_Physics_Trainer.train_step" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method overrides <code class="xref py py-func docutils literal notranslate"><span class="pre">Trainer.train_step</span></code> and adds an additional ‘Physics_loss’ term.</p>
+<p>Mse_loss and physics loss are summed (<code class="docutils literal notranslate"><span class="pre">Mse_loss</span> <span class="pre">+</span> <span class="pre">scale*physics_loss</span></code>)with a scaling factor <code class="docutils literal notranslate"><span class="pre">self.psf*mse_loss/Physics_loss</span></code>. Mathematically this cancels out the physics_loss and the final loss is (1+self.psf)*mse_loss. However because the scaling factor is calculated within a <code class="docutils literal notranslate"><span class="pre">torch.no_grad</span></code> context manager the gradients are not computed.
+This is essentially the same as scaling the physics_loss with any arbitary scaling factor but in this case simply happens to be exactly proportional to the ration of Mse_loss and physics_loss in every step.</p>
+<p>Called from <code class="xref py py-func docutils literal notranslate"><span class="pre">Trainer.train_epoch</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>batch</strong> (<em>torch.Tensor</em>) – tensor shape [Batch size, 3, Number of Atoms]. A mini-batch of protein frames normalised. To recover original data multiple by <code class="docutils literal notranslate"><span class="pre">self.std</span></code>.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Return loss. The dictionary must contain an entry with key <code class="docutils literal notranslate"><span class="pre">'loss'</span></code> that <code class="xref py py-func docutils literal notranslate"><span class="pre">self.train_epoch</span></code> will call <code class="docutils literal notranslate"><span class="pre">result['loss'].backwards()</span></code> to obtain gradients.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="molearn.trainers.torch_physics_trainer.Torch_Physics_Trainer.valid_step">
+<span class="sig-name descname"><span class="pre">valid_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/trainers/torch_physics_trainer.html#Torch_Physics_Trainer.valid_step"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.trainers.torch_physics_trainer.Torch_Physics_Trainer.valid_step" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method overrides <code class="xref py py-func docutils literal notranslate"><span class="pre">Trainer.valid_step</span></code> and adds an additional ‘Physics_loss’ term.</p>
+<p>Differently to <code class="xref py py-func docutils literal notranslate"><span class="pre">train_step</span></code> this method sums the logs of mse_loss and physics_loss <code class="docutils literal notranslate"><span class="pre">final_loss</span> <span class="pre">=</span> <span class="pre">torch.log(results['mse_loss'])+scale*torch.log(results['physics_loss'])</span></code></p>
+<p>Called from super class <code class="xref py py-func docutils literal notranslate"><span class="pre">Trainer.valid_epoch</span></code> on every mini-batch.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>batch</strong> (<em>torch.Tensor</em>) – Tensor of shape [Batch size, 3, Number of Atoms]. A mini-batch of protein frames normalised. To recover original data multiple by <code class="docutils literal notranslate"><span class="pre">self.std</span></code>.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Return loss. The dictionary must contain an entry with key <code class="docutils literal notranslate"><span class="pre">'loss'</span></code> that will be the score via which the best checkpoint is determined.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 </section>

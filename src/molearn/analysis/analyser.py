@@ -51,15 +51,15 @@ class MolearnAnalysis(object):
 
     def get_dataset(self, key):
         '''
-        :param key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
+        :param str key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
         '''
         return self._datasets[key]
 
     def set_dataset(self, key, data, atomselect="*"):
         '''
-        :param data: :func:`PDBData <molearn.data.PDBData>` object, containing atomic coordinates
-        :param key: string, label to be associated with data
-        :param atomselect: list of atom names to load. If '*', all atoms are loaded.
+        :param data: :func:`PDBData <molearn.data.PDBData>` object containing atomic coordinates
+        :param str key: label to be associated with data
+        :param list/str atomselect: list of atom names to load, or '*' to indicate that all atoms are loaded.
         '''
         if isinstance(data, str) and data.endswith('.pdb'):
             d = PDBData()
@@ -87,7 +87,7 @@ class MolearnAnalysis(object):
 
     def get_encoded(self, key):
         '''
-        :param key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
+        :param str key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
         :return: array containing the encoding in latent space of dataset associated with key
         '''
         if key not in self._encoded:
@@ -108,13 +108,13 @@ class MolearnAnalysis(object):
 
     def set_encoded(self, key, coords):
         '''
-        :param key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
+        :param str key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
         '''
         self._encoded[key] = torch.tensor(coords).float()
 
     def get_decoded(self, key):
         '''
-        :param key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
+        :param str key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
         '''
         if key not in self._decoded:
             with torch.no_grad():
@@ -128,7 +128,7 @@ class MolearnAnalysis(object):
 
     def set_decoded(self, key, structures):
         '''
-        :param key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
+        :param str key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
         '''
         self._decoded[key] = structures
 
@@ -142,8 +142,8 @@ class MolearnAnalysis(object):
         '''
         Calculate the reconstruction error of a dataset encoded and decoded by a trained neural network.
         
-        :param key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
-        :param align: if True, the RMSD will be calculated by finding the optimal alignment between structures
+        :param str key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
+        :param bool align: if True, the RMSD will be calculated by finding the optimal alignment between structures
         :return: 1D array containing the RMSD between input structures and their encoded-decoded counterparts
         '''
         dataset = self.get_dataset(key)
@@ -170,8 +170,8 @@ class MolearnAnalysis(object):
 
     def get_dope(self, key, refine=True):
         '''
-        :param key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
-        :param refine: if True, refine structures before calculating DOPE score
+        :param str key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
+        :param bool refine: if True, refine structures before calculating DOPE score
         :return: dictionary containing DOPE score of dataset, and its decoded counterpart
         '''
         dataset = self.get_dataset(key)
@@ -185,7 +185,7 @@ class MolearnAnalysis(object):
 
     def get_ramachandran(self, key):
         '''
-        :param key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
+        :param str key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
         '''
         
         dataset = self.get_dataset(key)
@@ -199,10 +199,10 @@ class MolearnAnalysis(object):
         '''
         Define a NxN point grid regularly sampling the latent space.
         
-        :param samples: grid size (build a samples x samples grid)
-        :param bounds_from: str, list of strings, or 'all'. Name(s) of datasets to use as reference.
-        :param bounds: tuple (xmin, xmax, ymin, ymax) or None
-        :param padding: define size of extra spacing around boundary conditions (as ratio of axis dimensions)
+        :param int samples: grid size (build a samples x samples grid)
+        :param str/list bounds_from: Name(s) of datasets to use as reference, either as single string, a list of strings, or 'all'
+        :param tuple/list bounds: tuple (xmin, xmax, ymin, ymax) or None
+        :param float padding: define size of extra spacing around boundary conditions (as ratio of axis dimensions)
         '''
         
         key = 'grid'
@@ -253,8 +253,8 @@ class MolearnAnalysis(object):
         '''
         Calculate landscape of RMSD vs single target structure. Target should be previously loaded datset containing a single conformation.  
   
-        :param key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
-        :return: RMSD lantent space NxN surface
+        :param str key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
+        :return: RMSD latent space NxN surface
         :return: x-axis values
         :return: y-axis values
         '''
@@ -274,10 +274,10 @@ class MolearnAnalysis(object):
         Calculate RMSD and z-drift on a grid sampling the latent space.
         Requires a grid system to be defined via a prior call to :func:`set_dataset <molearn.analysis.MolearnAnalysis.setup_grid>`.
         
-        :param s_key: string, label for RMSD dataset
-        :param z_key: string, label for z-drift dataset
-        :return: input-to-decoded RMSD lantent space NxN surface
-        :return: z-drift lantent space NxN surface
+        :param str s_key: label for RMSD dataset
+        :param str z_key: label for z-drift dataset
+        :return: input-to-decoded RMSD latent space NxN surface
+        :return: z-drift latent space NxN surface
         :return: x-axis values
         :return: y-axis values
         '''
@@ -341,7 +341,7 @@ class MolearnAnalysis(object):
 
     def get_all_ramachandran_score(self, tensor):
         '''
-        Calculate Ramachandran score of an ensemble of atomic conrdinates
+        Calculate Ramachandran score of an ensemble of atomic conrdinates.
         
         :param tensor:
         '''
@@ -359,10 +359,10 @@ class MolearnAnalysis(object):
 
     def get_all_dope_score(self, tensor, refine=True):
         '''
-        Calculate DOPE score of an ensemble of atom coordinates
+        Calculate DOPE score of an ensemble of atom coordinates.
 
         :param tensor:
-        :param refine: if True, return DOPE score of input and output structure after refinement
+        :param bool refine: if True, return DOPE score of input and output structure after refinement
         '''
         results = []
         for f in tensor:
@@ -372,7 +372,7 @@ class MolearnAnalysis(object):
 
     def reference_dope_score(self, frame):
         '''
-        :param frame: numpy array with shape [1, N, 3] with Cartesian coordinates of atoms
+        :param numpy.array frame: array with shape [1, N, 3] with Cartesian coordinates of atoms
         :return: DOPE score
         '''
         self.mol.coordinates = deepcopy(frame)
@@ -390,9 +390,9 @@ class MolearnAnalysis(object):
         Calculate DOPE score on a grid sampling the latent space.
         Requires a grid system to be defined via a prior call to :func:`set_dataset <molearn.analysis.MolearnAnalysis.setup_grid>`.
         
-        :param key: label for unrefined DOPE score surface (default is DOPE_unrefined or DOPE_refined)
-        :param refine: if True, structures generated will be energy minimised before DOPE scoring
-        :return: DOPE score lantent space NxN surface
+        :param str key: label for unrefined DOPE score surface (default is DOPE_unrefined or DOPE_refined)
+        :param bool refine: if True, structures generated will be energy minimised before DOPE scoring
+        :return: DOPE score latent space NxN surface
         :return: x-axis values
         :return: y-axis values
         '''
@@ -418,7 +418,7 @@ class MolearnAnalysis(object):
         Requires a grid system to be defined via a prior call to :func:`set_dataset <molearn.analysis.MolearnAnalysis.setup_grid>`.
         Saves four surfaces in memory, with keys 'Ramachandran_favored', 'Ramachandran_allowed', 'Ramachandran_outliers', and 'Ramachandran_total'.
 
-        :return: Ramachandran_favoured lantent space NxN surface (ratio of residues in favourable conformation)
+        :return: Ramachandran_favoured latent space NxN surface (ratio of residues in favourable conformation)
         :return: x-axis values
         :return: y-axis values
         '''
@@ -437,9 +437,9 @@ class MolearnAnalysis(object):
         Generate a surface coloured as a function of a user-defined function.
         
         :param fct: function taking atomic coordinates as input, an optional list of parameters, and returning a single value.
-        :param params: parameters to be passed to function f. If no parameter is needed, pass an empty list.
-        :param key: name of the dataset generated by this function scan
-        :return: lantent space NxN surface, evaluated according to input function
+        :param list params: parameters to be passed to function f. If no parameter is needed, pass an empty list.
+        :param str key: name of the dataset generated by this function scan
+        :return: latent space NxN surface, evaluated according to input function
         :return: x-axis values
         :return: y-axis values
         '''
@@ -456,7 +456,7 @@ class MolearnAnalysis(object):
         '''
         Generate a collection of protein conformations, given coordinates in the latent space.
         
-        :param crd: coordinates in the latent space, as a (Nx2) array
+        :param numpy.array crd: coordinates in the latent space, as a (Nx2) array
         :return: collection of protein conformations in the Cartesian space (NxMx3, where M is the number of atoms in the protein)
         ''' 
         with torch.no_grad():

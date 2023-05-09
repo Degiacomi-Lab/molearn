@@ -198,12 +198,12 @@
     <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Find shortest path between two points on a weighted grid</span>
 <span class="sd">    </span>
-<span class="sd">    :param idx_start: index on a 2D grid, as start point for a path</span>
-<span class="sd">    :param idx_end: index on a 2D grid, as end point for a path</span>
-<span class="sd">    :param landscape: 2D grid</span>
-<span class="sd">    :param xvals: x-axis values, to yield actual coordinates</span>
-<span class="sd">    :param yvals: y-axis values, to yield actual coordinates</span>
-<span class="sd">    :param smooth: size of kernel for running average (must be &gt;=1, default 3)</span>
+<span class="sd">    :param int idx_start: index on a 2D grid, as start point for a path</span>
+<span class="sd">    :param int idx_end: index on a 2D grid, as end point for a path</span>
+<span class="sd">    :param numpy.array landscape: 2D grid</span>
+<span class="sd">    :param numpy.array xvals: x-axis values, to yield actual coordinates</span>
+<span class="sd">    :param numpy.array yvals: y-axis values, to yield actual coordinates</span>
+<span class="sd">    :param int smooth: size of kernel for running average (must be &gt;=1, default 3)</span>
 <span class="sd">    :return: array of 2D coordinates each with an associated value on lanscape</span>
 <span class="sd">    &#39;&#39;&#39;</span>
 
@@ -249,9 +249,9 @@
     <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Extract index (of 2D surface) closest to a given real value coordinate</span>
 <span class="sd">    </span>
-<span class="sd">    :param crd: coordinate</span>
-<span class="sd">    :param xvals: x-axis of surface</span>
-<span class="sd">    :param yvals: y-axis of surface</span>
+<span class="sd">    :param numpy.array/list crd: coordinate</span>
+<span class="sd">    :param numpy.array xvals: x-axis of surface</span>
+<span class="sd">    :param numpy.array yvals: y-axis of surface</span>
 <span class="sd">    :return: 1D array with x,y coordinates</span>
 <span class="sd">    &#39;&#39;&#39;</span>
 
@@ -264,11 +264,11 @@
     <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Create a chain of shortest paths via give waypoints</span>
 <span class="sd">    </span>
-<span class="sd">    :param crd: waypoints coordinates (Nx2 array)</span>
-<span class="sd">    :param landscape: 2D grid</span>
-<span class="sd">    :param xvals: x-axis values, to yield actual coordinates</span>
-<span class="sd">    :param yvals: y-axis values, to yield actual coordinates</span>
-<span class="sd">    :param input_is_index: if False (default), assume crd contains actual coordinates, graph indexing otherwise</span>
+<span class="sd">    :param numpy.array crd: waypoints coordinates (Nx2 array)</span>
+<span class="sd">    :param numpy.array landscape: 2D grid</span>
+<span class="sd">    :param numpy.array xvals: x-axis values, to yield actual coordinates</span>
+<span class="sd">    :param numpy.array yvals: y-axis values, to yield actual coordinates</span>
+<span class="sd">    :param bool input_is_index: if False, assume crd contains actual coordinates, graph indexing otherwise</span>
 <span class="sd">    :return: array of 2D coordinates each with an associated value on lanscape</span>
 <span class="sd">    &#39;&#39;&#39;</span>
     
@@ -296,8 +296,8 @@
     <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Add extra equally spaced points between a list of points.</span>
 <span class="sd">    </span>
-<span class="sd">    :param crd: Nx2 numpy array</span>
-<span class="sd">    :param pts: int number of extra points to add in each interval</span>
+<span class="sd">    :param numpy.array crd: Nx2 numpy array with latent space coordinates</span>
+<span class="sd">    :param int pts: number of extra points to add in each interval</span>
 <span class="sd">    :return: Mx2 numpy array, with M&gt;=N.</span>
 <span class="sd">    &#39;&#39;&#39;</span> 
     <span class="n">pts</span> <span class="o">+=</span> <span class="mi">1</span>

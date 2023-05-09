@@ -157,12 +157,12 @@ def get_path(idx_start, idx_end, landscape, xvals, yvals, smooth=3):
     '''
     Find shortest path between two points on a weighted grid
     
-    :param idx_start: index on a 2D grid, as start point for a path
-    :param idx_end: index on a 2D grid, as end point for a path
-    :param landscape: 2D grid
-    :param xvals: x-axis values, to yield actual coordinates
-    :param yvals: y-axis values, to yield actual coordinates
-    :param smooth: size of kernel for running average (must be >=1, default 3)
+    :param int idx_start: index on a 2D grid, as start point for a path
+    :param int idx_end: index on a 2D grid, as end point for a path
+    :param numpy.array landscape: 2D grid
+    :param numpy.array xvals: x-axis values, to yield actual coordinates
+    :param numpy.array yvals: y-axis values, to yield actual coordinates
+    :param int smooth: size of kernel for running average (must be >=1, default 3)
     :return: array of 2D coordinates each with an associated value on lanscape
     '''
 
@@ -208,9 +208,9 @@ def _get_point_index(crd, xvals, yvals):
     '''
     Extract index (of 2D surface) closest to a given real value coordinate
     
-    :param crd: coordinate
-    :param xvals: x-axis of surface
-    :param yvals: y-axis of surface
+    :param numpy.array/list crd: coordinate
+    :param numpy.array xvals: x-axis of surface
+    :param numpy.array yvals: y-axis of surface
     :return: 1D array with x,y coordinates
     '''
 
@@ -223,11 +223,11 @@ def get_path_aggregate(crd, landscape, xvals, yvals, input_is_index=False):
     '''
     Create a chain of shortest paths via give waypoints
     
-    :param crd: waypoints coordinates (Nx2 array)
-    :param landscape: 2D grid
-    :param xvals: x-axis values, to yield actual coordinates
-    :param yvals: y-axis values, to yield actual coordinates
-    :param input_is_index: if False (default), assume crd contains actual coordinates, graph indexing otherwise
+    :param numpy.array crd: waypoints coordinates (Nx2 array)
+    :param numpy.array landscape: 2D grid
+    :param numpy.array xvals: x-axis values, to yield actual coordinates
+    :param numpy.array yvals: y-axis values, to yield actual coordinates
+    :param bool input_is_index: if False, assume crd contains actual coordinates, graph indexing otherwise
     :return: array of 2D coordinates each with an associated value on lanscape
     '''
     
@@ -255,8 +255,8 @@ def oversample(crd, pts=10):
     '''
     Add extra equally spaced points between a list of points.
     
-    :param crd: Nx2 numpy array
-    :param pts: int number of extra points to add in each interval
+    :param numpy.array crd: Nx2 numpy array with latent space coordinates
+    :param int pts: number of extra points to add in each interval
     :return: Mx2 numpy array, with M>=N.
     ''' 
     pts += 1

@@ -47,8 +47,23 @@
 
 <div class="viewcode-block" id="PDBData"><a class="viewcode-back" href="../../../data.html#molearn.data.PDBData">[docs]</a><span class="k">class</span> <span class="nc">PDBData</span><span class="p">:</span>
     
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">pass</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">fix_terminal</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">atoms</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Create PDBData object. </span>
+<span class="sd">        :param filename: str or list of strings, self.import_pdb(file) is called on each</span>
+<span class="sd">        :param fix_terminal: default False, if true calles self.fix_terminal after import, before atomselect</span>
+<span class="sd">        :param atoms: calls self.atomselect(atoms=atoms)</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">import_pdb</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">filename</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">_filename</span> <span class="ow">in</span> <span class="n">filename</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">import_pdb</span><span class="p">(</span><span class="n">_filename</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="n">fix_terminal</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fix_terminal</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">atoms</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">atomselect</span><span class="p">(</span><span class="n">atoms</span> <span class="o">=</span> <span class="n">atoms</span><span class="p">)</span>
 
 <div class="viewcode-block" id="PDBData.import_pdb"><a class="viewcode-back" href="../../../data.html#molearn.data.PDBData.import_pdb">[docs]</a>    <span class="k">def</span> <span class="nf">import_pdb</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
@@ -66,26 +81,13 @@
 
 <div class="viewcode-block" id="PDBData.fix_terminal"><a class="viewcode-back" href="../../../data.html#molearn.data.PDBData.fix_terminal">[docs]</a>    <span class="k">def</span> <span class="nf">fix_terminal</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        Rename N-terminal Oxygens (OT1, OT2, OXT) as O </span>
+<span class="sd">        Rename OT1 N-terminal Oxygen to O if terminal oxygens are named OT1 and OT2 otherwise no oxygen will be selected during an atomselect using atoms = [&#39;CA&#39;, &#39;C&#39;,&#39;N&#39;,&#39;O&#39;,&#39;CB&#39;]. No template will be found for terminal residue in openmm_loss. Alternative solution is to use atoms = [&#39;CA&#39;, &#39;C&#39;, &#39;N&#39;, &#39;O&#39;, &#39;CB&#39;, &#39;OT1&#39;]. instead.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">ot1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_mol</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="o">==</span><span class="s1">&#39;OT1&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
         <span class="n">ot2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_mol</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="o">==</span><span class="s1">&#39;OT2&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">oxt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_mol</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="o">==</span><span class="s1">&#39;OXT&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">resids</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ot1</span><span class="p">)</span><span class="o">!=</span><span class="mi">0</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">ot2</span><span class="p">)</span><span class="o">!=</span><span class="mi">0</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_mol</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">ot1</span><span class="p">,</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="o">=</span><span class="s1">&#39;O&#39;</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ot1</span><span class="p">)</span><span class="o">!=</span><span class="mi">0</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">ot1</span><span class="p">:</span>
-                <span class="n">resids</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">_mol</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;resid&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mol</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;resname&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]))</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">oxt</span><span class="p">)</span><span class="o">!=</span><span class="mi">0</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">oxt</span><span class="p">:</span>
-                <span class="n">resids</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">_mol</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;resid&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mol</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;resname&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]))</span></div>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_mol</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">ot1</span><span class="p">,</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="o">=</span><span class="s1">&#39;O&#39;</span></div>
 
-        <span class="c1">#for resid, resname in resids:</span>
-            <span class="c1">#resname = self._mol.data[&#39;resname&#39;][resid]</span>
-            <span class="c1">#if len(resname)==3:</span>
-            <span class="c1">#    self._mol.data.loc[self._mol.data.resid.eq(resid), &#39;resname&#39;]=f&#39;C{resname}&#39;</span>
-    
 <div class="viewcode-block" id="PDBData.atomselect"><a class="viewcode-back" href="../../../data.html#molearn.data.PDBData.atomselect">[docs]</a>    <span class="k">def</span> <span class="nf">atomselect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">atoms</span><span class="p">,</span> <span class="n">ignore_atoms</span><span class="o">=</span><span class="p">[]):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        From imported PDBs, cut out only atoms of interest.</span>
@@ -230,6 +232,8 @@
             <span class="n">indices</span> <span class="o">=</span> <span class="n">randperm</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="p">),</span> <span class="n">generator</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Generator</span><span class="p">()</span><span class="o">.</span><span class="n">manual_seed</span><span class="p">(</span><span class="n">manual_seed</span><span class="p">))</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">indices</span> <span class="o">=</span> <span class="n">randperm</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">indices</span> <span class="o">=</span> <span class="n">indices</span>
         <span class="n">train_dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="n">indices</span><span class="p">[:</span><span class="n">_train_size</span><span class="p">]]</span>
         <span class="n">valid_dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="n">indices</span><span class="p">[</span><span class="n">_train_size</span><span class="p">:</span><span class="n">_train_size</span><span class="o">+</span><span class="n">_valid_size</span><span class="p">]]</span>
         <span class="k">return</span> <span class="n">train_dataset</span><span class="p">,</span> <span class="n">valid_dataset</span></div>

@@ -45,20 +45,44 @@
 
 
 <div class="viewcode-block" id="OpenMM_Physics_Trainer"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.openmm_physics_trainer.OpenMM_Physics_Trainer">[docs]</a><span class="k">class</span> <span class="nc">OpenMM_Physics_Trainer</span><span class="p">(</span><span class="n">Trainer</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    OpenMM_Physics_Trainer subclasses Trainer and replaces the valid_step and train_step.</span>
+<span class="sd">    An extra &#39;physics_loss&#39; is calculated using OpenMM and the forces are inserted into backwards pass.</span>
+<span class="sd">    To use this trainer requires the additional step of calling :func:`prepare_physics &lt;molearn.trainers.OpenMM_Physics_Trainer.prepare_physics&gt;`.</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">prepare_physics</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">physics_scaling_factor</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">clamp_threshold</span> <span class="o">=</span> <span class="mi">10000</span><span class="p">,</span> <span class="n">clamp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">start_physics_at</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="OpenMM_Physics_Trainer.prepare_physics"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.openmm_physics_trainer.OpenMM_Physics_Trainer.prepare_physics">[docs]</a>    <span class="k">def</span> <span class="nf">prepare_physics</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">physics_scaling_factor</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">clamp_threshold</span> <span class="o">=</span> <span class="mf">1e8</span><span class="p">,</span> <span class="n">clamp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">start_physics_at</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Create ``self.physics_loss`` object from :func:`loss_functions.openmm_energy &lt;molearn.loss_functions.openmm_energy&gt;`</span>
+<span class="sd">        Needs ``self.mol``, ``self.std``, and ``self._data.atoms`` to have been set with :func:`Trainer.set_data&lt;molearn.trainer.Trainer.set_data&gt;`</span>
+
+<span class="sd">        :param float physics_scaling_factor: scaling factor saved to ``self.psf`` that is used in :func:`train_step &lt;molearn.trainers.OpenMM_Physics_Trainer.train_step&gt;`. Defaults to 0.1</span>
+<span class="sd">        :param float clamp_threshold: if ``clamp=True`` is passed then forces will be clamped between -clamp_threshold and clamp_threshold. Default: 1e-8</span>
+<span class="sd">        :param bool clamp: Whether to clamp the forces. Defaults to False</span>
+<span class="sd">        :param int start_physics_at: As of yet unused parameter saved as ``self.start_physics_at = start_physics_at``. Default: 0</span>
+<span class="sd">        :param \*\*kwargs: All aditional kwargs will be passed to :func:`openmm_energy &lt;molearn.loss_functions.openmm_energy&gt;`</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">start_physics_at</span> <span class="o">=</span> <span class="n">start_physics_at</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">psf</span> <span class="o">=</span> <span class="n">physics_scaling_factor</span>
         <span class="k">if</span> <span class="n">clamp</span><span class="p">:</span>
             <span class="n">clamp_kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">max</span><span class="o">=</span><span class="n">clamp_threshold</span><span class="p">,</span> <span class="nb">min</span> <span class="o">=</span> <span class="o">-</span><span class="n">clamp_threshold</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">clamp_kwargs</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">physics_loss</span> <span class="o">=</span> <span class="n">openmm_energy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mol</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">std</span><span class="p">,</span> <span class="n">clamp</span><span class="o">=</span><span class="n">clamp_kwargs</span><span class="p">,</span> <span class="n">platform</span> <span class="o">=</span> <span class="s1">&#39;CUDA&#39;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">device</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s1">&#39;cuda&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="s1">&#39;Reference&#39;</span><span class="p">,</span> <span class="n">atoms</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">atoms</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">physics_loss</span> <span class="o">=</span> <span class="n">openmm_energy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mol</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">std</span><span class="p">,</span> <span class="n">clamp</span><span class="o">=</span><span class="n">clamp_kwargs</span><span class="p">,</span> <span class="n">platform</span> <span class="o">=</span> <span class="s1">&#39;CUDA&#39;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">device</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s1">&#39;cuda&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="s1">&#39;Reference&#39;</span><span class="p">,</span> <span class="n">atoms</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">atoms</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
 
-    <span class="k">def</span> <span class="nf">common_physics_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">latent</span><span class="p">):</span>
+<div class="viewcode-block" id="OpenMM_Physics_Trainer.common_physics_step"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.openmm_physics_trainer.OpenMM_Physics_Trainer.common_physics_step">[docs]</a>    <span class="k">def</span> <span class="nf">common_physics_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">latent</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Called from both :func:`train_step &lt;molearn.trainers.OpenMM_Physics_Trainer.train_step&gt;` and :func:`valid_step &lt;molearn.trainers.OpenMM_Physics_Trainer.valid_step&gt;`.</span>
+<span class="sd">        Takes random interpolations between adjacent samples latent vectors. These are decoded (decoded structures saved as ``self._internal[&#39;generated&#39;] = generated if needed elsewhere) and the energy terms calculated with ``self.physics_loss``.</span>
+
+<span class="sd">        :param torch.Tensor batch: tensor of shape [batch_size, 3, n_atoms]. Give access to the mini-batch of structures. This is used to determine ``n_atoms``</span>
+<span class="sd">        :param torch.Tensor latent: tensor shape [batch_size, 2, 1]. Pass the encoded vectors of the mini-batch.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">alpha</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span><span class="o">//</span><span class="mi">2</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">type_as</span><span class="p">(</span><span class="n">latent</span><span class="p">)</span>
         <span class="n">latent_interpolated</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">alpha</span><span class="p">)</span><span class="o">*</span><span class="n">latent</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="n">alpha</span><span class="o">*</span><span class="n">latent</span><span class="p">[</span><span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">]</span>
 
@@ -69,24 +93,51 @@
         <span class="n">energy</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="n">energy</span><span class="p">,</span> <span class="nb">max</span><span class="o">=</span><span class="mf">1e34</span><span class="p">)</span>
         <span class="n">energy</span> <span class="o">=</span> <span class="n">energy</span><span class="o">.</span><span class="n">nanmean</span><span class="p">()</span>
 
-        <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;physics_loss&#39;</span><span class="p">:</span><span class="n">energy</span><span class="p">}</span><span class="c1">#a if not energy.isinf() else torch.tensor(0.0)}</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;physics_loss&#39;</span><span class="p">:</span><span class="n">energy</span><span class="p">}</span><span class="c1">#a if not energy.isinf() else torch.tensor(0.0)}</span></div>
 
-    <span class="k">def</span> <span class="nf">train_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">):</span>
+<div class="viewcode-block" id="OpenMM_Physics_Trainer.train_step"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.openmm_physics_trainer.OpenMM_Physics_Trainer.train_step">[docs]</a>    <span class="k">def</span> <span class="nf">train_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        This method overrides :func:`Trainer.train_step &lt;molearn.trainers.Trainer.train_step&gt;` and adds an additional &#39;Physics_loss&#39; term.</span>
+
+<span class="sd">        Mse_loss and physics loss are summed (``Mse_loss + scale*physics_loss``)with a scaling factor ``self.psf*mse_loss/Physics_loss``. Mathematically this cancels out the physics_loss and the final loss is (1+self.psf)*mse_loss. However because the scaling factor is calculated within a ``torch.no_grad`` context manager the gradients are not computed.</span>
+<span class="sd">        This is essentially the same as scaling the physics_loss with any arbitary scaling factor but in this case simply happens to be exactly proportional to the ration of Mse_loss and physics_loss in every step. </span>
+
+<span class="sd">        Called from :func:`Trainer.train_epoch &lt;molearn.trainers.Trainer.train_epoch&gt;`.</span>
+
+<span class="sd">        :param torch.Tensor batch: tensor shape [Batch size, 3, Number of Atoms]. A mini-batch of protein frames normalised. To recover original data multiple by ``self.std``.</span>
+<span class="sd">        :returns: Return loss. The dictionary must contain an entry with key ``&#39;loss&#39;`` that :func:`self.train_epoch &lt;molearn.trainers.Trainer.train_epoch&gt;` will call ``result[&#39;loss&#39;].backwards()`` to obtain gradients.</span>
+<span class="sd">        :rtype: dict</span>
+<span class="sd">        &#39;&#39;&#39;</span> 
+        <span class="vm">__doc__</span> <span class="o">+=</span><span class="n">Trainer</span><span class="o">.</span><span class="n">train_step</span><span class="o">.</span><span class="vm">__doc__</span>
+        
         <span class="n">results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">common_step</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span>
         <span class="n">results</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">common_physics_step</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_internal</span><span class="p">[</span><span class="s1">&#39;encoded&#39;</span><span class="p">]))</span>
         <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
             <span class="n">scale</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">psf</span><span class="o">*</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;mse_loss&#39;</span><span class="p">])</span><span class="o">/</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;physics_loss&#39;</span><span class="p">]</span> <span class="o">+</span><span class="mf">1e-5</span><span class="p">)</span>
         <span class="n">final_loss</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="s1">&#39;mse_loss&#39;</span><span class="p">]</span><span class="o">+</span><span class="n">scale</span><span class="o">*</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;physics_loss&#39;</span><span class="p">]</span>
         <span class="n">results</span><span class="p">[</span><span class="s1">&#39;loss&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">final_loss</span>
-        <span class="k">return</span> <span class="n">results</span>
+        <span class="k">return</span> <span class="n">results</span></div>
 
-    <span class="k">def</span> <span class="nf">valid_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">):</span>
+<div class="viewcode-block" id="OpenMM_Physics_Trainer.valid_step"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.openmm_physics_trainer.OpenMM_Physics_Trainer.valid_step">[docs]</a>    <span class="k">def</span> <span class="nf">valid_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        This method overrides :func:`Trainer.valid_step &lt;molearn.trainers.Trainer.valid_step&gt;` and adds an additional &#39;Physics_loss&#39; term.</span>
+
+<span class="sd">        Differently to :func:`train_step &lt;molearn.trainers.OpenMM_Physics_Trainer.train_step&gt;` this method sums the logs of mse_loss and physics_loss ``final_loss = torch.log(results[&#39;mse_loss&#39;])+scale*torch.log(results[&#39;physics_loss&#39;])``</span>
+
+<span class="sd">        Called from super class :func:`Trainer.valid_epoch&lt;molearn.trainer.Trainer.valid_epoch&gt;` on every mini-batch.</span>
+
+<span class="sd">        :param torch.Tensor batch: Tensor of shape [Batch size, 3, Number of Atoms]. A mini-batch of protein frames normalised. To recover original data multiple by ``self.std``.</span>
+<span class="sd">        :returns:  Return loss. The dictionary must contain an entry with key ``&#39;loss&#39;`` that will be the score via which the best checkpoint is determined.</span>
+<span class="sd">        :rtype: dict</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+
         <span class="n">results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">common_step</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span>
         <span class="n">results</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">common_physics_step</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_internal</span><span class="p">[</span><span class="s1">&#39;encoded&#39;</span><span class="p">]))</span>
-        <span class="n">scale</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">psf</span><span class="o">*</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;mse_loss&#39;</span><span class="p">])</span><span class="o">/</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;physics_loss&#39;</span><span class="p">]</span> <span class="o">+</span><span class="mf">1e-5</span><span class="p">)</span>
-        <span class="n">final_loss</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;mse_loss&#39;</span><span class="p">])</span><span class="o">+</span><span class="n">scale</span><span class="o">*</span><span class="n">torch</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;physics_loss&#39;</span><span class="p">])</span>
+        <span class="c1">#scale = (self.psf*results[&#39;mse_loss&#39;])/(results[&#39;physics_loss&#39;] +1e-5)</span>
+        <span class="n">final_loss</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;mse_loss&#39;</span><span class="p">])</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">psf</span><span class="o">*</span><span class="n">torch</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;physics_loss&#39;</span><span class="p">])</span>
         <span class="n">results</span><span class="p">[</span><span class="s1">&#39;loss&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">final_loss</span>
-        <span class="k">return</span> <span class="n">results</span></div>
+        <span class="k">return</span> <span class="n">results</span></div></div>
 
 <span class="k">if</span> <span class="vm">__name__</span><span class="o">==</span><span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
     <span class="k">pass</span>

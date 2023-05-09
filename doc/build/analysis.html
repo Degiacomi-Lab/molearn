@@ -55,7 +55,7 @@ trained model.</p>
 <dd><p>Generate a collection of protein conformations, given coordinates in the latent space.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>crd</strong> – coordinates in the latent space, as a (Nx2) array</p>
+<dd class="field-odd"><p><strong>crd</strong> (<em>numpy.array</em>) – coordinates in the latent space, as a (Nx2) array</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>collection of protein conformations in the Cartesian space (NxMx3, where M is the number of atoms in the protein)</p>
@@ -66,12 +66,12 @@ trained model.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="molearn.analysis.MolearnAnalysis.get_all_dope_score">
 <span class="sig-name descname"><span class="pre">get_all_dope_score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">refine</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/analysis/analyser.html#MolearnAnalysis.get_all_dope_score"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.MolearnAnalysis.get_all_dope_score" title="Permalink to this definition">¶</a></dt>
-<dd><p>Calculate DOPE score of an ensemble of atom coordinates</p>
+<dd><p>Calculate DOPE score of an ensemble of atom coordinates.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>tensor</strong> – </p></li>
-<li><p><strong>refine</strong> – if True, return DOPE score of input and output structure after refinement</p></li>
+<li><p><strong>refine</strong> (<em>bool</em>) – if True, return DOPE score of input and output structure after refinement</p></li>
 </ul>
 </dd>
 </dl>
@@ -80,7 +80,7 @@ trained model.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="molearn.analysis.MolearnAnalysis.get_all_ramachandran_score">
 <span class="sig-name descname"><span class="pre">get_all_ramachandran_score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tensor</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/analysis/analyser.html#MolearnAnalysis.get_all_ramachandran_score"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.MolearnAnalysis.get_all_ramachandran_score" title="Permalink to this definition">¶</a></dt>
-<dd><p>Calculate Ramachandran score of an ensemble of atomic conrdinates</p>
+<dd><p>Calculate Ramachandran score of an ensemble of atomic conrdinates.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>tensor</strong> – </p>
@@ -93,7 +93,7 @@ trained model.</p>
 <span class="sig-name descname"><span class="pre">get_dataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/analysis/analyser.html#MolearnAnalysis.get_dataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.MolearnAnalysis.get_dataset" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>key</strong> – key pointing to a dataset previously loaded with <a class="reference internal" href="#molearn.analysis.MolearnAnalysis.set_dataset" title="molearn.analysis.MolearnAnalysis.set_dataset"><code class="xref py py-func docutils literal notranslate"><span class="pre">set_dataset</span></code></a></p>
+<dd class="field-odd"><p><strong>key</strong> (<em>str</em>) – key pointing to a dataset previously loaded with <a class="reference internal" href="#molearn.analysis.MolearnAnalysis.set_dataset" title="molearn.analysis.MolearnAnalysis.set_dataset"><code class="xref py py-func docutils literal notranslate"><span class="pre">set_dataset</span></code></a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -103,7 +103,7 @@ trained model.</p>
 <span class="sig-name descname"><span class="pre">get_decoded</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/analysis/analyser.html#MolearnAnalysis.get_decoded"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.MolearnAnalysis.get_decoded" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>key</strong> – key pointing to a dataset previously loaded with <a class="reference internal" href="#molearn.analysis.MolearnAnalysis.set_dataset" title="molearn.analysis.MolearnAnalysis.set_dataset"><code class="xref py py-func docutils literal notranslate"><span class="pre">set_dataset</span></code></a></p>
+<dd class="field-odd"><p><strong>key</strong> (<em>str</em>) – key pointing to a dataset previously loaded with <a class="reference internal" href="#molearn.analysis.MolearnAnalysis.set_dataset" title="molearn.analysis.MolearnAnalysis.set_dataset"><code class="xref py py-func docutils literal notranslate"><span class="pre">set_dataset</span></code></a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -114,8 +114,8 @@ trained model.</p>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>key</strong> – key pointing to a dataset previously loaded with <a class="reference internal" href="#molearn.analysis.MolearnAnalysis.set_dataset" title="molearn.analysis.MolearnAnalysis.set_dataset"><code class="xref py py-func docutils literal notranslate"><span class="pre">set_dataset</span></code></a></p></li>
-<li><p><strong>refine</strong> – if True, refine structures before calculating DOPE score</p></li>
+<li><p><strong>key</strong> (<em>str</em>) – key pointing to a dataset previously loaded with <a class="reference internal" href="#molearn.analysis.MolearnAnalysis.set_dataset" title="molearn.analysis.MolearnAnalysis.set_dataset"><code class="xref py py-func docutils literal notranslate"><span class="pre">set_dataset</span></code></a></p></li>
+<li><p><strong>refine</strong> (<em>bool</em>) – if True, refine structures before calculating DOPE score</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -129,7 +129,7 @@ trained model.</p>
 <span class="sig-name descname"><span class="pre">get_encoded</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/analysis/analyser.html#MolearnAnalysis.get_encoded"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.MolearnAnalysis.get_encoded" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>key</strong> – key pointing to a dataset previously loaded with <a class="reference internal" href="#molearn.analysis.MolearnAnalysis.set_dataset" title="molearn.analysis.MolearnAnalysis.set_dataset"><code class="xref py py-func docutils literal notranslate"><span class="pre">set_dataset</span></code></a></p>
+<dd class="field-odd"><p><strong>key</strong> (<em>str</em>) – key pointing to a dataset previously loaded with <a class="reference internal" href="#molearn.analysis.MolearnAnalysis.set_dataset" title="molearn.analysis.MolearnAnalysis.set_dataset"><code class="xref py py-func docutils literal notranslate"><span class="pre">set_dataset</span></code></a></p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>array containing the encoding in latent space of dataset associated with key</p>
@@ -144,8 +144,8 @@ trained model.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>key</strong> – key pointing to a dataset previously loaded with <a class="reference internal" href="#molearn.analysis.MolearnAnalysis.set_dataset" title="molearn.analysis.MolearnAnalysis.set_dataset"><code class="xref py py-func docutils literal notranslate"><span class="pre">set_dataset</span></code></a></p></li>
-<li><p><strong>align</strong> – if True, the RMSD will be calculated by finding the optimal alignment between structures</p></li>
+<li><p><strong>key</strong> (<em>str</em>) – key pointing to a dataset previously loaded with <a class="reference internal" href="#molearn.analysis.MolearnAnalysis.set_dataset" title="molearn.analysis.MolearnAnalysis.set_dataset"><code class="xref py py-func docutils literal notranslate"><span class="pre">set_dataset</span></code></a></p></li>
+<li><p><strong>align</strong> (<em>bool</em>) – if True, the RMSD will be calculated by finding the optimal alignment between structures</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -159,7 +159,7 @@ trained model.</p>
 <span class="sig-name descname"><span class="pre">get_ramachandran</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/analysis/analyser.html#MolearnAnalysis.get_ramachandran"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.MolearnAnalysis.get_ramachandran" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>key</strong> – key pointing to a dataset previously loaded with <a class="reference internal" href="#molearn.analysis.MolearnAnalysis.set_dataset" title="molearn.analysis.MolearnAnalysis.set_dataset"><code class="xref py py-func docutils literal notranslate"><span class="pre">set_dataset</span></code></a></p>
+<dd class="field-odd"><p><strong>key</strong> (<em>str</em>) – key pointing to a dataset previously loaded with <a class="reference internal" href="#molearn.analysis.MolearnAnalysis.set_dataset" title="molearn.analysis.MolearnAnalysis.set_dataset"><code class="xref py py-func docutils literal notranslate"><span class="pre">set_dataset</span></code></a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -179,7 +179,7 @@ trained model.</p>
 <span class="sig-name descname"><span class="pre">reference_dope_score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">frame</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/analysis/analyser.html#MolearnAnalysis.reference_dope_score"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.MolearnAnalysis.reference_dope_score" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>frame</strong> – numpy array with shape [1, N, 3] with Cartesian coordinates of atoms</p>
+<dd class="field-odd"><p><strong>frame</strong> (<em>numpy.array</em>) – array with shape [1, N, 3] with Cartesian coordinates of atoms</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>DOPE score</p>
@@ -195,12 +195,12 @@ trained model.</p>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>fct</strong> – function taking atomic coordinates as input, an optional list of parameters, and returning a single value.</p></li>
-<li><p><strong>params</strong> – parameters to be passed to function f. If no parameter is needed, pass an empty list.</p></li>
-<li><p><strong>key</strong> – name of the dataset generated by this function scan</p></li>
+<li><p><strong>params</strong> (<em>list</em>) – parameters to be passed to function f. If no parameter is needed, pass an empty list.</p></li>
+<li><p><strong>key</strong> (<em>str</em>) – name of the dataset generated by this function scan</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>lantent space NxN surface, evaluated according to input function</p>
+<dd class="field-even"><p>latent space NxN surface, evaluated according to input function</p>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>x-axis values</p>
@@ -219,12 +219,12 @@ Requires a grid system to be defined via a prior call to <a class="reference int
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>key</strong> – label for unrefined DOPE score surface (default is DOPE_unrefined or DOPE_refined)</p></li>
-<li><p><strong>refine</strong> – if True, structures generated will be energy minimised before DOPE scoring</p></li>
+<li><p><strong>key</strong> (<em>str</em>) – label for unrefined DOPE score surface (default is DOPE_unrefined or DOPE_refined)</p></li>
+<li><p><strong>refine</strong> (<em>bool</em>) – if True, structures generated will be energy minimised before DOPE scoring</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>DOPE score lantent space NxN surface</p>
+<dd class="field-even"><p>DOPE score latent space NxN surface</p>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>x-axis values</p>
@@ -243,15 +243,15 @@ Requires a grid system to be defined via a prior call to <a class="reference int
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>s_key</strong> – string, label for RMSD dataset</p></li>
-<li><p><strong>z_key</strong> – string, label for z-drift dataset</p></li>
+<li><p><strong>s_key</strong> (<em>str</em>) – label for RMSD dataset</p></li>
+<li><p><strong>z_key</strong> (<em>str</em>) – label for z-drift dataset</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>input-to-decoded RMSD lantent space NxN surface</p>
+<dd class="field-even"><p>input-to-decoded RMSD latent space NxN surface</p>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>z-drift lantent space NxN surface</p>
+<dd class="field-odd"><p>z-drift latent space NxN surface</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>x-axis values</p>
@@ -268,10 +268,10 @@ Requires a grid system to be defined via a prior call to <a class="reference int
 <dd><p>Calculate landscape of RMSD vs single target structure. Target should be previously loaded datset containing a single conformation.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>key</strong> – key pointing to a dataset previously loaded with <a class="reference internal" href="#molearn.analysis.MolearnAnalysis.set_dataset" title="molearn.analysis.MolearnAnalysis.set_dataset"><code class="xref py py-func docutils literal notranslate"><span class="pre">set_dataset</span></code></a></p>
+<dd class="field-odd"><p><strong>key</strong> (<em>str</em>) – key pointing to a dataset previously loaded with <a class="reference internal" href="#molearn.analysis.MolearnAnalysis.set_dataset" title="molearn.analysis.MolearnAnalysis.set_dataset"><code class="xref py py-func docutils literal notranslate"><span class="pre">set_dataset</span></code></a></p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>RMSD lantent space NxN surface</p>
+<dd class="field-even"><p>RMSD latent space NxN surface</p>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>x-axis values</p>
@@ -290,7 +290,7 @@ Requires a grid system to be defined via a prior call to <a class="reference int
 Saves four surfaces in memory, with keys ‘Ramachandran_favored’, ‘Ramachandran_allowed’, ‘Ramachandran_outliers’, and ‘Ramachandran_total’.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Ramachandran_favoured lantent space NxN surface (ratio of residues in favourable conformation)</p>
+<dd class="field-odd"><p>Ramachandran_favoured latent space NxN surface (ratio of residues in favourable conformation)</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>x-axis values</p>
@@ -307,9 +307,9 @@ Saves four surfaces in memory, with keys ‘Ramachandran_favored’, ‘Ramachan
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>data</strong> – <a class="reference internal" href="data.html#molearn.data.PDBData" title="molearn.data.PDBData"><code class="xref py py-func docutils literal notranslate"><span class="pre">PDBData</span></code></a> object, containing atomic coordinates</p></li>
-<li><p><strong>key</strong> – string, label to be associated with data</p></li>
-<li><p><strong>atomselect</strong> – list of atom names to load. If ‘*’, all atoms are loaded.</p></li>
+<li><p><strong>data</strong> – <a class="reference internal" href="data.html#molearn.data.PDBData" title="molearn.data.PDBData"><code class="xref py py-func docutils literal notranslate"><span class="pre">PDBData</span></code></a> object containing atomic coordinates</p></li>
+<li><p><strong>key</strong> (<em>str</em>) – label to be associated with data</p></li>
+<li><p><strong>atomselect</strong> (<em>list/str</em>) – list of atom names to load, or ‘*’ to indicate that all atoms are loaded.</p></li>
 </ul>
 </dd>
 </dl>
@@ -320,7 +320,7 @@ Saves four surfaces in memory, with keys ‘Ramachandran_favored’, ‘Ramachan
 <span class="sig-name descname"><span class="pre">set_decoded</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">structures</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/analysis/analyser.html#MolearnAnalysis.set_decoded"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.MolearnAnalysis.set_decoded" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>key</strong> – key pointing to a dataset previously loaded with <a class="reference internal" href="#molearn.analysis.MolearnAnalysis.set_dataset" title="molearn.analysis.MolearnAnalysis.set_dataset"><code class="xref py py-func docutils literal notranslate"><span class="pre">set_dataset</span></code></a></p>
+<dd class="field-odd"><p><strong>key</strong> (<em>str</em>) – key pointing to a dataset previously loaded with <a class="reference internal" href="#molearn.analysis.MolearnAnalysis.set_dataset" title="molearn.analysis.MolearnAnalysis.set_dataset"><code class="xref py py-func docutils literal notranslate"><span class="pre">set_dataset</span></code></a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -330,7 +330,7 @@ Saves four surfaces in memory, with keys ‘Ramachandran_favored’, ‘Ramachan
 <span class="sig-name descname"><span class="pre">set_encoded</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coords</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/analysis/analyser.html#MolearnAnalysis.set_encoded"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.MolearnAnalysis.set_encoded" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>key</strong> – key pointing to a dataset previously loaded with <a class="reference internal" href="#molearn.analysis.MolearnAnalysis.set_dataset" title="molearn.analysis.MolearnAnalysis.set_dataset"><code class="xref py py-func docutils literal notranslate"><span class="pre">set_dataset</span></code></a></p>
+<dd class="field-odd"><p><strong>key</strong> (<em>str</em>) – key pointing to a dataset previously loaded with <a class="reference internal" href="#molearn.analysis.MolearnAnalysis.set_dataset" title="molearn.analysis.MolearnAnalysis.set_dataset"><code class="xref py py-func docutils literal notranslate"><span class="pre">set_dataset</span></code></a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -352,10 +352,10 @@ Saves four surfaces in memory, with keys ‘Ramachandran_favored’, ‘Ramachan
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>samples</strong> – grid size (build a samples x samples grid)</p></li>
-<li><p><strong>bounds_from</strong> – str, list of strings, or ‘all’. Name(s) of datasets to use as reference.</p></li>
-<li><p><strong>bounds</strong> – tuple (xmin, xmax, ymin, ymax) or None</p></li>
-<li><p><strong>padding</strong> – define size of extra spacing around boundary conditions (as ratio of axis dimensions)</p></li>
+<li><p><strong>samples</strong> (<em>int</em>) – grid size (build a samples x samples grid)</p></li>
+<li><p><strong>bounds_from</strong> (<em>str/list</em>) – Name(s) of datasets to use as reference, either as single string, a list of strings, or ‘all’</p></li>
+<li><p><strong>bounds</strong> (<em>tuple/list</em>) – tuple (xmin, xmax, ymin, ymax) or None</p></li>
+<li><p><strong>padding</strong> (<em>float</em>) – define size of extra spacing around boundary conditions (as ratio of axis dimensions)</p></li>
 </ul>
 </dd>
 </dl>
@@ -383,12 +383,12 @@ viewable within a Jupyter notebook.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>idx_start</strong> – index on a 2D grid, as start point for a path</p></li>
-<li><p><strong>idx_end</strong> – index on a 2D grid, as end point for a path</p></li>
-<li><p><strong>landscape</strong> – 2D grid</p></li>
-<li><p><strong>xvals</strong> – x-axis values, to yield actual coordinates</p></li>
-<li><p><strong>yvals</strong> – y-axis values, to yield actual coordinates</p></li>
-<li><p><strong>smooth</strong> – size of kernel for running average (must be &gt;=1, default 3)</p></li>
+<li><p><strong>idx_start</strong> (<em>int</em>) – index on a 2D grid, as start point for a path</p></li>
+<li><p><strong>idx_end</strong> (<em>int</em>) – index on a 2D grid, as end point for a path</p></li>
+<li><p><strong>landscape</strong> (<em>numpy.array</em>) – 2D grid</p></li>
+<li><p><strong>xvals</strong> (<em>numpy.array</em>) – x-axis values, to yield actual coordinates</p></li>
+<li><p><strong>yvals</strong> (<em>numpy.array</em>) – y-axis values, to yield actual coordinates</p></li>
+<li><p><strong>smooth</strong> (<em>int</em>) – size of kernel for running average (must be &gt;=1, default 3)</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -404,11 +404,11 @@ viewable within a Jupyter notebook.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>crd</strong> – waypoints coordinates (Nx2 array)</p></li>
-<li><p><strong>landscape</strong> – 2D grid</p></li>
-<li><p><strong>xvals</strong> – x-axis values, to yield actual coordinates</p></li>
-<li><p><strong>yvals</strong> – y-axis values, to yield actual coordinates</p></li>
-<li><p><strong>input_is_index</strong> – if False (default), assume crd contains actual coordinates, graph indexing otherwise</p></li>
+<li><p><strong>crd</strong> (<em>numpy.array</em>) – waypoints coordinates (Nx2 array)</p></li>
+<li><p><strong>landscape</strong> (<em>numpy.array</em>) – 2D grid</p></li>
+<li><p><strong>xvals</strong> (<em>numpy.array</em>) – x-axis values, to yield actual coordinates</p></li>
+<li><p><strong>yvals</strong> (<em>numpy.array</em>) – y-axis values, to yield actual coordinates</p></li>
+<li><p><strong>input_is_index</strong> (<em>bool</em>) – if False, assume crd contains actual coordinates, graph indexing otherwise</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -424,8 +424,8 @@ viewable within a Jupyter notebook.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>crd</strong> – Nx2 numpy array</p></li>
-<li><p><strong>pts</strong> – int number of extra points to add in each interval</p></li>
+<li><p><strong>crd</strong> (<em>numpy.array</em>) – Nx2 numpy array with latent space coordinates</p></li>
+<li><p><strong>pts</strong> (<em>int</em>) – number of extra points to add in each interval</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>

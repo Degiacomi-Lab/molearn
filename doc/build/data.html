@@ -50,8 +50,12 @@
 <h1>Data Loading<a class="headerlink" href="#data-loading" title="Permalink to this heading">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="molearn.data.PDBData">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">PDBData</span></span><a class="reference internal" href="_modules/molearn/data/pdb_data.html#PDBData"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.data.PDBData" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="py method">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">PDBData</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fix_terminal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">atoms</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/data/pdb_data.html#PDBData"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.data.PDBData" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create PDBData object. 
+:param filename: str or list of strings, self.import_pdb(file) is called on each
+:param fix_terminal: default False, if true calles self.fix_terminal after import, before atomselect
+:param atoms: calls self.atomselect(atoms=atoms)</p>
+<dl class="py method">
 <dt class="sig sig-object py" id="molearn.data.PDBData.atomselect">
 <span class="sig-name descname"><span class="pre">atomselect</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">atoms</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_atoms</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/data/pdb_data.html#PDBData.atomselect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.data.PDBData.atomselect" title="Permalink to this definition">¶</a></dt>
 <dd><p>From imported PDBs, cut out only atoms of interest.
@@ -66,7 +70,7 @@
 <dl class="py method">
 <dt class="sig sig-object py" id="molearn.data.PDBData.fix_terminal">
 <span class="sig-name descname"><span class="pre">fix_terminal</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/data/pdb_data.html#PDBData.fix_terminal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.data.PDBData.fix_terminal" title="Permalink to this definition">¶</a></dt>
-<dd><p>Rename N-terminal Oxygens (OT1, OT2, OXT) as O</p>
+<dd><p>Rename OT1 N-terminal Oxygen to O if terminal oxygens are named OT1 and OT2 otherwise no oxygen will be selected during an atomselect using atoms = [‘CA’, ‘C’,’N’,’O’,’CB’]. No template will be found for terminal residue in openmm_loss. Alternative solution is to use atoms = [‘CA’, ‘C’, ‘N’, ‘O’, ‘CB’, ‘OT1’]. instead.</p>
 </dd></dl>
 
 <dl class="py method">

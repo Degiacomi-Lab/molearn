@@ -92,15 +92,15 @@
 
 <div class="viewcode-block" id="MolearnAnalysis.get_dataset"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.MolearnAnalysis.get_dataset">[docs]</a>    <span class="k">def</span> <span class="nf">get_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        :param key: key pointing to a dataset previously loaded with :func:`set_dataset &lt;molearn.analysis.MolearnAnalysis.set_dataset&gt;`</span>
+<span class="sd">        :param str key: key pointing to a dataset previously loaded with :func:`set_dataset &lt;molearn.analysis.MolearnAnalysis.set_dataset&gt;`</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_datasets</span><span class="p">[</span><span class="n">key</span><span class="p">]</span></div>
 
 <div class="viewcode-block" id="MolearnAnalysis.set_dataset"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.MolearnAnalysis.set_dataset">[docs]</a>    <span class="k">def</span> <span class="nf">set_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">atomselect</span><span class="o">=</span><span class="s2">&quot;*&quot;</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        :param data: :func:`PDBData &lt;molearn.data.PDBData&gt;` object, containing atomic coordinates</span>
-<span class="sd">        :param key: string, label to be associated with data</span>
-<span class="sd">        :param atomselect: list of atom names to load. If &#39;*&#39;, all atoms are loaded.</span>
+<span class="sd">        :param data: :func:`PDBData &lt;molearn.data.PDBData&gt;` object containing atomic coordinates</span>
+<span class="sd">        :param str key: label to be associated with data</span>
+<span class="sd">        :param list/str atomselect: list of atom names to load, or &#39;*&#39; to indicate that all atoms are loaded.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">data</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;.pdb&#39;</span><span class="p">):</span>
             <span class="n">d</span> <span class="o">=</span> <span class="n">PDBData</span><span class="p">()</span>
@@ -128,7 +128,7 @@
 
 <div class="viewcode-block" id="MolearnAnalysis.get_encoded"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.MolearnAnalysis.get_encoded">[docs]</a>    <span class="k">def</span> <span class="nf">get_encoded</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        :param key: key pointing to a dataset previously loaded with :func:`set_dataset &lt;molearn.analysis.MolearnAnalysis.set_dataset&gt;`</span>
+<span class="sd">        :param str key: key pointing to a dataset previously loaded with :func:`set_dataset &lt;molearn.analysis.MolearnAnalysis.set_dataset&gt;`</span>
 <span class="sd">        :return: array containing the encoding in latent space of dataset associated with key</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_encoded</span><span class="p">:</span>
@@ -149,13 +149,13 @@
 
 <div class="viewcode-block" id="MolearnAnalysis.set_encoded"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.MolearnAnalysis.set_encoded">[docs]</a>    <span class="k">def</span> <span class="nf">set_encoded</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">coords</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        :param key: key pointing to a dataset previously loaded with :func:`set_dataset &lt;molearn.analysis.MolearnAnalysis.set_dataset&gt;`</span>
+<span class="sd">        :param str key: key pointing to a dataset previously loaded with :func:`set_dataset &lt;molearn.analysis.MolearnAnalysis.set_dataset&gt;`</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_encoded</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span><span class="o">.</span><span class="n">float</span><span class="p">()</span></div>
 
 <div class="viewcode-block" id="MolearnAnalysis.get_decoded"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.MolearnAnalysis.get_decoded">[docs]</a>    <span class="k">def</span> <span class="nf">get_decoded</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        :param key: key pointing to a dataset previously loaded with :func:`set_dataset &lt;molearn.analysis.MolearnAnalysis.set_dataset&gt;`</span>
+<span class="sd">        :param str key: key pointing to a dataset previously loaded with :func:`set_dataset &lt;molearn.analysis.MolearnAnalysis.set_dataset&gt;`</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_decoded</span><span class="p">:</span>
             <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
@@ -169,7 +169,7 @@
 
 <div class="viewcode-block" id="MolearnAnalysis.set_decoded"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.MolearnAnalysis.set_decoded">[docs]</a>    <span class="k">def</span> <span class="nf">set_decoded</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">structures</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        :param key: key pointing to a dataset previously loaded with :func:`set_dataset &lt;molearn.analysis.MolearnAnalysis.set_dataset&gt;`</span>
+<span class="sd">        :param str key: key pointing to a dataset previously loaded with :func:`set_dataset &lt;molearn.analysis.MolearnAnalysis.set_dataset&gt;`</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_decoded</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">structures</span></div>
 
@@ -183,8 +183,8 @@
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Calculate the reconstruction error of a dataset encoded and decoded by a trained neural network.</span>
 <span class="sd">        </span>
-<span class="sd">        :param key: key pointing to a dataset previously loaded with :func:`set_dataset &lt;molearn.analysis.MolearnAnalysis.set_dataset&gt;`</span>
-<span class="sd">        :param align: if True, the RMSD will be calculated by finding the optimal alignment between structures</span>
+<span class="sd">        :param str key: key pointing to a dataset previously loaded with :func:`set_dataset &lt;molearn.analysis.MolearnAnalysis.set_dataset&gt;`</span>
+<span class="sd">        :param bool align: if True, the RMSD will be calculated by finding the optimal alignment between structures</span>
 <span class="sd">        :return: 1D array containing the RMSD between input structures and their encoded-decoded counterparts</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">dataset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_dataset</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
@@ -211,8 +211,8 @@
 
 <div class="viewcode-block" id="MolearnAnalysis.get_dope"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.MolearnAnalysis.get_dope">[docs]</a>    <span class="k">def</span> <span class="nf">get_dope</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">refine</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        :param key: key pointing to a dataset previously loaded with :func:`set_dataset &lt;molearn.analysis.MolearnAnalysis.set_dataset&gt;`</span>
-<span class="sd">        :param refine: if True, refine structures before calculating DOPE score</span>
+<span class="sd">        :param str key: key pointing to a dataset previously loaded with :func:`set_dataset &lt;molearn.analysis.MolearnAnalysis.set_dataset&gt;`</span>
+<span class="sd">        :param bool refine: if True, refine structures before calculating DOPE score</span>
 <span class="sd">        :return: dictionary containing DOPE score of dataset, and its decoded counterpart</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">dataset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_dataset</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
@@ -226,7 +226,7 @@
 
 <div class="viewcode-block" id="MolearnAnalysis.get_ramachandran"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.MolearnAnalysis.get_ramachandran">[docs]</a>    <span class="k">def</span> <span class="nf">get_ramachandran</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        :param key: key pointing to a dataset previously loaded with :func:`set_dataset &lt;molearn.analysis.MolearnAnalysis.set_dataset&gt;`</span>
+<span class="sd">        :param str key: key pointing to a dataset previously loaded with :func:`set_dataset &lt;molearn.analysis.MolearnAnalysis.set_dataset&gt;`</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         
         <span class="n">dataset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_dataset</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
@@ -240,10 +240,10 @@
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Define a NxN point grid regularly sampling the latent space.</span>
 <span class="sd">        </span>
-<span class="sd">        :param samples: grid size (build a samples x samples grid)</span>
-<span class="sd">        :param bounds_from: str, list of strings, or &#39;all&#39;. Name(s) of datasets to use as reference.</span>
-<span class="sd">        :param bounds: tuple (xmin, xmax, ymin, ymax) or None</span>
-<span class="sd">        :param padding: define size of extra spacing around boundary conditions (as ratio of axis dimensions)</span>
+<span class="sd">        :param int samples: grid size (build a samples x samples grid)</span>
+<span class="sd">        :param str/list bounds_from: Name(s) of datasets to use as reference, either as single string, a list of strings, or &#39;all&#39;</span>
+<span class="sd">        :param tuple/list bounds: tuple (xmin, xmax, ymin, ymax) or None</span>
+<span class="sd">        :param float padding: define size of extra spacing around boundary conditions (as ratio of axis dimensions)</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         
         <span class="n">key</span> <span class="o">=</span> <span class="s1">&#39;grid&#39;</span>
@@ -294,8 +294,8 @@
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Calculate landscape of RMSD vs single target structure. Target should be previously loaded datset containing a single conformation.  </span>
 <span class="sd">  </span>
-<span class="sd">        :param key: key pointing to a dataset previously loaded with :func:`set_dataset &lt;molearn.analysis.MolearnAnalysis.set_dataset&gt;`</span>
-<span class="sd">        :return: RMSD lantent space NxN surface</span>
+<span class="sd">        :param str key: key pointing to a dataset previously loaded with :func:`set_dataset &lt;molearn.analysis.MolearnAnalysis.set_dataset&gt;`</span>
+<span class="sd">        :return: RMSD latent space NxN surface</span>
 <span class="sd">        :return: x-axis values</span>
 <span class="sd">        :return: y-axis values</span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -315,10 +315,10 @@
 <span class="sd">        Calculate RMSD and z-drift on a grid sampling the latent space.</span>
 <span class="sd">        Requires a grid system to be defined via a prior call to :func:`set_dataset &lt;molearn.analysis.MolearnAnalysis.setup_grid&gt;`.</span>
 <span class="sd">        </span>
-<span class="sd">        :param s_key: string, label for RMSD dataset</span>
-<span class="sd">        :param z_key: string, label for z-drift dataset</span>
-<span class="sd">        :return: input-to-decoded RMSD lantent space NxN surface</span>
-<span class="sd">        :return: z-drift lantent space NxN surface</span>
+<span class="sd">        :param str s_key: label for RMSD dataset</span>
+<span class="sd">        :param str z_key: label for z-drift dataset</span>
+<span class="sd">        :return: input-to-decoded RMSD latent space NxN surface</span>
+<span class="sd">        :return: z-drift latent space NxN surface</span>
 <span class="sd">        :return: x-axis values</span>
 <span class="sd">        :return: y-axis values</span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -382,7 +382,7 @@
 
 <div class="viewcode-block" id="MolearnAnalysis.get_all_ramachandran_score"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.MolearnAnalysis.get_all_ramachandran_score">[docs]</a>    <span class="k">def</span> <span class="nf">get_all_ramachandran_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensor</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        Calculate Ramachandran score of an ensemble of atomic conrdinates</span>
+<span class="sd">        Calculate Ramachandran score of an ensemble of atomic conrdinates.</span>
 <span class="sd">        </span>
 <span class="sd">        :param tensor:</span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -400,10 +400,10 @@
 
 <div class="viewcode-block" id="MolearnAnalysis.get_all_dope_score"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.MolearnAnalysis.get_all_dope_score">[docs]</a>    <span class="k">def</span> <span class="nf">get_all_dope_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tensor</span><span class="p">,</span> <span class="n">refine</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        Calculate DOPE score of an ensemble of atom coordinates</span>
+<span class="sd">        Calculate DOPE score of an ensemble of atom coordinates.</span>
 
 <span class="sd">        :param tensor:</span>
-<span class="sd">        :param refine: if True, return DOPE score of input and output structure after refinement</span>
+<span class="sd">        :param bool refine: if True, return DOPE score of input and output structure after refinement</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">tensor</span><span class="p">:</span>
@@ -413,7 +413,7 @@
 
 <div class="viewcode-block" id="MolearnAnalysis.reference_dope_score"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.MolearnAnalysis.reference_dope_score">[docs]</a>    <span class="k">def</span> <span class="nf">reference_dope_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">frame</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        :param frame: numpy array with shape [1, N, 3] with Cartesian coordinates of atoms</span>
+<span class="sd">        :param numpy.array frame: array with shape [1, N, 3] with Cartesian coordinates of atoms</span>
 <span class="sd">        :return: DOPE score</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mol</span><span class="o">.</span><span class="n">coordinates</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">frame</span><span class="p">)</span>
@@ -431,9 +431,9 @@
 <span class="sd">        Calculate DOPE score on a grid sampling the latent space.</span>
 <span class="sd">        Requires a grid system to be defined via a prior call to :func:`set_dataset &lt;molearn.analysis.MolearnAnalysis.setup_grid&gt;`.</span>
 <span class="sd">        </span>
-<span class="sd">        :param key: label for unrefined DOPE score surface (default is DOPE_unrefined or DOPE_refined)</span>
-<span class="sd">        :param refine: if True, structures generated will be energy minimised before DOPE scoring</span>
-<span class="sd">        :return: DOPE score lantent space NxN surface</span>
+<span class="sd">        :param str key: label for unrefined DOPE score surface (default is DOPE_unrefined or DOPE_refined)</span>
+<span class="sd">        :param bool refine: if True, structures generated will be energy minimised before DOPE scoring</span>
+<span class="sd">        :return: DOPE score latent space NxN surface</span>
 <span class="sd">        :return: x-axis values</span>
 <span class="sd">        :return: y-axis values</span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -459,7 +459,7 @@
 <span class="sd">        Requires a grid system to be defined via a prior call to :func:`set_dataset &lt;molearn.analysis.MolearnAnalysis.setup_grid&gt;`.</span>
 <span class="sd">        Saves four surfaces in memory, with keys &#39;Ramachandran_favored&#39;, &#39;Ramachandran_allowed&#39;, &#39;Ramachandran_outliers&#39;, and &#39;Ramachandran_total&#39;.</span>
 
-<span class="sd">        :return: Ramachandran_favoured lantent space NxN surface (ratio of residues in favourable conformation)</span>
+<span class="sd">        :return: Ramachandran_favoured latent space NxN surface (ratio of residues in favourable conformation)</span>
 <span class="sd">        :return: x-axis values</span>
 <span class="sd">        :return: y-axis values</span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -478,9 +478,9 @@
 <span class="sd">        Generate a surface coloured as a function of a user-defined function.</span>
 <span class="sd">        </span>
 <span class="sd">        :param fct: function taking atomic coordinates as input, an optional list of parameters, and returning a single value.</span>
-<span class="sd">        :param params: parameters to be passed to function f. If no parameter is needed, pass an empty list.</span>
-<span class="sd">        :param key: name of the dataset generated by this function scan</span>
-<span class="sd">        :return: lantent space NxN surface, evaluated according to input function</span>
+<span class="sd">        :param list params: parameters to be passed to function f. If no parameter is needed, pass an empty list.</span>
+<span class="sd">        :param str key: name of the dataset generated by this function scan</span>
+<span class="sd">        :return: latent space NxN surface, evaluated according to input function</span>
 <span class="sd">        :return: x-axis values</span>
 <span class="sd">        :return: y-axis values</span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -497,7 +497,7 @@
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Generate a collection of protein conformations, given coordinates in the latent space.</span>
 <span class="sd">        </span>
-<span class="sd">        :param crd: coordinates in the latent space, as a (Nx2) array</span>
+<span class="sd">        :param numpy.array crd: coordinates in the latent space, as a (Nx2) array</span>
 <span class="sd">        :return: collection of protein conformations in the Cartesian space (NxMx3, where M is the number of atoms in the protein)</span>
 <span class="sd">        &#39;&#39;&#39;</span> 
         <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
