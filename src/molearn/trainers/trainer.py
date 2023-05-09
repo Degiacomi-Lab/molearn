@@ -13,10 +13,30 @@ class TrainingFailure(Exception):
     pass
 
 class Trainer():
+    '''
+    Trainer class that defines a number of useful methods for training an autoencoder.
+
+    :ivar autoencoder: any torch.nn.module network that has methods ``autoencoder.encode`` and ``autoencoder.decode`` with the weights associated with these operations accessible via ``autoencoder.encoder`` and ``autoencoder.decoder``. This can be set using set_autoencoder
+    :ivar _autoencoder_kwargs: kwargs used to initialise the network. Saved in every checkpoint under the key 'kwargs'
+    :ivar torch.optim.optimiser optimiser: pytorch optimiser with access to self.autoencoder.parameters()
+    :ivar torch.Device device: The device used for all operations.
+    :ivar int epoch: the current epoch
+    :ivar float best: The best validation score corresponding to the current best checkpoint
+    :ivar float best_name: the filename corresponding to self.best
+    :ivar float std: Standard deviation of the training dataset. Can be used to unscale structures produced by the network.
+    :ivar float mol: Biobox molecule containing a single example frame of the protein being trained on. This can be used to save examples during training. It is also used to save a temporary pdb that may be used to initialise thirdparty packages.
+    :ivar torch.Dataloader train_dataloader: Training data
+    :ivar torch.Dataloader valid_dataloader: Validation data
+    :ivar _data: (:func:`molearn.data <molearn.data.PDBata>` Data object given to :func:`set_data <molearn.trainers.Trainer.set_data>`
+
+    '''
+    
+
+
     def __init__(self, device = None, log_filename = 'log_file.dat'):
         '''
-        :param device: torch.Device object, if not given will be determinined automatically based on torch.cuda.is_available()
-        :param log_filename: (str, default 'default_log_filename.json') file used to log outputs to
+        :param torch.Device device: if not given will be determinined automatically based on torch.cuda.is_available()
+        :param str log_filename: (default: 'default_log_filename.json') file used to log outputs to
         '''
         if not device:
             self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
@@ -49,16 +69,19 @@ class Trainer():
 
     def set_autoencoder(self, autoencoder, **kwargs):
         '''
-        :param autoencoder: (:func:`autoencoder <molearn.models>`,) torch network class that implements ``autoencoder.encode``, and ``autoencoder.decode``
+        :param autoencoder: (:func:`autoencoder <molearn.models>`,) torch network class that implements ``autoencoder.encode``, and ``autoencoder.decode``. Please pass the class not the instance
         :param \*\*kwargs: any other kwargs given to this method will be used to initialise the network ``self.autoencoder = autoencoder(**kwargs)``
         '''
-        self.autoencoder = autoencoder(**kwargs).to(self.device)
+        if isinstance(autoencoder, type):
+            self.autoencoder = autoencoder(**kwargs).to(self.device)
+        else:
+            self.autoencoder = autoencoder.to(self.device)
         self._autoencoder_kwargs = kwargs
 
     def set_dataloader(self, train_dataloader=None, valid_dataloader=None):
         '''
-        :param train_dataloader: (**torch.DataLoader**,) class. Alternatively set using ``trainer.train_dataloader = dataloader``
-        :param valid_dataloader: (**torch.DataLoader**,) Alternatively set using ``trainer.valid_dataloader = dataloader`` 
+        :param torch.DataLoader train_dataloader: Alternatively set using ``trainer.train_dataloader = dataloader``
+        :param torch.DataLoader valid_dataloader: Alternatively set using ``trainer.valid_dataloader = dataloader`` 
         '''
         if train_dataloader is not None:
             self.train_dataloader = train_dataloader
@@ -70,7 +93,7 @@ class Trainer():
         Sets up internal variables and gives trainer access to dataloaders.
         ``self.train_dataloader``, ``self.valid_dataloader``, ``self.std``, ``self.mean``, ``self.mol`` will all be obtained from this object.
 
-        :param data: (:func:`PDBData object <molearn.data.PDBData>`,) data object to be set.
+        :param :func:`PDBData <molearn.data.PDBData>` data: data object to be set.
         :param \*\*kwargs: will be passed on to :func:`data.get_dataloader(**kwargs) <molearn.data.PDBData.get_dataloader>`
 
         '''
@@ -90,8 +113,8 @@ class Trainer():
         With no optional arguments this function is the same as doing:
         ``trainer.optimiser = torch.optim.AdawW(self.autoencoder.parameters(), lr=1e-3, weight_decay = 0.0001)``
 
-        :param lr: (**float**, default 1e-3) optimiser learning rate.
-        :param weight_decay: (**float**, default 0.0001) optimiser weight_decay
+        :param float lr: (default: 1e-3) optimiser learning rate.
+        :param float weight_decay: (default: 0.0001) optimiser weight_decay
         :param \*\*optimiser_kwargs: other kwargs that are passed onto AdamW
         '''
         self.optimiser = torch.optim.AdamW(self.autoencoder.parameters(), lr=lr, weight_decay = weight_decay, **optimiser_kwargs)
@@ -101,8 +124,8 @@ class Trainer():
         Then contents of log_dict are dumped using ``json.dumps(log_dict)`` and printed and/or appended to ``self.log_filename``
         This function is called from :func:`self.run <molearn.trainers.Trainer.run>`
 
-        :param log_dict: (**dict**,) dictionary to be printed or saved
-        :param verbose: (**bool**, default False) if True or self.verbose is true the output will be printed
+        :param dict log_dict: dictionary to be printed or saved
+        :param bool verbose: (default: False) if True or self.verbose is true the output will be printed
         '''
 
         dump = json.dumps(log_dict)
@@ -115,13 +138,13 @@ class Trainer():
         '''
         This function does nothing. It is called after :func:`self.valid_epoch <molearn.trainers.Trainer.valid_epoch>` in :func:`Trainer.run() <molearn.trainers.Trainer.run>` and before :func:`checkpointing <molearn.trainers.Trainer.checkpoint>`. It is designed to be overridden if you wish to use a scheduler.
 
-        :param logs: (**dict**,) Dictionary passed passed containing all logs returned from ``self.train_epoch`` and ``self.valid_epoch``. 
+        :param dict logs: Dictionary passed passed containing all logs returned from ``self.train_epoch`` and ``self.valid_epoch``. 
         '''
         pass
 
     def run(self, max_epochs=100, log_filename = None, log_folder=None, checkpoint_frequency=1, checkpoint_folder='checkpoints', allow_n_failures=10, verbose=None):
         '''
-        Calls in a loop:
+        Calls the following in a loop:
 
         - :func:`Trainer.train_epoch <molearn.trainers.Trainer.train_epoch>`
         - :func:`Trainer.valid_epoch <molearn.trainers.Trainer.valid_epoch>`
@@ -130,13 +153,13 @@ class Trainer():
         - :func:`Trainer.checkpoint <molearn.trainers.Trainer.checkpoint>`
         - :func:`Trainer.log <molearn.trainers.Trainer.log>`
 
-        :param max_epochs: (**int**, default 100). run until ``self.epoch`` matches max_epochs
-        :param log_filename: (**str**, default None) If log_filename already exists, all logs are appended to the existing file. Else new log file file is created. 
-        :param log_folder: (**str**, default None) If not None log_folder directory is created and the log file is saved within this folder
-        :param checkpoint_frequency: (**int**, default 1) The frequency at which last.ckpt is saved. A checkpoint is saved every epoch if ``'valid_loss'`` is lower else when ``self.epoch`` is divisible by checkpoint_frequency.
-        :param checkpoint_folder: (**str**, default 'checkpoints') Where to save checkpoints.
-        :param allow_n_failures: (**int**, default 10) How many times should training be restarted on error. Each epoch is run in a try except block. If an error is raised training is continued from the best checkpoint.
-        :param verbose: (**bool**, default None) set trainer.verbose. If True the epoch logs will be printed as well as written to log_filename 
+        :param int max_epochs: (default: 100). run until ``self.epoch`` matches max_epochs
+        :param str log_filename: (default: None) If log_filename already exists, all logs are appended to the existing file. Else new log file file is created. 
+        :param str log_folder: (default: None) If not None log_folder directory is created and the log file is saved within this folder
+        :param int checkpoint_frequency: (default: 1) The frequency at which last.ckpt is saved. A checkpoint is saved every epoch if ``'valid_loss'`` is lower else when ``self.epoch`` is divisible by checkpoint_frequency.
+        :param str checkpoint_folder: (default: 'checkpoints') Where to save checkpoints.
+        :param int allow_n_failures: (default: 10) How many times should training be restarted on error. Each epoch is run in a try except block. If an error is raised training is continued from the best checkpoint.
+        :param bool verbose: (default: None) set trainer.verbose. If True, the epoch logs will be printed as well as written to log_filename 
 
         '''
         if log_filename is not None:
@@ -199,8 +222,9 @@ class Trainer():
 
         - All results are aggregated via averaging and returned with ``'train_'`` prepended on the dictionary key 
 
-        :param epoch: (**int**) The epoch is passed as an argument however epoch number can also be accessed from self.epoch.
-        :returns: (**dict**) Return all results from train_step averaged. These results will be printed and/or logged in :func:`trainer.run() <molearn.trainers.Trainer.run>` via a call to :func:`self.log(results) <molearn.trainers.Trainer.log>`
+        :param int epoch: The epoch is passed as an argument however epoch number can also be accessed from self.epoch.
+        :returns:  Return all results from train_step averaged. These results will be printed and/or logged in :func:`trainer.run() <molearn.trainers.Trainer.run>` via a call to :func:`self.log(results) <molearn.trainers.Trainer.log>`
+        :rtype: dict
         '''
         self.autoencoder.train()
         N = 0
@@ -221,10 +245,11 @@ class Trainer():
 
     def train_step(self, batch):
         '''
-        Called from trainer.train_epoch.
+        Called from :func:`Trainer.train_epoch <molearn.trainers.Trainer.train_epoch>`.
 
-        :param batch: (**torch.Tensor** shape [Batch size, 3, Number of Atoms]) A mini-batch of protein frames normalised. To recover original data multiple by ``self.std``.
-        :returns: (**dict**) Return loss. The dictionary must contain an entry with key ``'loss'`` that :func:`self.train_epoch <molearn.trainers.Trainer.train_epoch>` will call ``result['loss'].backwards()`` to obtain gradients.
+        :param torch.Tensor batch: Tensor of shape [Batch size, 3, Number of Atoms]. A mini-batch of protein frames normalised. To recover original data multiple by ``self.std``.
+        :returns: Return loss. The dictionary must contain an entry with key ``'loss'`` that :func:`self.train_epoch <molearn.trainers.Trainer.train_epoch>` will call ``result['loss'].backwards()`` to obtain gradients.
+        :rtype: dict
         '''
         results = self.common_step(batch)
         results['loss'] = results['mse_loss']
@@ -236,8 +261,9 @@ class Trainer():
         Calculates the mean squared error loss for self.autoencoder. 
         Encoded and decoded frames are saved in self._internal under keys ``encoded`` and ``decoded`` respectively should you wish to use them elsewhere. 
 
-        :param batch: (**torch.Tensor**, shape [Batch size, 3, Number of Atoms]) A mini-batch of protein frames normalised. To recover original data multiple by ``self.std``.
-        :returns: (**dict**) Return calculated mse_loss 
+        :param torch.Tensor batch: Tensor of shape [Batch size, 3, Number of Atoms] A mini-batch of protein frames normalised. To recover original data multiple by ``self.std``.
+        :returns: Return calculated mse_loss 
+        :rtype: dict
         '''
         self._internal = {}
         encoded = self.autoencoder.encode(batch)
@@ -257,8 +283,9 @@ class Trainer():
 
           * The loss with key ``'loss'`` is returned as ``'valid_loss'`` this will be the loss value by which the best checkpoint is determined.
 
-        :param epoch: (**int**) The epoch is passed as an argument however epoch number can also be accessed from self.epoch.
-        :returns: (**dict**) Return all results from valid_step averaged. These results will be printed and/or logged in :func:`Trainer.run() <molearn.trainers.Trainer.run>` via a call to :func:`self.log(results) <molearn.trainers.Trainer.log>`
+        :param int epoch: The epoch is passed as an argument however epoch number can also be accessed from self.epoch.
+        :returns: Return all results from valid_step averaged. These results will be printed and/or logged in :func:`Trainer.run() <molearn.trainers.Trainer.run>` via a call to :func:`self.log(results) <molearn.trainers.Trainer.log>`
+        :rtype: dict
         '''
         self.autoencoder.eval()
         N = 0
@@ -278,8 +305,9 @@ class Trainer():
         '''
         Called from :func:`Trainer.valid_epoch<molearn.trainer.Trainer.valid_epoch>` on every mini-batch.
 
-        :param batch: (**torch.Tensor**, shape [Batch size, 3, Number of Atoms]) A mini-batch of protein frames normalised. To recover original data multiple by ``self.std``.
-        :returns: (**dict**) Return loss. The dictionary must contain an entry with key ``'loss'`` that will be the score via which the best checkpoint is determined.
+        :param torch.Tensor batch: Tensor of shape [Batch size, 3, Number of Atoms]. A mini-batch of protein frames normalised. To recover original data multiple by ``self.std``.
+        :returns: Return loss. The dictionary must contain an entry with key ``'loss'`` that will be the score via which the best checkpoint is determined.
+        :rtype: dict
         '''
         results = self.common_step(batch)
         results['loss'] = results['mse_loss']
@@ -291,12 +319,13 @@ class Trainer():
         Performs a sweep of learning rate between ``max_lr`` and ``min_lr`` over ``number_of_iterations``. 
         See `Finding Good Learning Rate and The One Cycle Policy <https://towardsdatascience.com/finding-good-learning-rate-and-the-one-cycle-policy-7159fe1db5d6>`_
 
-        :param max_lr: (**float**, default 100.0) final/maximum learning rate to be used
-        :param min_lr: (**float**, default 1e-5) Starting learning rate
-        :param number_of_iterations: Number of steps to run sweep over. 
-        :param train_on: (**str**, default 'mse_loss') key returned from trainer.train_step(batch) on which to train
-        :param save: (**list**, default ['loss', 'mse_loss']) what loss values to return.
-        :returns: **np.ndarray** of shape [len(save), min(number_of_iterations, iterations before NaN)] containing loss values defined in `save` key word.
+        :param float max_lr: (default: 100.0) final/maximum learning rate to be used
+        :param float min_lr: (default: 1e-5) Starting learning rate
+        :param int number_of_iterations: (default: 1000) Number of steps to run sweep over. 
+        :param str train_on: (default: 'mse_loss') key returned from trainer.train_step(batch) on which to train
+        :param list save: (default: ['loss', 'mse_loss']) what loss values to return.
+        :returns: array of shape [len(save), min(number_of_iterations, iterations before NaN)] containing loss values defined in `save` key word.
+        :rtype: numpy.ndarray
         '''
         self.autoencoder.train()
         def cycle(iterable):
@@ -341,10 +370,10 @@ class Trainer():
         Checkpoint the current network. The checkpoint will be saved as ``'last.ckpt'``.
         If valid_logs[loss_key] is better than self.best then this checkpoint will replace self.best and ``'last.ckpt'`` will be renamed to ``f'{checkpoint_folder}/checkpoint_epoch{epoch}_loss{valid_loss}.ckpt'`` and the former best (filename saved as ``self.best_name``) will be deleted
 
-        :param epoch: (**int**) current epoch, will be saved within the ckpt. Current epoch can usually be obtained with ``self.epoch``
-        :param valid_logs: (**dict**) results dictionary containing loss_key. 
-        :param checkpoint_folder: (**str**) The folder in which to save the checkpoint. 
-        :param loss_key: (**str**, default 'valid_loss') The key with which to get loss from valid_logs.
+        :param int epoch: current epoch, will be saved within the ckpt. Current epoch can usually be obtained with ``self.epoch``
+        :param dict valid_logs: results dictionary containing loss_key. 
+        :param str checkpoint_folder:  The folder in which to save the checkpoint. 
+        :param str loss_key: (default: 'valid_loss') The key with which to get loss from valid_logs.
         '''
         valid_loss = valid_logs[loss_key]
         if not os.path.exists(checkpoint_folder):
@@ -372,9 +401,9 @@ class Trainer():
         '''
         Load checkpoint. 
 
-        :param checkpoint_name: (**str**, default ``'best'``) if ``'best'`` then checkpoint_folder is searched for all files beginning with ``'checkpoint_'`` and loss values are extracted from the filename by assuming all characters after ``'loss'`` and before ``'.ckpt'`` are a float. The checkpoint with the lowest loss is loaded. checkpoint_name is not ``'best'`` we search for a checkpoint file at ``f'{checkpoint_folder}/{checkpoint_name}'``.
-        :param checkpoint_folder: (**str**,)  Folder whithin which to search for checkpoints.
-        :param load_optimiser: (**bool**, default True) Should optimiser state dictionary be loaded.
+        :param str checkpoint_name: (default: ``'best'``) if ``'best'`` then checkpoint_folder is searched for all files beginning with ``'checkpoint_'`` and loss values are extracted from the filename by assuming all characters after ``'loss'`` and before ``'.ckpt'`` are a float. The checkpoint with the lowest loss is loaded. checkpoint_name is not ``'best'`` we search for a checkpoint file at ``f'{checkpoint_folder}/{checkpoint_name}'``.
+        :param str checkpoint_folder:  Folder whithin which to search for checkpoints.
+        :param bool load_optimiser: (default: True) Should optimiser state dictionary be loaded.
         '''
         if checkpoint_name=='best':
             if self.best_name is not None:
