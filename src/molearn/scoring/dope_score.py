@@ -12,8 +12,14 @@ from multiprocessing import Pool, Event, get_context
 import os
     
 class DOPE_Score:
+    '''
+    This class contains methods to calculate dope without saving to save and load PDB files for every structure. Atoms in a biobox coordinate tensor are mapped to the coordinates in the modeller model directly.
+    '''
 
     def __init__(self, mol):
+        '''
+        :param biobox.Molecule mol: One example frame to gain access to the topology. Mol will also be used to save a temporary pdb file that will be reloaded in modeller to create the initial modeller Model.
+        '''
 
         #set residues names with protonated histidines back to generic HIS name (needed by DOPE score function)
         testH = mol.data["resname"].values
@@ -56,6 +62,14 @@ class DOPE_Score:
         os.remove(tmp_file)
 
     def get_dope(self, frame, refine=False):
+        '''
+        Get the dope score. Injects coordinates into modeller and uses ``mdl.build(build_method='INTERNAL_COORDINATES', initialize_xyz=False) to reconstruct missing atoms.
+        If a error is thrown by modeller or at any stage, we just return a fixed large value of 1e10.
+        :param numpy.ndarray frame: shape [N, 3]
+        :param bool refine: (default: False) If True, relax the structures using a maximum of 50 steps of ConjugateGradient descent
+        :returns: Dope score as calculated by modeller. If error is thrown we just simply return 1e10.
+        :rtype: float
+        '''
         # expect coords to be shape [N, 3] use .cpu().numpy().copy() before passing here and make sure it is scaled correctly
         try:
             frame = frame.astype(float)
@@ -76,6 +90,13 @@ class DOPE_Score:
             return 1e10
         
     def get_all_dope(self, coords, refine=False):
+        '''
+        Expect a array of frames. return array of DOPE score value.
+        :param numpy.ndarray coords: shape [B, N, 3]
+        :param bool refine: (default: False) If True, relax the structures using a maximum of 50 steps of Conjugate Gradient descent
+        :returns: float array shape [B]
+        :rtype: np.ndarray
+        '''
         # expect coords to be shape [B, N, 3] use .cpu().numpy().copy() before passing here and make sure it is scaled correctly
         dope_scores = []
         for frame in coords:
@@ -96,6 +117,7 @@ class DOPE_Score:
 def set_global_score(score, kwargs):
     '''
     make score a global variable
+    This is used when initializing a multiprocessing process
     '''
     global worker_dope_score
     worker_dope_score = score(**kwargs)#mol = mol, data_dir=data_dir, **kwargs)
@@ -103,11 +125,30 @@ def set_global_score(score, kwargs):
 def process_dope(coords, kwargs):
     '''
     dope worker
+    Worker function for multiprocessing class
     '''
     return worker_dope_score.get_dope(coords,**kwargs)
 
 class Parallel_DOPE_Score():
+    '''
+    a multiprocessing class to get modeller DOPE scores.
+    A typical use case would looke like::
+
+      score_class = Parallel_DOPE_Score(mol, **kwargs)
+      results = []
+      for frame in coordinates_array:
+          results.append(score_class.get_score(frame))
+      .... # DOPE will be calculated asynchronously in background
+      #to retrieve the results
+      results = np.array([r.get() for r in results])
+
+    '''
     def __init__(self, mol, processes=-1, **kwargs):
+        '''
+        :param biobox.Molecule mol: biobox molecule containing one example frame of the protein to be analysed. This will be passed to DOPE_Score class instances in each thread.
+        :param int processes: (default: -1) Number of processes argument to pass to multiprocessing.pool. This controls the number of threads created.
+        :param \*\*kwargs: additional kwargs will be passed multiprocesing.pool during initialisation.
+        '''
         
         # set a number of processes as user desires, capped on number of CPUs
         if processes > 0:
@@ -129,7 +170,7 @@ class Parallel_DOPE_Score():
 
     def get_score(self, coords, **kwargs):
         '''
-        :param coords: # shape (1, N, 3) numpy array
+        :param np.array coords: # shape (N, 3) numpy array
         '''
         #is copy necessary?
         return self.pool.apply_async(self.process_function, (coords.copy(), kwargs))

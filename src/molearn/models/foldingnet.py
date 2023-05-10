@@ -70,9 +70,9 @@ class Encoder(nn.Module):
     '''
     Graph based encoder
     '''
-    def __init__(self, **kwargs):
+    def __init__(self, latent_dimension = 2,**kwargs):
         super(Encoder, self).__init__()
-
+        self.latent_dimension = latent_dimension
         self.conv1 = nn.Conv1d(12, 64, 1)
         self.conv2 = nn.Conv1d(64, 64, 1)
         self.conv3 = nn.Conv1d(64, 64, 1)
@@ -86,7 +86,7 @@ class Encoder(nn.Module):
 
         self.conv4 = nn.Conv1d(1024, 512, 1)
         self.bn4 = nn.BatchNorm1d(512)
-        self.conv5 = nn.Conv1d(512, 2,1)
+        self.conv5 = nn.Conv1d(512, latent_dimension,1)
 
     def forward(self, x):
         b, c, n = x.size()
@@ -202,19 +202,22 @@ class Decoder(nn.Module):
     Decoder Module of FoldingNet
     '''
 
-    def __init__(self, out_points, in_channel=2, **kwargs):
+    def __init__(self, out_points, latent_dimension=2, **kwargs):
         super(Decoder, self).__init__()
+        self.latent_dimension = latent_dimension
 
         # Sample the grids in 2D space
         #xx = np.linspace(-0.3, 0.3, 45, dtype=np.float32)
         #yy = np.linspace(-0.3, 0.3, 45, dtype=np.float32)
         #self.grid = np.meshgrid(xx, yy)   # (2, 45, 45)
+
+        
         start_out = (out_points//128) +1
 
 
         self.out_points = out_points
 
-        self.layer1 = Decoder_Layer(1,           start_out,    in_channel,3*128)
+        self.layer1 = Decoder_Layer(1,           start_out,    latent_dimension,3*128)
         self.layer2 = Decoder_Layer(start_out,   start_out*8,  3*128,     3*16)
         self.layer3 = Decoder_Layer(start_out*8, start_out*32, 3*16,      3*4)
         self.layer4 = Decoder_Layer(start_out*32,start_out*128,3*4,       3)

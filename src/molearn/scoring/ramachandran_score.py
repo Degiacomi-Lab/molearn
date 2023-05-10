@@ -11,7 +11,14 @@ from ..utils import cpu_count, random_string
 import os
 
 class Ramachandran_Score():
+    '''
+    This class contains methods that use iotbx/mmtbx to calulate the quality of phi and psi values in a protein.
+    '''
     def __init__(self, mol, threshold=1e-3):
+        '''
+        :param biobox.Molecule mol: One example frame to gain access to the topology. Mol will also be used to save a temporary pdb file that will be reloaded to create the initial iotbx Model.
+        :param float threshold: (default: 1e-3) Threshold used to determine similarity between biobox.molecule coordinates and iotbx model coordinates. Determine that iotbx model was created successfully.
+        '''
         tmp_file = f'rama_tmp{random_string()}.pdb'
         mol.write_pdb(tmp_file, split_struc = False)#'rama_tmp.pdb')
         filename = tmp_file#'rama_tmp.pdb'
@@ -34,8 +41,10 @@ class Ramachandran_Score():
     def get_score(self, coords, as_ratio = False):
         '''
             Given coords (corresponding to self.mol) will calculate Ramachandran scores using cctbux ramalyze module
-            :param coords: numpy array (shape (N, 3))
+            Returns the counts of number of torsion angles that fall within favored, allowed, and outlier regions and finally the total number of torsion angles analysed.
+            :param numpy.ndarray coords: shape (N, 3)
             :returns: (favored, allowed, outliers, total)
+            :rtype: tuple of ints
 
         '''
         assert coords.shape == self.shape
@@ -55,6 +64,7 @@ class Ramachandran_Score():
 def set_global_score(score, kwargs):
     '''
     make score a global variable
+    This is used when initializing a multiprocessing process
     '''
     global worker_ramachandran_score
     worker_ramachandran_score = score(**kwargs)#mol = mol, data_dir=data_dir, **kwargs)
@@ -62,12 +72,35 @@ def set_global_score(score, kwargs):
 def process_ramachandran(coords, kwargs):
     '''
     ramachandran worker
+    Worker function for multiprocessing class
     '''
     return worker_ramachandran_score.get_score(coords,**kwargs)
 
 class Parallel_Ramachandran_Score():
+    '''
+    A multiprocessing class to get Ramachandran scores. 
+    A typical use case would looke like::
+
+        score_class = Parallel_Ramachandran_Score(mol, **kwargs)
+        results = []
+        for frame in coordinates_array:
+            results.append(score_class.get_score(frame))
+            # Ramachandran scores will be calculated asynchronously in background
+        ...
+        # to retrieve the results
+        results = np.array([r.get() for r in results])
+        favored = results[:,0]
+        allowed = results[:,1]
+        outliers = results[:,2]
+        total = results[:,3]
+
+    '''
     
     def __init__(self, mol, processes=-1):
+        '''
+        :param biobox.Molecule mol: biobox melucel containing one example fram of the protein to be analysed. This will be passed to Ramachandran_Score instances in each thread.
+        :param int processes: (default: -1) Number of processes argument to pass to multiprocessing.pool. This controls the number of therads created.
+        '''
         
         # set a number of processes as user desires, capped on number of CPUs
         if processes > 0:
@@ -90,7 +123,7 @@ class Parallel_Ramachandran_Score():
 
     def get_score(self, coords,**kwargs):
         '''
-        :param coords: # shape (1, N, 3) numpy array
+        :param coords: # shape (N, 3) numpy array
         '''
         #is copy necessary?
         return self.pool.apply_async(self.process_function, (coords.copy(), kwargs))
