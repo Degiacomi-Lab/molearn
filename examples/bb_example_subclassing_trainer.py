@@ -128,4 +128,4 @@ if __name__ == '__main__':
         if not best>trainer.best:
             break
         best = trainer.best
-    print(f'best {trainer.best}, best_filename {trainer.best_filename}')
+    print(f'best {trainer.best}, best_filename {trainer.best_name}')
