@@ -142,7 +142,7 @@ class Trainer():
         '''
         pass
 
-    def run(self, max_epochs=100, log_filename = None, log_folder=None, checkpoint_frequency=1, checkpoint_folder='checkpoints', allow_n_failures=10, verbose=None):
+    def run(self, max_epochs=100, log_filename = None, log_folder=None, checkpoint_frequency=1, checkpoint_folder='checkpoint_folder', allow_n_failures=10, verbose=None):
         '''
         Calls the following in a loop:
 
@@ -157,7 +157,7 @@ class Trainer():
         :param str log_filename: (default: None) If log_filename already exists, all logs are appended to the existing file. Else new log file file is created. 
         :param str log_folder: (default: None) If not None log_folder directory is created and the log file is saved within this folder
         :param int checkpoint_frequency: (default: 1) The frequency at which last.ckpt is saved. A checkpoint is saved every epoch if ``'valid_loss'`` is lower else when ``self.epoch`` is divisible by checkpoint_frequency.
-        :param str checkpoint_folder: (default: 'checkpoints') Where to save checkpoints.
+        :param str checkpoint_folder: (default: 'checkpoint_folder') Where to save checkpoints.
         :param int allow_n_failures: (default: 10) How many times should training be restarted on error. Each epoch is run in a try except block. If an error is raised training is continued from the best checkpoint.
         :param bool verbose: (default: None) set trainer.verbose. If True, the epoch logs will be printed as well as written to log_filename 
 
