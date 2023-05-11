@@ -11,7 +11,7 @@ class Small_Decoder(nn.Module):
     '''
 
     def __init__(self, out_points, in_channel=2, **kwargs):
-        super(Decoder, self).__init__()
+        super().__init__()
 
         # Sample the grids in 2D space
         #xx = np.linspace(-0.3, 0.3, 45, dtype=np.float32)
