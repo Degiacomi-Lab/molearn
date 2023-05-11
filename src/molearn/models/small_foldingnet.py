@@ -41,7 +41,7 @@ class Small_AutoEncoder(AutoEncoder):
     '''
     
     def __init__(self, *args, **kwargs):
-        super().__init__()
+        super(AutoEncoder, self).__init__()
 
         self.encoder = Encoder(*args, **kwargs)
         self.decoder = Small_Decoder(*args, **kwargs)
