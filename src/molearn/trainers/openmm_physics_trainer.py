@@ -67,7 +67,6 @@ class OpenMM_Physics_Trainer(Trainer):
         :returns: Return loss. The dictionary must contain an entry with key ``'loss'`` that :func:`self.train_epoch <molearn.trainers.Trainer.train_epoch>` will call ``result['loss'].backwards()`` to obtain gradients.
         :rtype: dict
         ''' 
-        __doc__ +=Trainer.train_step.__doc__
         
         results = self.common_step(batch)
         results.update(self.common_physics_step(batch, self._internal['encoded']))
