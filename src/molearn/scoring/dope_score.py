@@ -78,7 +78,12 @@ class DOPE_Score:
                 if i+1<frame.shape[0]:
                     j.x, j.y, j.z = frame[self.fast_atom_order[i], :]
             self.fast_mdl.build(build_method='INTERNAL_COORDINATES', initialize_xyz=False)
-            
+            if refine == 'both':
+                with ShutUp():
+                    dope_unrefined = self.fast_fs.assess_dope()
+                    self.cg.optimize(self.fast_fs, max_iterations=50)
+                    dope_refined = self.fast_fs.assess_dope()
+                    return dope_unrefined, dope_refined
             with ShutUp():
                 if refine:
                     self.cg.optimize(self.fast_fs, max_iterations=50)
@@ -155,7 +160,7 @@ class Parallel_DOPE_Score():
             processes = min(processes, cpu_count())
         else:
             processes = cpu_count()
-            
+        self.processes = processes
         self.mol = deepcopy(mol)
         score = DOPE_Score
         ctx = get_context('spawn')
@@ -166,7 +171,7 @@ class Parallel_DOPE_Score():
         self.process_function = process_dope
 
     def __reduce__(self):
-        return (self.__class__, (self.mol,))
+        return (self.__class__, (self.mol, processes=self.processes))
 
     def get_score(self, coords, **kwargs):
         '''

@@ -466,3 +466,7 @@ class MolearnAnalysis(object):
 
         return s*self.stdval + self.meanval
 
+
+    def __getstate__(self):
+        return {key:value for key, value in dict(self.__dict__).items() if key not in ['dope_score_class', 'ramachandran_score_class']}
+
