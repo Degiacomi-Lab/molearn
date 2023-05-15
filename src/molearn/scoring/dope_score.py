@@ -148,7 +148,7 @@ class Parallel_DOPE_Score():
       results = np.array([r.get() for r in results])
 
     '''
-    def __init__(self, mol, processes=-1, **kwargs):
+    def __init__(self, mol, processes=-1, context = 'spawn', **kwargs):
         '''
         :param biobox.Molecule mol: biobox molecule containing one example frame of the protein to be analysed. This will be passed to DOPE_Score class instances in each thread.
         :param int processes: (default: -1) Number of processes argument to pass to multiprocessing.pool. This controls the number of threads created.
@@ -163,7 +163,7 @@ class Parallel_DOPE_Score():
         self.processes = processes
         self.mol = deepcopy(mol)
         score = DOPE_Score
-        ctx = get_context('spawn')
+        ctx = get_context(context)
         self.pool = ctx.Pool(processes=processes, initializer=set_global_score,
                          initargs=(score, dict(mol=mol)),
                          **kwargs,
@@ -171,7 +171,7 @@ class Parallel_DOPE_Score():
         self.process_function = process_dope
 
     def __reduce__(self):
-        return (self.__class__, (self.mol, processes=self.processes))
+        return (self.__class__, (self.mol, self.processes))
 
     def get_score(self, coords, **kwargs):
         '''
