@@ -380,7 +380,8 @@ class MolearnGUI(object):
         options2 = ["none"]
         if self.MA is not None:
             for f in list(self.MA._datasets):
-                options2.append(f)
+                if "grid_" not in f:
+                    options2.append(f)
 
         self.drop_dataset = widgets.Dropdown(
             options=options2,

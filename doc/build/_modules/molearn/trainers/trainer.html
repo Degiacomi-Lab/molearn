@@ -53,7 +53,7 @@
 <span class="k">class</span> <span class="nc">TrainingFailure</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
     <span class="k">pass</span>
 
-<div class="viewcode-block" id="Trainer"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.trainer.Trainer">[docs]</a><span class="k">class</span> <span class="nc">Trainer</span><span class="p">():</span>
+<div class="viewcode-block" id="Trainer"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.Trainer">[docs]</a><span class="k">class</span> <span class="nc">Trainer</span><span class="p">():</span>
     <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Trainer class that defines a number of useful methods for training an autoencoder.</span>
 
@@ -92,7 +92,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">log_filename</span> <span class="o">=</span> <span class="s1">&#39;default_log_filename.json&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">scheduler_key</span> <span class="o">=</span> <span class="kc">None</span>
 
-<div class="viewcode-block" id="Trainer.get_network_summary"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.trainer.Trainer.get_network_summary">[docs]</a>    <span class="k">def</span> <span class="nf">get_network_summary</span><span class="p">(</span><span class="bp">self</span><span class="p">,):</span>
+<div class="viewcode-block" id="Trainer.get_network_summary"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.Trainer.get_network_summary">[docs]</a>    <span class="k">def</span> <span class="nf">get_network_summary</span><span class="p">(</span><span class="bp">self</span><span class="p">,):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        returns a dictionary containing information about the size of the autoencoder.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -108,7 +108,7 @@
             <span class="n">autoencoder_total</span> <span class="o">=</span> <span class="n">get_parameters</span><span class="p">(</span><span class="kc">False</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">autoencoder</span><span class="p">),</span>
                       <span class="p">)</span></div>
 
-<div class="viewcode-block" id="Trainer.set_autoencoder"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.trainer.Trainer.set_autoencoder">[docs]</a>    <span class="k">def</span> <span class="nf">set_autoencoder</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">autoencoder</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="Trainer.set_autoencoder"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.Trainer.set_autoencoder">[docs]</a>    <span class="k">def</span> <span class="nf">set_autoencoder</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">autoencoder</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        :param autoencoder: (:func:`autoencoder &lt;molearn.models&gt;`,) torch network class that implements ``autoencoder.encode``, and ``autoencoder.decode``. Please pass the class not the instance</span>
 <span class="sd">        :param \*\*kwargs: any other kwargs given to this method will be used to initialise the network ``self.autoencoder = autoencoder(**kwargs)``</span>
@@ -119,7 +119,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">autoencoder</span> <span class="o">=</span> <span class="n">autoencoder</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_autoencoder_kwargs</span> <span class="o">=</span> <span class="n">kwargs</span></div>
 
-<div class="viewcode-block" id="Trainer.set_dataloader"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.trainer.Trainer.set_dataloader">[docs]</a>    <span class="k">def</span> <span class="nf">set_dataloader</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">train_dataloader</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">valid_dataloader</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="Trainer.set_dataloader"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.Trainer.set_dataloader">[docs]</a>    <span class="k">def</span> <span class="nf">set_dataloader</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">train_dataloader</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">valid_dataloader</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        :param torch.DataLoader train_dataloader: Alternatively set using ``trainer.train_dataloader = dataloader``</span>
 <span class="sd">        :param torch.DataLoader valid_dataloader: Alternatively set using ``trainer.valid_dataloader = dataloader`` </span>
@@ -129,7 +129,7 @@
         <span class="k">if</span> <span class="n">valid_dataloader</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">valid_dataloader</span> <span class="o">=</span> <span class="n">valid_dataloader</span></div>
 
-<div class="viewcode-block" id="Trainer.set_data"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.trainer.Trainer.set_data">[docs]</a>    <span class="k">def</span> <span class="nf">set_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="Trainer.set_data"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.Trainer.set_data">[docs]</a>    <span class="k">def</span> <span class="nf">set_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Sets up internal variables and gives trainer access to dataloaders.</span>
 <span class="sd">        ``self.train_dataloader``, ``self.valid_dataloader``, ``self.std``, ``self.mean``, ``self.mol`` will all be obtained from this object.</span>
@@ -148,7 +148,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">data</span></div>
 
 
-<div class="viewcode-block" id="Trainer.prepare_optimiser"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.trainer.Trainer.prepare_optimiser">[docs]</a>    <span class="k">def</span> <span class="nf">prepare_optimiser</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lr</span> <span class="o">=</span> <span class="mf">1e-3</span><span class="p">,</span> <span class="n">weight_decay</span> <span class="o">=</span> <span class="mf">0.0001</span><span class="p">,</span> <span class="o">**</span><span class="n">optimiser_kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="Trainer.prepare_optimiser"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.Trainer.prepare_optimiser">[docs]</a>    <span class="k">def</span> <span class="nf">prepare_optimiser</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lr</span> <span class="o">=</span> <span class="mf">1e-3</span><span class="p">,</span> <span class="n">weight_decay</span> <span class="o">=</span> <span class="mf">0.0001</span><span class="p">,</span> <span class="o">**</span><span class="n">optimiser_kwargs</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        The Default optimiser is ``AdamW`` and is saved in ``self.optimiser``.</span>
 <span class="sd">        With no optional arguments this function is the same as doing:</span>
@@ -160,7 +160,7 @@
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">optimiser</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">AdamW</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">autoencoder</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="n">lr</span><span class="p">,</span> <span class="n">weight_decay</span> <span class="o">=</span> <span class="n">weight_decay</span><span class="p">,</span> <span class="o">**</span><span class="n">optimiser_kwargs</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Trainer.log"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.trainer.Trainer.log">[docs]</a>    <span class="k">def</span> <span class="nf">log</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">log_dict</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="Trainer.log"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.Trainer.log">[docs]</a>    <span class="k">def</span> <span class="nf">log</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">log_dict</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Then contents of log_dict are dumped using ``json.dumps(log_dict)`` and printed and/or appended to ``self.log_filename``</span>
 <span class="sd">        This function is called from :func:`self.run &lt;molearn.trainers.Trainer.run&gt;`</span>
@@ -175,7 +175,7 @@
         <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log_filename</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
             <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">dump</span><span class="o">+</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Trainer.scheduler_step"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.trainer.Trainer.scheduler_step">[docs]</a>    <span class="k">def</span> <span class="nf">scheduler_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">logs</span><span class="p">):</span>
+<div class="viewcode-block" id="Trainer.scheduler_step"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.Trainer.scheduler_step">[docs]</a>    <span class="k">def</span> <span class="nf">scheduler_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">logs</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        This function does nothing. It is called after :func:`self.valid_epoch &lt;molearn.trainers.Trainer.valid_epoch&gt;` in :func:`Trainer.run() &lt;molearn.trainers.Trainer.run&gt;` and before :func:`checkpointing &lt;molearn.trainers.Trainer.checkpoint&gt;`. It is designed to be overridden if you wish to use a scheduler.</span>
 
@@ -183,7 +183,7 @@
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">pass</span></div>
 
-<div class="viewcode-block" id="Trainer.run"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.trainer.Trainer.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_epochs</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">log_filename</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">log_folder</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">checkpoint_frequency</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">checkpoint_folder</span><span class="o">=</span><span class="s1">&#39;checkpoints&#39;</span><span class="p">,</span> <span class="n">allow_n_failures</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="Trainer.run"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.Trainer.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_epochs</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">log_filename</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">log_folder</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">checkpoint_frequency</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">checkpoint_folder</span><span class="o">=</span><span class="s1">&#39;checkpoint_folder&#39;</span><span class="p">,</span> <span class="n">allow_n_failures</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Calls the following in a loop:</span>
 
@@ -198,7 +198,7 @@
 <span class="sd">        :param str log_filename: (default: None) If log_filename already exists, all logs are appended to the existing file. Else new log file file is created. </span>
 <span class="sd">        :param str log_folder: (default: None) If not None log_folder directory is created and the log file is saved within this folder</span>
 <span class="sd">        :param int checkpoint_frequency: (default: 1) The frequency at which last.ckpt is saved. A checkpoint is saved every epoch if ``&#39;valid_loss&#39;`` is lower else when ``self.epoch`` is divisible by checkpoint_frequency.</span>
-<span class="sd">        :param str checkpoint_folder: (default: &#39;checkpoints&#39;) Where to save checkpoints.</span>
+<span class="sd">        :param str checkpoint_folder: (default: &#39;checkpoint_folder&#39;) Where to save checkpoints.</span>
 <span class="sd">        :param int allow_n_failures: (default: 10) How many times should training be restarted on error. Each epoch is run in a try except block. If an error is raised training is continued from the best checkpoint.</span>
 <span class="sd">        :param bool verbose: (default: None) set trainer.verbose. If True, the epoch logs will be printed as well as written to log_filename </span>
 
@@ -249,7 +249,7 @@
                 <span class="k">break</span></div>
 
 
-<div class="viewcode-block" id="Trainer.train_epoch"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.trainer.Trainer.train_epoch">[docs]</a>    <span class="k">def</span> <span class="nf">train_epoch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">epoch</span><span class="p">):</span>
+<div class="viewcode-block" id="Trainer.train_epoch"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.Trainer.train_epoch">[docs]</a>    <span class="k">def</span> <span class="nf">train_epoch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">epoch</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Train one epoch. Called once an epoch from :func:`trainer.run &lt;molearn.trainers.Trainer.run&gt;`</span>
 <span class="sd">        This method performs the following functions:</span>
@@ -284,7 +284,7 @@
             <span class="n">N</span><span class="o">+=</span><span class="nb">len</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span>
         <span class="k">return</span> <span class="p">{</span><span class="sa">f</span><span class="s1">&#39;train_</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">:</span> <span class="n">results</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">/</span><span class="n">N</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">results</span><span class="o">.</span><span class="n">keys</span><span class="p">()}</span></div>
 
-<div class="viewcode-block" id="Trainer.train_step"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.trainer.Trainer.train_step">[docs]</a>    <span class="k">def</span> <span class="nf">train_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">):</span>
+<div class="viewcode-block" id="Trainer.train_step"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.Trainer.train_step">[docs]</a>    <span class="k">def</span> <span class="nf">train_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Called from :func:`Trainer.train_epoch &lt;molearn.trainers.Trainer.train_epoch&gt;`.</span>
 
@@ -296,7 +296,7 @@
         <span class="n">results</span><span class="p">[</span><span class="s1">&#39;loss&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="s1">&#39;mse_loss&#39;</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">results</span></div>
 
-<div class="viewcode-block" id="Trainer.common_step"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.trainer.Trainer.common_step">[docs]</a>    <span class="k">def</span> <span class="nf">common_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">):</span>
+<div class="viewcode-block" id="Trainer.common_step"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.Trainer.common_step">[docs]</a>    <span class="k">def</span> <span class="nf">common_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Called from both train_step and valid_step.</span>
 <span class="sd">        Calculates the mean squared error loss for self.autoencoder. </span>
@@ -314,7 +314,7 @@
         <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">mse_loss</span> <span class="o">=</span> <span class="p">((</span><span class="n">batch</span><span class="o">-</span><span class="n">decoded</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">())</span></div>
 
 
-<div class="viewcode-block" id="Trainer.valid_epoch"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.trainer.Trainer.valid_epoch">[docs]</a>    <span class="k">def</span> <span class="nf">valid_epoch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">epoch</span><span class="p">):</span>
+<div class="viewcode-block" id="Trainer.valid_epoch"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.Trainer.valid_epoch">[docs]</a>    <span class="k">def</span> <span class="nf">valid_epoch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">epoch</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Called once an epoch from :func:`trainer.run &lt;molearn.trainers.Trainer.run&gt;` within a no_grad context.</span>
 <span class="sd">        This method performs the following functions:</span>
@@ -342,7 +342,7 @@
             <span class="n">N</span><span class="o">+=</span><span class="nb">len</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span>
         <span class="k">return</span> <span class="p">{</span><span class="sa">f</span><span class="s1">&#39;valid_</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">:</span> <span class="n">results</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">/</span><span class="n">N</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">results</span><span class="o">.</span><span class="n">keys</span><span class="p">()}</span></div>
 
-<div class="viewcode-block" id="Trainer.valid_step"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.trainer.Trainer.valid_step">[docs]</a>    <span class="k">def</span> <span class="nf">valid_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">):</span>
+<div class="viewcode-block" id="Trainer.valid_step"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.Trainer.valid_step">[docs]</a>    <span class="k">def</span> <span class="nf">valid_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Called from :func:`Trainer.valid_epoch&lt;molearn.trainer.Trainer.valid_epoch&gt;` on every mini-batch.</span>
 
@@ -354,7 +354,7 @@
         <span class="n">results</span><span class="p">[</span><span class="s1">&#39;loss&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="s1">&#39;mse_loss&#39;</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">results</span></div>
 
-<div class="viewcode-block" id="Trainer.learning_rate_sweep"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.trainer.Trainer.learning_rate_sweep">[docs]</a>    <span class="k">def</span> <span class="nf">learning_rate_sweep</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_lr</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">min_lr</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">,</span> <span class="n">number_of_iterations</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">checkpoint_folder</span><span class="o">=</span><span class="s1">&#39;checkpoint_sweep&#39;</span><span class="p">,</span><span class="n">train_on</span><span class="o">=</span><span class="s1">&#39;mse_loss&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;loss&#39;</span><span class="p">,</span> <span class="s1">&#39;mse_loss&#39;</span><span class="p">]):</span>
+<div class="viewcode-block" id="Trainer.learning_rate_sweep"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.Trainer.learning_rate_sweep">[docs]</a>    <span class="k">def</span> <span class="nf">learning_rate_sweep</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_lr</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">min_lr</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">,</span> <span class="n">number_of_iterations</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">checkpoint_folder</span><span class="o">=</span><span class="s1">&#39;checkpoint_sweep&#39;</span><span class="p">,</span><span class="n">train_on</span><span class="o">=</span><span class="s1">&#39;mse_loss&#39;</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;loss&#39;</span><span class="p">,</span> <span class="s1">&#39;mse_loss&#39;</span><span class="p">]):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Deprecated method.</span>
 <span class="sd">        Performs a sweep of learning rate between ``max_lr`` and ``min_lr`` over ``number_of_iterations``. </span>
@@ -396,7 +396,7 @@
         <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;min value &#39;</span><span class="p">,</span> <span class="n">values</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">nanargmin</span><span class="p">(</span><span class="n">values</span><span class="p">[:,</span><span class="mi">1</span><span class="p">])])</span>
         <span class="k">return</span> <span class="n">values</span></div>
 
-<div class="viewcode-block" id="Trainer.update_optimiser_hyperparameters"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.trainer.Trainer.update_optimiser_hyperparameters">[docs]</a>    <span class="k">def</span> <span class="nf">update_optimiser_hyperparameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="Trainer.update_optimiser_hyperparameters"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.Trainer.update_optimiser_hyperparameters">[docs]</a>    <span class="k">def</span> <span class="nf">update_optimiser_hyperparameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Update optimeser hyperparameter e.g. ``trainer.update_optimiser_hyperparameters(lr = 1e3)``</span>
 
@@ -406,7 +406,7 @@
             <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
                 <span class="n">g</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span></div>
 
-<div class="viewcode-block" id="Trainer.checkpoint"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.trainer.Trainer.checkpoint">[docs]</a>    <span class="k">def</span> <span class="nf">checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">epoch</span><span class="p">,</span> <span class="n">valid_logs</span><span class="p">,</span> <span class="n">checkpoint_folder</span><span class="p">,</span> <span class="n">loss_key</span><span class="o">=</span><span class="s1">&#39;valid_loss&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="Trainer.checkpoint"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.Trainer.checkpoint">[docs]</a>    <span class="k">def</span> <span class="nf">checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">epoch</span><span class="p">,</span> <span class="n">valid_logs</span><span class="p">,</span> <span class="n">checkpoint_folder</span><span class="p">,</span> <span class="n">loss_key</span><span class="o">=</span><span class="s1">&#39;valid_loss&#39;</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Checkpoint the current network. The checkpoint will be saved as ``&#39;last.ckpt&#39;``.</span>
 <span class="sd">        If valid_logs[loss_key] is better than self.best then this checkpoint will replace self.best and ``&#39;last.ckpt&#39;`` will be renamed to ``f&#39;{checkpoint_folder}/checkpoint_epoch{epoch}_loss{valid_loss}.ckpt&#39;`` and the former best (filename saved as ``self.best_name``) will be deleted</span>
@@ -438,7 +438,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">best_epoch</span> <span class="o">=</span> <span class="n">epoch</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">best</span> <span class="o">=</span> <span class="n">valid_loss</span></div>
 
-<div class="viewcode-block" id="Trainer.load_checkpoint"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.trainer.Trainer.load_checkpoint">[docs]</a>    <span class="k">def</span> <span class="nf">load_checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">checkpoint_folder</span><span class="p">,</span> <span class="n">checkpoint_name</span> <span class="o">=</span><span class="s1">&#39;best&#39;</span><span class="p">,</span> <span class="n">load_optimiser</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<div class="viewcode-block" id="Trainer.load_checkpoint"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.Trainer.load_checkpoint">[docs]</a>    <span class="k">def</span> <span class="nf">load_checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">checkpoint_folder</span><span class="p">,</span> <span class="n">checkpoint_name</span> <span class="o">=</span><span class="s1">&#39;best&#39;</span><span class="p">,</span> <span class="n">load_optimiser</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Load checkpoint. </span>
 

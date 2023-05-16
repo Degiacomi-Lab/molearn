@@ -25,7 +25,8 @@ define a training protocol, and analyse the resulting trained model.
    trainers
    scoring
    analysis
-
+   FAQ
+   
 
 Please see molearn's `Github page <https://github.com/Degiacomi-Lab/molearn>`_ 
 for installation instructions and examples scripts.
