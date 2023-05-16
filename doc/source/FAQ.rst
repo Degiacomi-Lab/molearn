@@ -18,7 +18,25 @@ loading and re-saving the file via biobox.
 
 **I cannot install openmmtorchplugin**
 
-Matching drivers issue here! Sam will tell you more.
+openmmtorchplugin must be install via terminal with conda-forge:
+
+.. code::
+
+    conda install -c conda-forge openmmtorchplugin
+
+The following python versions are supported: 3.8, 3.9, 3.10, 3.11
+If you are running into issues please attempt a fresh install in a new conda environment:
+
+.. code:: 
+
+    conda create --name test_env python=3.10
+    conda install -c conda-forge openmmtorchplugin molearn
+
+openmmtorchplugin depends on conda-forge builds of pytorch and openmm. Due to this dependency Windows can not be supported. It is built with cuda_compiler_version = 11.2 in conda forge CI tools.
+This has been successfully tested on Ubuntu machines running with a driver version of 525.105.17 (see nvidia-smi output).
+
+The nvidia website tabulats minimum driver versions required and version compatibility. `NVIDIA CUDA Toolkit Minimum driver versions <https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/index.html>`_
+
 
 
 **The GUI seems to be frozen after I start using it/does not work as expected**
