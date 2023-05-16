@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="molearn",
-    version="1.0.0",
+    version="2.0.1",
     author="S. C. Musson",
     long_description = long_description,
     long_description_content_type="text/markdown",
