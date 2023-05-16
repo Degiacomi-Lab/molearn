@@ -48,7 +48,36 @@
             
   <section id="module-molearn.scoring.DOPE_Score">
 <span id="scoring"></span><h1>Scoring<a class="headerlink" href="#module-molearn.scoring.DOPE_Score" title="Permalink to this heading">¶</a></h1>
-<span class="target" id="module-molearn.scoring.Parallel_DOPE_Score"></span><span class="target" id="module-molearn.scoring.Ramachandran_Score"></span><span class="target" id="module-molearn.scoring.Parallel_Ramachandran_Score"></span></section>
+<p>This class contains methods to calculate dope without saving to save and load PDB files for every structure. Atoms in a biobox coordinate tensor are mapped to the coordinates in the modeller model directly.</p>
+<span class="target" id="module-molearn.scoring.Parallel_DOPE_Score"></span><p>a multiprocessing class to get modeller DOPE scores.
+A typical use case would looke like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">score_class</span> <span class="o">=</span> <span class="n">Parallel_DOPE_Score</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">frame</span> <span class="ow">in</span> <span class="n">coordinates_array</span><span class="p">:</span>
+    <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">score_class</span><span class="o">.</span><span class="n">get_score</span><span class="p">(</span><span class="n">frame</span><span class="p">))</span>
+<span class="o">....</span> <span class="c1"># DOPE will be calculated asynchronously in background</span>
+<span class="c1">#to retrieve the results</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">r</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">results</span><span class="p">])</span>
+</pre></div>
+</div>
+<span class="target" id="module-molearn.scoring.Ramachandran_Score"></span><p>This class contains methods that use iotbx/mmtbx to calulate the quality of phi and psi values in a protein.</p>
+<span class="target" id="module-molearn.scoring.Parallel_Ramachandran_Score"></span><p>A multiprocessing class to get Ramachandran scores. 
+A typical use case would looke like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">score_class</span> <span class="o">=</span> <span class="n">Parallel_Ramachandran_Score</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">frame</span> <span class="ow">in</span> <span class="n">coordinates_array</span><span class="p">:</span>
+    <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">score_class</span><span class="o">.</span><span class="n">get_score</span><span class="p">(</span><span class="n">frame</span><span class="p">))</span>
+    <span class="c1"># Ramachandran scores will be calculated asynchronously in background</span>
+<span class="o">...</span>
+<span class="c1"># to retrieve the results</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">r</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">results</span><span class="p">])</span>
+<span class="n">favored</span> <span class="o">=</span> <span class="n">results</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">allowed</span> <span class="o">=</span> <span class="n">results</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">outliers</span> <span class="o">=</span> <span class="n">results</span><span class="p">[:,</span><span class="mi">2</span><span class="p">]</span>
+<span class="n">total</span> <span class="o">=</span> <span class="n">results</span><span class="p">[:,</span><span class="mi">3</span><span class="p">]</span>
+</pre></div>
+</div>
+</section>
 
 
             <div class="clearer"></div>
