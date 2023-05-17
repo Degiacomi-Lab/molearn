@@ -1,5 +1,5 @@
 ---
-title: 'Molearn: A Python package streamlining the design of generative models of biomolecular dynamics'
+title: 'Molearn: a Python package streamlining the design of generative models of biomolecular dynamics'
 tags:
   - Python
   - machine learning
