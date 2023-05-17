@@ -31,6 +31,9 @@ To calculate DOPE and Ramachandran scores during analysis:
 * [Modeller](https://salilab.org/modeller/)
 * [cctbx](https://cctbx.github.io/)
 
+To run the GUI:
+* [MDAnalysis](https://www.mdanalysis.org/)
+
 ## Installation ##
 
 molearn requires no installation. Simply clone the repository and make sure the requirements above are met.
