@@ -1,5 +1,7 @@
 # molearn
 
+[![status](https://joss.theoj.org/papers/781a409020f1c37417067aef6fbc3217/status.svg)](https://joss.theoj.org/papers/781a409020f1c37417067aef6fbc3217)
+
 *protein conformational spaces meet machine learning*
 
 molearn is a Python package streamlining the implementation of machine learning models dedicated to the generation of protein conformations from example data obtained via experiment or molecular simulation.
