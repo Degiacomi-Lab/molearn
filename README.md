@@ -1,6 +1,7 @@
 # molearn
 
 [![status](https://joss.theoj.org/papers/781a409020f1c37417067aef6fbc3217/status.svg)](https://joss.theoj.org/papers/781a409020f1c37417067aef6fbc3217)
+[![Documentation Status](https://readthedocs.org/projects/molearn/badge/?version=latest)](https://molearn.readthedocs.io/en/latest/?badge=latest)
 
 *protein conformational spaces meet machine learning*
 
@@ -47,6 +48,7 @@ The most recent release can also be obtained through Anaconda:
 
 * See example scripts in the `examples` folder, and documentation in the `doc` folder.
 * Jupyter notebook tutorials describing the usage of a trained neural network are available [here](https://github.com/Degiacomi-Lab/molearn_notebook).
+* software documentation is available at [molearn.readthedocs.io](https://molearn.readthedocs.io/).
 
 ## Reference ##
 
