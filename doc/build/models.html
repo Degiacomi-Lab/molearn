@@ -6,16 +6,14 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
-    <title>Models &#8212; molearn 1.3.0 documentation</title>
+    <title>FoldingNet Model &#8212; molearn 2.0.1 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="_static/classic.css" />
-    
+    <link rel="stylesheet" type="text/css" href="_static/sphinxdoc.css" />
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
     <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
-    
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Trainers" href="trainers.html" />
@@ -36,8 +34,8 @@
         <li class="right" >
           <a href="loss_functions.html" title="Loss Functions"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">molearn 1.3.0 documentation</a> &#187;</li>
-        <li class="nav-item nav-item-this"><a href="">Models</a></li> 
+        <li class="nav-item nav-item-0"><a href="index.html">molearn 2.0.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">FoldingNet Model</a></li> 
       </ul>
     </div>  
 
@@ -46,9 +44,53 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <section id="module-molearn.models.foldingnet.AutoEncoder">
-<span id="models"></span><h1>Models<a class="headerlink" href="#module-molearn.models.foldingnet.AutoEncoder" title="Permalink to this heading">¶</a></h1>
-<p>autoencoder architecture derived from FoldingNet.</p>
+  <section id="foldingnet-model">
+<h1>FoldingNet Model<a class="headerlink" href="#foldingnet-model" title="Permalink to this heading">¶</a></h1>
+<p>Import from <cite>molearn.models.foldingnet</cite></p>
+<dl class="py class">
+<dt class="sig sig-object py" id="molearn.models.foldingnet.AutoEncoder">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">AutoEncoder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/models/foldingnet.html#AutoEncoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.models.foldingnet.AutoEncoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>autoencoder architecture derived from FoldingNet.</p>
+<p>Initializes internal Module state, shared by both nn.Module and ScriptModule.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="molearn.models.foldingnet.AutoEncoder.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/models/foldingnet.html#AutoEncoder.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.models.foldingnet.AutoEncoder.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="cnn-model">
+<h1>CNN model<a class="headerlink" href="#cnn-model" title="Permalink to this heading">¶</a></h1>
+<p>import from  <cite>molearn.models.CNN_autoencoder</cite></p>
+<dl class="py class">
+<dt class="sig sig-object py" id="molearn.models.CNN_autoencoder.Autoencoder">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Autoencoder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">init_z</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">32</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">latent_z</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">depth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">droprate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/models/CNN_autoencoder.html#Autoencoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.models.CNN_autoencoder.Autoencoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is the autoencoder used in our <a class="reference external" href="https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.011052">Ramaswamy 2021 paper</a>
+It is largely superseded by <a class="reference internal" href="#molearn.models.foldingnet.AutoEncoder" title="molearn.models.foldingnet.AutoEncoder"><code class="xref py py-func docutils literal notranslate"><span class="pre">molearn.models.foldingnet.AutoEncoder()</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>init_z</strong> (<em>int</em>) – number of channels in first layer</p></li>
+<li><p><strong>latent_z</strong> (<em>int</em>) – number of latent space dimensions</p></li>
+<li><p><strong>depth</strong> (<em>int</em>) – number of layers</p></li>
+<li><p><strong>m</strong> (<em>float</em>) – scaling factor, dictating number of channels in subsequent layers</p></li>
+<li><p><strong>r</strong> (<em>int</em>) – number of residual blocks between layers</p></li>
+<li><p><strong>droprate</strong> (<em>float</em>) – dropout rate</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
 
 
@@ -58,6 +100,14 @@
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">FoldingNet Model</a></li>
+<li><a class="reference internal" href="#cnn-model">CNN model</a></li>
+</ul>
+
+  </div>
   <div>
     <h4>Previous topic</h4>
     <p class="topless"><a href="loss_functions.html"
@@ -104,12 +154,12 @@
         <li class="right" >
           <a href="loss_functions.html" title="Loss Functions"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">molearn 1.3.0 documentation</a> &#187;</li>
-        <li class="nav-item nav-item-this"><a href="">Models</a></li> 
+        <li class="nav-item nav-item-0"><a href="index.html">molearn 2.0.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">FoldingNet Model</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2021, V. K. Ramaswamy, S. C. Musson, M. T. Degiacomi.
+        &#169; Copyright 2021, S. C. Musson, M. T. Degiacomi.
       Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.0.2.
     </div>
   </body>

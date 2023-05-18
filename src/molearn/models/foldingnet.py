@@ -139,9 +139,7 @@ class FoldingLayer(nn.Module):
 
     def forward(self, *args):
         """
-        Parameters
-        ----------
-            grids: reshaped 2D grids or intermediam reconstructed point clouds
+        :param grids: reshaped 2D grids or intermediam reconstructed point clouds
         """
         # concatenate
         #try:
@@ -237,7 +235,7 @@ class Decoder(nn.Module):
 
 class AutoEncoder(nn.Module):
     '''
-    autoencoder architecture derived from FoldingNet.
+    Autoencoder architecture derived from FoldingNet.
     '''
     
     def __init__(self, *args, **kwargs):

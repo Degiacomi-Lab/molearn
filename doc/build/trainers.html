@@ -6,20 +6,18 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
-    <title>Trainers &#8212; molearn 1.3.0 documentation</title>
+    <title>Trainers &#8212; molearn 2.0.1 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="_static/classic.css" />
-    
+    <link rel="stylesheet" type="text/css" href="_static/sphinxdoc.css" />
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
     <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
-    
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Scoring" href="scoring.html" />
-    <link rel="prev" title="Models" href="models.html" /> 
+    <link rel="prev" title="FoldingNet Model" href="models.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
@@ -34,9 +32,9 @@
           <a href="scoring.html" title="Scoring"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="models.html" title="Models"
+          <a href="models.html" title="FoldingNet Model"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">molearn 1.3.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">molearn 2.0.1 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Trainers</a></li> 
       </ul>
     </div>  
@@ -247,8 +245,8 @@ With no optional arguments this function is the same as doing:
 <span class="sig-name descname"><span class="pre">set_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/trainers/trainer.html#Trainer.set_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.trainers.Trainer.set_data" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sets up internal variables and gives trainer access to dataloaders.
 <code class="docutils literal notranslate"><span class="pre">self.train_dataloader</span></code>, <code class="docutils literal notranslate"><span class="pre">self.valid_dataloader</span></code>, <code class="docutils literal notranslate"><span class="pre">self.std</span></code>, <code class="docutils literal notranslate"><span class="pre">self.mean</span></code>, <code class="docutils literal notranslate"><span class="pre">self.mol</span></code> will all be obtained from this object.</p>
-<p>:param <code class="xref py py-func docutils literal notranslate"><span class="pre">PDBData</span></code> data: data object to be set.
-:param **kwargs: will be passed on to <code class="xref py py-func docutils literal notranslate"><span class="pre">data.get_dataloader(**kwargs)</span></code></p>
+<p>:param <a class="reference internal" href="data.html#molearn.data.PDBData" title="molearn.data.PDBData"><code class="xref py py-func docutils literal notranslate"><span class="pre">PDBData</span></code></a> data: data object to be set.
+:param **kwargs: will be passed on to <a class="reference internal" href="data.html#molearn.data.PDBData.get_dataloader" title="molearn.data.PDBData.get_dataloader"><code class="xref py py-func docutils literal notranslate"><span class="pre">data.get_dataloader(**kwargs)</span></code></a></p>
 </dd></dl>
 
 <dl class="py method">
@@ -548,7 +546,7 @@ This is essentially the same as scaling the physics_loss with any arbitary scali
   <div>
     <h4>Previous topic</h4>
     <p class="topless"><a href="models.html"
-                          title="previous chapter">Models</a></p>
+                          title="previous chapter">FoldingNet Model</a></p>
   </div>
   <div>
     <h4>Next topic</h4>
@@ -589,14 +587,14 @@ This is essentially the same as scaling the physics_loss with any arbitary scali
           <a href="scoring.html" title="Scoring"
              >next</a> |</li>
         <li class="right" >
-          <a href="models.html" title="Models"
+          <a href="models.html" title="FoldingNet Model"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">molearn 1.3.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">molearn 2.0.1 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Trainers</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2021, V. K. Ramaswamy, S. C. Musson, M. T. Degiacomi.
+        &#169; Copyright 2021, S. C. Musson, M. T. Degiacomi.
       Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.0.2.
     </div>
   </body>

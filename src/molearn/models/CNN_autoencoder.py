@@ -53,10 +53,19 @@ class From2D(nn.Module):
 
 class Autoencoder(nn.Module):    
     '''
-    This is the autoencoder used in our `Ramaswamy 2021 paper <https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.011052>`_
-    It is largely superceded (superseded) by :func:`molearn.models.foldingnet.AutoEncoder`. We would therefore not recommend using this class.
+    This is the autoencoder used in our `Ramaswamy 2021 paper <https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.011052>`_.
+    It is largely superseded by :func:`molearn.models.foldingnet.AutoEncoder`.
     '''
     def __init__(self, init_z=32, latent_z=1, depth=4, m=1.5, r=0, droprate=None):    
+        '''
+        :param int init_z: number of channels in first layer
+        :param int latent_z: number of latent space dimensions
+        :param int depth: number of layers
+        :param float m: scaling factor, dictating number of channels in subsequent layers
+        :param int r: number of residual blocks between layers
+        :param float droprate: dropout rate
+        '''
+        
         super(Autoencoder, self).__init__()    
         # encoder block    
         eb = nn.ModuleList()    
@@ -94,10 +103,12 @@ class Autoencoder(nn.Module):
                 db.append(ResidualBlock(int(init_z*m**i)))
         db.append(nn.ConvTranspose1d(int(init_z*m**(i)), 3, 4, 2, 1))
         self.decoder = db
+        
     def encode(self, x):
         for m in self.encoder:
             x = m(x)
         return x
+    
     def decode(self, x):
         for m in self.decoder:
             x = m(x)
