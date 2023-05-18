@@ -47,6 +47,7 @@ The most recent release can also be obtained through Anaconda:
 
 * See example scripts in the `examples` folder, and documentation in the `doc` folder.
 * Jupyter notebook tutorials describing the usage of a trained neural network are available [here](https://github.com/Degiacomi-Lab/molearn_notebook).
+* software documentation is available at [molearn.readthedocs.io](https://molearn.readthedocs.io/).
 
 ## Reference ##
 
