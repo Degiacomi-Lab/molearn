@@ -8,7 +8,7 @@ build:
   number: 0
 
 sphinx:
-  configuration: source/conf.py
+  configuration: docs/source/conf.py
   
 requirements:
   build:
