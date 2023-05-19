@@ -14,5 +14,6 @@ dependencies:
   - pytorch-cpu
   - biobox
   - openmm
+  - ipywidgets
   - pip:
     - geomloss
