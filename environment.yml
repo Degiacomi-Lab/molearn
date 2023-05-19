@@ -8,3 +8,4 @@ dependencies:
   - pandas
   - scipy
   - pytorch-cpu=1.7
+  - biobox
