@@ -14,10 +14,13 @@
 from copy import deepcopy
 import numpy as np
 import torch.optim
-
-from modeller import *
-from modeller.scripts import complete_pdb
-
+try:
+    from modeller import *
+    from modeller.scripts import complete_pdb
+except Exception as e:
+    print('Error importing modeller: ')
+    print(e)
+    
 from ..scoring import Parallel_DOPE_Score, Parallel_Ramachandran_Score
 from ..data import PDBData
 
