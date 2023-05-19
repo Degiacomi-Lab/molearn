@@ -9,7 +9,7 @@ molearn is a Python package streamlining the implementation of machine learning 
 
 Included in this repository are the following:
 * Source code in the `molearn` folder
-* Software documentation in the `doc` folder.
+* Software documentation in the `docs` folder.
 * Example training and analysis scripts, along with example data, in the `examples` folder
 
 ## Dependencies
@@ -46,9 +46,9 @@ The most recent release can also be obtained through Anaconda:
 
 ## Usage ##
 
-* See example scripts in the `examples` folder, and documentation in the `doc` folder.
+* See example scripts in the `examples` folder.
 * Jupyter notebook tutorials describing the usage of a trained neural network are available [here](https://github.com/Degiacomi-Lab/molearn_notebook).
-* software documentation is available at [molearn.readthedocs.io](https://molearn.readthedocs.io/).
+* software documentation in the `docs` folder is available at [molearn.readthedocs.io](https://molearn.readthedocs.io/).
 
 ## Reference ##
 
