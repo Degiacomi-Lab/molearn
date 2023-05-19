@@ -1,0 +1,9 @@
+name: docs-environment
+channels:
+    - conda-forge
+dependencies:
+    - python
+    - numpy
+    - pandas
+    - scipy
+    - pytorch

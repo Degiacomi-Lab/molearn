@@ -7,9 +7,7 @@ build:
   tools:
     python: "3.10"
 
-
-python:
-  version: 3.7
-  install:
-    - requirements: docs/requirements.txt
+conda:
+  environment:
+    docs/requirements.yml
 
