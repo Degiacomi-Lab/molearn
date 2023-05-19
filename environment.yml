@@ -1,12 +1,18 @@
 name: docs-environment
 channels:
   - conda-forge
+  - salilab
   - defaults
 dependencies:
   - python=3.8
   - numpy
+  - modeller
+  - mdanalysis
+  - cctbx
   - pandas
   - scipy
   - pytorch-cpu
   - biobox
   - openmm
+  - pip:
+    - geomloss
