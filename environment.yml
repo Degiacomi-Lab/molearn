@@ -7,5 +7,6 @@ dependencies:
   - numpy
   - pandas
   - scipy
-  - pytorch-cpu=1.7
+  - pytorch-cpu
   - biobox
+  - openmm
