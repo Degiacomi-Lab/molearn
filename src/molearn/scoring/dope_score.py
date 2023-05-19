@@ -2,11 +2,15 @@ import numpy as np
 from copy import deepcopy
 
 from ..utils import ShutUp, cpu_count, random_string
-
-import modeller
-from modeller import *
-from modeller.scripts import complete_pdb
-from modeller.optimizers import ConjugateGradients
+try:
+    import modeller
+    from modeller import *
+    from modeller.scripts import complete_pdb
+    from modeller.optimizers import ConjugateGradients
+except Exception as e:
+    print('Error importing modeller: ')
+    print(e)
+    
 
 from multiprocessing import Pool, Event, get_context
 import os
