@@ -11,14 +11,8 @@ build:
     python: "3.10"
 
 
-requirements:
-  build:
-    - python
-    - setuptools
-  run:
-    - python
-    - numpy
-    - pytorch
-    - pandas
-    - scipy
+python:
+  version: 3.10
+  install:
+    - requirements: docs/requirements.txt
 

@@ -1,0 +1,4 @@
+numpy
+pytorch
+pandas
+scipy
