@@ -1,8 +1,9 @@
 name: docs-environment
 channels:
   - conda-forge
+  - defaults
 dependencies:
-  - python
+  - python=3.7
   - numpy
   - pandas
   - scipy
