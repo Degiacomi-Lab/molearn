@@ -17,6 +17,7 @@ from IPython import display
 
 import numpy as np
 import MDAnalysis as mda
+import torch
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -225,7 +226,10 @@ class MolearnGUI(object):
             
         else:
             try:
-               data = as_numpy(self.MA.get_encoded(change.new).squeeze(2))
+                if isinstance(change.new, str):
+                    data = as_numpy(self.MA.get_encoded(change.new).squeeze(2))
+                else:
+                    data = as_numpy(torch.cat([self.MA.get_encoded(d).squeeze(2) for d in change.new]))
             except Exception as e:
                 print(f"{e}")
                 return      
@@ -383,18 +387,28 @@ class MolearnGUI(object):
                 if "grid_" not in f:
                     options2.append(f)
 
-        self.drop_dataset = widgets.Dropdown(
-            options=options2,
-            value=options2[0],
-            description='Dataset:',
-            layout=Layout(flex='1 1 0%', width='auto'))
+
+        self._multiple_dataset = widgets.SelectMultiple(
+            options = options2,
+            value = options2,
+            description = 'Dataset:',
+            layout = Layout(flex='1 1 0%', width='auto'))
+        self.multiple_dataset = widgets.Accordion(children=[self._multiple_dataset], titles=('Datasets'))
+#        self.drop_dataset = widgets.Dropdown(
+#            options=options2,
+#            value=options2[0],
+#            description='Dataset:',
+#            layout=Layout(flex='1 1 0%', width='auto'))
 
         if len(options2) == 1:
-            self.drop_dataset.disabled = True
+#            self.drop_dataset.disabled = True
+            self._multiple_dataset.disabled = True
         else:
-            self.drop_dataset.disabled = False
+#            self.drop_dataset.disabled = False
+            self._multiple_dataset.disabled = False
         
-        self.drop_dataset.observe(self.drop_dataset_event, names='value')
+#        self.drop_dataset.observe(self.drop_dataset_event, names='value')
+        self._multiple_dataset.observe(self.drop_dataset_event, names='value')
 
         # pathfinder method dropdown menu
         self.drop_path = widgets.Dropdown(
@@ -523,8 +537,10 @@ class MolearnGUI(object):
         
         ### WIDGETS ARRANGEMENT ###
         
-        self.block0 = widgets.VBox([self.drop_dataset, self.range_slider,
-                                    self.drop_background, self.drop_path, self.samplebox, self.mybox,
+        self.block0 = widgets.VBox([
+            #self.drop_dataset,
+              self.multiple_dataset,
+                self.range_slider, self.drop_background, self.drop_path, self.samplebox, self.mybox,
                                     self.button_pdb, self.button_save_state, self.button_load_state],
                               layout=Layout(flex='1 1 2', width='auto', border="solid"))
 
