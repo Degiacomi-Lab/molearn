@@ -397,7 +397,7 @@ class Trainer():
             self.best_epoch = epoch
             self.best = valid_loss
 
-    def load_checkpoint(self, checkpoint_folder, checkpoint_name ='best', load_optimiser=True):
+    def load_checkpoint(self, checkpoint_name ='best', checkpoint_folder = '', load_optimiser=True):
         '''
         Load checkpoint. 
 

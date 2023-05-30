@@ -154,15 +154,15 @@ class MolearnAnalysis(object):
         decoded = self.get_decoded(key)
 
         err = []
+        m = deepcopy(self.mol)
         for i in range(dataset.shape[0]):
             crd_ref = as_numpy(dataset[i].permute(1,0).unsqueeze(0))*self.stdval + self.meanval
             crd_mdl = as_numpy(decoded[i].permute(1,0).unsqueeze(0))[:, :dataset.shape[2]]*self.stdval + self.meanval #clip the padding of models  
-
             if align: # use Molecule Biobox class to calculate RMSD
-                self.mol.coordinates = deepcopy(crd_ref)
-                self.mol.set_current(0)
-                self.mol.add_xyz(crd_mdl[0])
-                rmsd = self.mol.rmsd(0, 1)
+                m.coordinates = deepcopy(crd_ref)
+                m.set_current(0)
+                m.add_xyz(crd_mdl[0])
+                rmsd = m.rmsd(0, 1)
             else:
                 rmsd = np.sqrt(np.sum((crd_ref.flatten()-crd_mdl.flatten())**2)/crd_mdl.shape[1]) # Cartesian L2 norm
 
@@ -252,7 +252,7 @@ class MolearnAnalysis(object):
         xmax, ymax = max(xmax), max(ymax)
         return xmin, xmax, ymin, ymax
 
-    def scan_error_from_target(self, key, index=None):
+    def scan_error_from_target(self, key, index=None, align=False):
         '''
         Calculate landscape of RMSD vs single target structure. Target should be previously loaded datset containing a single conformation.  
   
@@ -267,7 +267,15 @@ class MolearnAnalysis(object):
             target = self.get_dataset(key) if index is None else self.get_dataset(key)[index]
             assert target.shape[0] == 1
             decoded = self.get_decoded('grid')
-            rmsd = (((decoded-target)*self.stdval)**2).sum(axis=1).mean(axis=-1).sqrt()
+            if align:
+                crd_ref = as_numpy(target.permute(0,2,1))*self.stdval
+                crd_mdl = as_numpy(decoded.permute(0,2,1))*self.stdval
+                m = deepcopy(self.mol)
+                m.coordinates = np.concatenate([crd_ref, crd_mdl])
+                m.set_current(0)
+                rmsd = np.array([m.rmsd(0,i) for i in range(1, len(m.coordinates))])
+            else:
+                rmsd = (((decoded-target)*self.stdval)**2).sum(axis=1).mean(axis=-1).sqrt()
             self.surfaces[s_key] = rmsd.reshape(self.n_samples, self.n_samples).numpy()
             
         return self.surfaces[s_key], self.xvals, self.yvals
