@@ -525,10 +525,20 @@ class MolearnGUI(object):
         self.latent.update_yaxes(showspikes=False)
 
         if len(sc)>0:
-            self.range_slider.value = (np.min(sc), np.max(sc))
-            self.range_slider.min = np.min(sc)
-            self.range_slider.max = np.max(sc)
-            self.range_slider.step = (np.max(sc)-np.min(sc))/100.0
+
+            scmin = np.min(sc)
+            scmax = np.max(sc)
+            self.range_slider.value = (scmin, scmax)
+
+            # step below to avoid situations whereby temporarily min>max
+            try:
+                self.range_slider.min = scmin
+                self.range_slider.max = scmax
+            except:
+                self.range_slider.max = scmax
+                self.range_slider.min = scmin
+
+            self.range_slider.step = (scmax-scmin)/100.0
             self.range_slider.disabled = False
 
         # 3D protein representation (triggered by update of textbox, sampling box, or pathfinding method)
