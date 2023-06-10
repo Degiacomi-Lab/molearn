@@ -23,7 +23,7 @@ Molearn requires Python 3.x and the following packages (and their associated pac
 
 #### Optional
 
-To run energy evaluations with OpenMM:
+To run energy evaluations with OpenMM (Windows not supported):
 * [OpenMM](https://openmm.org/documentation)
 * [openmmtorchplugin](https://github.com/SCMusson/openmmtorchplugin)
 
