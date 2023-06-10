@@ -36,6 +36,7 @@ To calculate DOPE and Ramachandran scores during analysis:
 
 To run the GUI:
 * [MDAnalysis](https://www.mdanalysis.org/)
+* [NGLView](http://nglviewer.org/nglview/latest/)
 
 ## Installation ##
 
