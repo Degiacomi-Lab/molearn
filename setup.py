@@ -12,4 +12,5 @@ setuptools.setup(
     package_dir={"": "src"},
     packages=setuptools.find_packages(where='src',),
     package_data={'molearn':['parameters/*']},
+    install_requires = ["numpy", "pytorch", "biobox", "openmmtorchplugin"],
 )
