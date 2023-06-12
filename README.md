@@ -14,16 +14,17 @@ Included in this repository are the following:
 
 ## Dependencies
 
-#### Required
+The current version of molearn only supports Linux, and has verified to support Python >=3.9.
 
-Molearn requires Python 3.x and the following packages (and their associated packages):
+#### Required Packages
+
 * numpy
 * PyTorch (1.7+)
 * [Biobox](https://github.com/Degiacomi-Lab/biobox)
 
-#### Optional
+#### Optional Packages
 
-To run energy evaluations with OpenMM (Windows not supported):
+To run energy evaluations with OpenMM:
 * [OpenMM](https://openmm.org/documentation)
 * [openmmtorchplugin](https://github.com/SCMusson/openmmtorchplugin)
 
@@ -31,11 +32,12 @@ To evaluate Sinkhorn distances during training:
 * [geomloss](https://www.kernel-operations.io/geomloss/)
 
 To calculate DOPE and Ramachandran scores during analysis:
-* [Modeller](https://salilab.org/modeller/)
+* [Modeller](https://salilab.org/modeller/) (requires academic license)
 * [cctbx](https://cctbx.github.io/)
 
 To run the GUI:
 * [MDAnalysis](https://www.mdanalysis.org/)
+* [plotly](https://plotly.com/python/)
 * [NGLView](http://nglviewer.org/nglview/latest/)
 
 ## Installation ##
