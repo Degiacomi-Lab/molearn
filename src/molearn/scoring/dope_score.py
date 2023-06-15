@@ -67,8 +67,9 @@ class DOPE_Score:
 
     def get_dope(self, frame, refine=False):
         '''
-        Get the dope score. Injects coordinates into modeller and uses ``mdl.build(build_method='INTERNAL_COORDINATES', initialize_xyz=False) to reconstruct missing atoms.
+        Get the dope score. Injects coordinates into modeller and uses `mdl.build(build_method='INTERNAL_COORDINATES', initialize_xyz=False)` to reconstruct missing atoms.
         If a error is thrown by modeller or at any stage, we just return a fixed large value of 1e10.
+        
         :param numpy.ndarray frame: shape [N, 3]
         :param bool refine: (default: False) If True, relax the structures using a maximum of 50 steps of ConjugateGradient descent
         :returns: Dope score as calculated by modeller. If error is thrown we just simply return 1e10.
@@ -101,6 +102,7 @@ class DOPE_Score:
     def get_all_dope(self, coords, refine=False):
         '''
         Expect a array of frames. return array of DOPE score value.
+        
         :param numpy.ndarray coords: shape [B, N, 3]
         :param bool refine: (default: False) If True, relax the structures using a maximum of 50 steps of Conjugate Gradient descent
         :returns: float array shape [B]
@@ -125,15 +127,14 @@ class DOPE_Score:
 
 def set_global_score(score, kwargs):
     '''
-    make score a global variable
-    This is used when initializing a multiprocessing process
+    Make score a global variable.
+    This is used when initializing a multiprocessing process.
     '''
     global worker_dope_score
     worker_dope_score = score(**kwargs)#mol = mol, data_dir=data_dir, **kwargs)
 
 def process_dope(coords, kwargs):
     '''
-    dope worker
     Worker function for multiprocessing class
     '''
     return worker_dope_score.get_dope(coords,**kwargs)

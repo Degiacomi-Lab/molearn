@@ -20,6 +20,8 @@ requirements:
     - pytorch
     - pandas
     - scipy
+    - plotly
+    - nglview
 test:
   imports:
     - molearn

@@ -2,7 +2,7 @@
 Scoring
 -------
 
-.. automclass:: molearn.scoring.DOPE_Score
+.. autoclass:: molearn.scoring.DOPE_Score
    :members:
 
 .. autoclass:: molearn.scoring.Parallel_DOPE_Score

@@ -47,6 +47,58 @@
   <section id="scoring">
 <h1>Scoring<a class="headerlink" href="#scoring" title="Permalink to this heading">¶</a></h1>
 <dl class="py class">
+<dt class="sig sig-object py" id="molearn.scoring.DOPE_Score">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DOPE_Score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mol</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/scoring/dope_score.html#DOPE_Score"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.scoring.DOPE_Score" title="Permalink to this definition">¶</a></dt>
+<dd><p>This class contains methods to calculate dope without saving to save and load PDB files for every structure. Atoms in a biobox coordinate tensor are mapped to the coordinates in the modeller model directly.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>mol</strong> (<em>biobox.Molecule</em>) – One example frame to gain access to the topology. Mol will also be used to save a temporary pdb file that will be reloaded in modeller to create the initial modeller Model.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="molearn.scoring.DOPE_Score.get_all_dope">
+<span class="sig-name descname"><span class="pre">get_all_dope</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coords</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">refine</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/scoring/dope_score.html#DOPE_Score.get_all_dope"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.scoring.DOPE_Score.get_all_dope" title="Permalink to this definition">¶</a></dt>
+<dd><p>Expect a array of frames. return array of DOPE score value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>coords</strong> (<em>numpy.ndarray</em>) – shape [B, N, 3]</p></li>
+<li><p><strong>refine</strong> (<em>bool</em>) – (default: False) If True, relax the structures using a maximum of 50 steps of Conjugate Gradient descent</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>float array shape [B]</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="molearn.scoring.DOPE_Score.get_dope">
+<span class="sig-name descname"><span class="pre">get_dope</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">frame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">refine</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/scoring/dope_score.html#DOPE_Score.get_dope"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.scoring.DOPE_Score.get_dope" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the dope score. Injects coordinates into modeller and uses <cite>mdl.build(build_method=’INTERNAL_COORDINATES’, initialize_xyz=False)</cite> to reconstruct missing atoms.
+If a error is thrown by modeller or at any stage, we just return a fixed large value of 1e10.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>frame</strong> (<em>numpy.ndarray</em>) – shape [N, 3]</p></li>
+<li><p><strong>refine</strong> (<em>bool</em>) – (default: False) If True, relax the structures using a maximum of 50 steps of ConjugateGradient descent</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dope score as calculated by modeller. If error is thrown we just simply return 1e10.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="molearn.scoring.Parallel_DOPE_Score">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Parallel_DOPE_Score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mol</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">processes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'spawn'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/scoring/dope_score.html#Parallel_DOPE_Score"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.scoring.Parallel_DOPE_Score" title="Permalink to this definition">¶</a></dt>
 <dd><p>a multiprocessing class to get modeller DOPE scores.
