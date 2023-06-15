@@ -2,6 +2,7 @@ name: docs-environment
 channels:
   - conda-forge
   - salilab
+  - plotly
   - defaults
 dependencies:
   - python=3.8
@@ -15,5 +16,7 @@ dependencies:
   - biobox
   - openmm
   - ipywidgets
+  - plotly
+  - nglview
   - pip:
     - geomloss
