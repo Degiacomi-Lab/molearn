@@ -5,16 +5,14 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>molearn.scoring.ramachandran_score &#8212; molearn 1.3.0 documentation</title>
+    <title>molearn.scoring.ramachandran_score &#8212; molearn 2.0.1 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/classic.css" />
-    
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinxdoc.css" />
     <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
     <script src="../../../_static/jquery.js"></script>
     <script src="../../../_static/underscore.js"></script>
     <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../_static/doctools.js"></script>
-    
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
   </head><body>
@@ -27,7 +25,7 @@
         <li class="right" >
           <a href="../../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../../index.html">molearn 1.3.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">molearn 2.0.1 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">molearn.scoring.ramachandran_score</a></li> 
       </ul>
@@ -51,10 +49,17 @@
 <span class="kn">from</span> <span class="nn">..utils</span> <span class="kn">import</span> <span class="n">cpu_count</span><span class="p">,</span> <span class="n">random_string</span>
 <span class="kn">import</span> <span class="nn">os</span>
 
-<span class="k">class</span> <span class="nc">Ramachandran_Score</span><span class="p">():</span>
+<div class="viewcode-block" id="Ramachandran_Score"><a class="viewcode-back" href="../../../scoring.html#molearn.scoring.Ramachandran_Score">[docs]</a><span class="k">class</span> <span class="nc">Ramachandran_Score</span><span class="p">():</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    This class contains methods that use iotbx/mmtbx to calulate the quality of phi and psi values in a protein.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mol</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        :param biobox.Molecule mol: One example frame to gain access to the topology. Mol will also be used to save a temporary pdb file that will be reloaded to create the initial iotbx Model.</span>
+<span class="sd">        :param float threshold: (default: 1e-3) Threshold used to determine similarity between biobox.molecule coordinates and iotbx model coordinates. Determine that iotbx model was created successfully.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">tmp_file</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;rama_tmp</span><span class="si">{</span><span class="n">random_string</span><span class="p">()</span><span class="si">}</span><span class="s1">.pdb&#39;</span>
-        <span class="n">mol</span><span class="o">.</span><span class="n">write_pdb</span><span class="p">(</span><span class="n">tmp_file</span><span class="p">)</span><span class="c1">#&#39;rama_tmp.pdb&#39;)</span>
+        <span class="n">mol</span><span class="o">.</span><span class="n">write_pdb</span><span class="p">(</span><span class="n">tmp_file</span><span class="p">,</span> <span class="n">split_struc</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span><span class="c1">#&#39;rama_tmp.pdb&#39;)</span>
         <span class="n">filename</span> <span class="o">=</span> <span class="n">tmp_file</span><span class="c1">#&#39;rama_tmp.pdb&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mol</span> <span class="o">=</span> <span class="n">mol</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dm</span> <span class="o">=</span> <span class="n">DataManager</span><span class="p">(</span><span class="n">datatypes</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;model&#39;</span><span class="p">])</span>
@@ -72,11 +77,13 @@
         <span class="k">assert</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(((</span><span class="n">m</span><span class="o">-</span><span class="n">x</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">idxs</span><span class="p">])</span><span class="o">&gt;</span><span class="n">threshold</span><span class="p">))</span>
         <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">tmp_file</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">as_ratio</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="Ramachandran_Score.get_score"><a class="viewcode-back" href="../../../scoring.html#molearn.scoring.Ramachandran_Score.get_score">[docs]</a>    <span class="k">def</span> <span class="nf">get_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">as_ratio</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">            Given coords (corresponding to self.mol) will calculate Ramachandran scores using cctbux ramalyze module</span>
-<span class="sd">            :param coords: numpy array (shape (N, 3))</span>
+<span class="sd">            Returns the counts of number of torsion angles that fall within favored, allowed, and outlier regions and finally the total number of torsion angles analysed.</span>
+<span class="sd">            :param numpy.ndarray coords: shape (N, 3)</span>
 <span class="sd">            :returns: (favored, allowed, outliers, total)</span>
+<span class="sd">            :rtype: tuple of ints</span>
 
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">assert</span> <span class="n">coords</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">shape</span>
@@ -89,26 +96,50 @@
         <span class="k">if</span> <span class="n">as_ratio</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">nf</span><span class="o">/</span><span class="n">nt</span><span class="p">,</span> <span class="n">na</span><span class="o">/</span><span class="n">nt</span><span class="p">,</span> <span class="n">no</span><span class="o">/</span><span class="n">nt</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">nf</span><span class="p">,</span> <span class="n">na</span><span class="p">,</span> <span class="n">no</span><span class="p">,</span> <span class="n">nt</span>
+            <span class="k">return</span> <span class="n">nf</span><span class="p">,</span> <span class="n">na</span><span class="p">,</span> <span class="n">no</span><span class="p">,</span> <span class="n">nt</span></div></div>
 
 
 
-<div class="viewcode-block" id="set_global_score"><a class="viewcode-back" href="../../../scoring.html#molearn.scoring.ramachandran_score.set_global_score">[docs]</a><span class="k">def</span> <span class="nf">set_global_score</span><span class="p">(</span><span class="n">score</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">set_global_score</span><span class="p">(</span><span class="n">score</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    make score a global variable</span>
+<span class="sd">    This is used when initializing a multiprocessing process</span>
 <span class="sd">    &#39;&#39;&#39;</span>
     <span class="k">global</span> <span class="n">worker_ramachandran_score</span>
-    <span class="n">worker_ramachandran_score</span> <span class="o">=</span> <span class="n">score</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span><span class="c1">#mol = mol, data_dir=data_dir, **kwargs)</span></div>
+    <span class="n">worker_ramachandran_score</span> <span class="o">=</span> <span class="n">score</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span><span class="c1">#mol = mol, data_dir=data_dir, **kwargs)</span>
 
-<div class="viewcode-block" id="process_ramachandran"><a class="viewcode-back" href="../../../scoring.html#molearn.scoring.ramachandran_score.process_ramachandran">[docs]</a><span class="k">def</span> <span class="nf">process_ramachandran</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">process_ramachandran</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    ramachandran worker</span>
+<span class="sd">    Worker function for multiprocessing class</span>
 <span class="sd">    &#39;&#39;&#39;</span>
-    <span class="k">return</span> <span class="n">worker_ramachandran_score</span><span class="o">.</span><span class="n">get_score</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">worker_ramachandran_score</span><span class="o">.</span><span class="n">get_score</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
-<span class="k">class</span> <span class="nc">Parallel_Ramachandran_Score</span><span class="p">():</span>
+<div class="viewcode-block" id="Parallel_Ramachandran_Score"><a class="viewcode-back" href="../../../scoring.html#molearn.scoring.Parallel_Ramachandran_Score">[docs]</a><span class="k">class</span> <span class="nc">Parallel_Ramachandran_Score</span><span class="p">():</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    A multiprocessing class to get Ramachandran scores. </span>
+<span class="sd">    A typical use case would looke like::</span>
+
+<span class="sd">        score_class = Parallel_Ramachandran_Score(mol, **kwargs)</span>
+<span class="sd">        results = []</span>
+<span class="sd">        for frame in coordinates_array:</span>
+<span class="sd">            results.append(score_class.get_score(frame))</span>
+<span class="sd">            # Ramachandran scores will be calculated asynchronously in background</span>
+<span class="sd">        ...</span>
+<span class="sd">        # to retrieve the results</span>
+<span class="sd">        results = np.array([r.get() for r in results])</span>
+<span class="sd">        favored = results[:,0]</span>
+<span class="sd">        allowed = results[:,1]</span>
+<span class="sd">        outliers = results[:,2]</span>
+<span class="sd">        total = results[:,3]</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
     
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mol</span><span class="p">,</span> <span class="n">processes</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        :param biobox.Molecule mol: biobox melucel containing one example fram of the protein to be analysed. This will be passed to Ramachandran_Score instances in each thread.</span>
+<span class="sd">        :param int processes: (default: -1) Number of processes argument to pass to multiprocessing.pool. This controls the number of therads created.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
         
         <span class="c1"># set a number of processes as user desires, capped on number of CPUs</span>
         <span class="k">if</span> <span class="n">processes</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
@@ -129,12 +160,12 @@
         <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">,</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mol</span><span class="p">,))</span>
 
 
-    <span class="k">def</span> <span class="nf">get_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="Parallel_Ramachandran_Score.get_score"><a class="viewcode-back" href="../../../scoring.html#molearn.scoring.Parallel_Ramachandran_Score.get_score">[docs]</a>    <span class="k">def</span> <span class="nf">get_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        :param coords: # shape (1, N, 3) numpy array</span>
+<span class="sd">        :param coords: # shape (N, 3) numpy array</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="c1">#is copy necessary?</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pool</span><span class="o">.</span><span class="n">apply_async</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">process_function</span><span class="p">,</span> <span class="p">(</span><span class="n">coords</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">kwargs</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pool</span><span class="o">.</span><span class="n">apply_async</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">process_function</span><span class="p">,</span> <span class="p">(</span><span class="n">coords</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">kwargs</span><span class="p">))</span></div></div>
 
 
 
@@ -169,13 +200,13 @@
         <li class="right" >
           <a href="../../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../../index.html">molearn 1.3.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">molearn 2.0.1 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">molearn.scoring.ramachandran_score</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2021, V. K. Ramaswamy, S. C. Musson, M. T. Degiacomi.
+        &#169; Copyright 2021, S. C. Musson, M. T. Degiacomi.
       Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.0.2.
     </div>
   </body>

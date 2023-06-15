@@ -44,10 +44,12 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <section id="module-molearn.scoring.DOPE_Score">
-<span id="scoring"></span><h1>Scoring<a class="headerlink" href="#module-molearn.scoring.DOPE_Score" title="Permalink to this heading">¶</a></h1>
-<p>This class contains methods to calculate dope without saving to save and load PDB files for every structure. Atoms in a biobox coordinate tensor are mapped to the coordinates in the modeller model directly.</p>
-<span class="target" id="module-molearn.scoring.Parallel_DOPE_Score"></span><p>a multiprocessing class to get modeller DOPE scores.
+  <section id="scoring">
+<h1>Scoring<a class="headerlink" href="#scoring" title="Permalink to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="molearn.scoring.Parallel_DOPE_Score">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Parallel_DOPE_Score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mol</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">processes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'spawn'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/scoring/dope_score.html#Parallel_DOPE_Score"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.scoring.Parallel_DOPE_Score" title="Permalink to this definition">¶</a></dt>
+<dd><p>a multiprocessing class to get modeller DOPE scores.
 A typical use case would looke like:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">score_class</span> <span class="o">=</span> <span class="n">Parallel_DOPE_Score</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
@@ -58,8 +60,55 @@ A typical use case would looke like:</p>
 <span class="n">results</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">r</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">results</span><span class="p">])</span>
 </pre></div>
 </div>
-<span class="target" id="module-molearn.scoring.Ramachandran_Score"></span><p>This class contains methods that use iotbx/mmtbx to calulate the quality of phi and psi values in a protein.</p>
-<span class="target" id="module-molearn.scoring.Parallel_Ramachandran_Score"></span><p>A multiprocessing class to get Ramachandran scores. 
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mol</strong> (<em>biobox.Molecule</em>) – biobox molecule containing one example frame of the protein to be analysed. This will be passed to DOPE_Score class instances in each thread.</p></li>
+<li><p><strong>processes</strong> (<em>int</em>) – (default: -1) Number of processes argument to pass to multiprocessing.pool. This controls the number of threads created.</p></li>
+<li><p><strong>**kwargs</strong> – additional kwargs will be passed multiprocesing.pool during initialisation.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="molearn.scoring.Parallel_DOPE_Score.get_score">
+<span class="sig-name descname"><span class="pre">get_score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coords</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/scoring/dope_score.html#Parallel_DOPE_Score.get_score"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.scoring.Parallel_DOPE_Score.get_score" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>coords</strong> (<em>np.array</em>) – # shape (N, 3) numpy array</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="molearn.scoring.Ramachandran_Score">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Ramachandran_Score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mol</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/scoring/ramachandran_score.html#Ramachandran_Score"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.scoring.Ramachandran_Score" title="Permalink to this definition">¶</a></dt>
+<dd><p>This class contains methods that use iotbx/mmtbx to calulate the quality of phi and psi values in a protein.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mol</strong> (<em>biobox.Molecule</em>) – One example frame to gain access to the topology. Mol will also be used to save a temporary pdb file that will be reloaded to create the initial iotbx Model.</p></li>
+<li><p><strong>threshold</strong> (<em>float</em>) – (default: 1e-3) Threshold used to determine similarity between biobox.molecule coordinates and iotbx model coordinates. Determine that iotbx model was created successfully.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="molearn.scoring.Ramachandran_Score.get_score">
+<span class="sig-name descname"><span class="pre">get_score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coords</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">as_ratio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/scoring/ramachandran_score.html#Ramachandran_Score.get_score"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.scoring.Ramachandran_Score.get_score" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given coords (corresponding to self.mol) will calculate Ramachandran scores using cctbux ramalyze module
+Returns the counts of number of torsion angles that fall within favored, allowed, and outlier regions and finally the total number of torsion angles analysed.
+:param numpy.ndarray coords: shape (N, 3)
+:returns: (favored, allowed, outliers, total)
+:rtype: tuple of ints</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="molearn.scoring.Parallel_Ramachandran_Score">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Parallel_Ramachandran_Score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mol</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">processes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/scoring/ramachandran_score.html#Parallel_Ramachandran_Score"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.scoring.Parallel_Ramachandran_Score" title="Permalink to this definition">¶</a></dt>
+<dd><p>A multiprocessing class to get Ramachandran scores. 
 A typical use case would looke like:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">score_class</span> <span class="o">=</span> <span class="n">Parallel_Ramachandran_Score</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
@@ -75,6 +124,26 @@ A typical use case would looke like:</p>
 <span class="n">total</span> <span class="o">=</span> <span class="n">results</span><span class="p">[:,</span><span class="mi">3</span><span class="p">]</span>
 </pre></div>
 </div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mol</strong> (<em>biobox.Molecule</em>) – biobox melucel containing one example fram of the protein to be analysed. This will be passed to Ramachandran_Score instances in each thread.</p></li>
+<li><p><strong>processes</strong> (<em>int</em>) – (default: -1) Number of processes argument to pass to multiprocessing.pool. This controls the number of therads created.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="molearn.scoring.Parallel_Ramachandran_Score.get_score">
+<span class="sig-name descname"><span class="pre">get_score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coords</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/scoring/ramachandran_score.html#Parallel_Ramachandran_Score.get_score"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.scoring.Parallel_Ramachandran_Score.get_score" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>coords</strong> – # shape (N, 3) numpy array</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 </section>
 
 

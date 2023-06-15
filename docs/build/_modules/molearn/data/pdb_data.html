@@ -5,16 +5,14 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>molearn.data.pdb_data &#8212; molearn 1.3.0 documentation</title>
+    <title>molearn.data.pdb_data &#8212; molearn 2.0.1 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/classic.css" />
-    
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinxdoc.css" />
     <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
     <script src="../../../_static/jquery.js"></script>
     <script src="../../../_static/underscore.js"></script>
     <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../_static/doctools.js"></script>
-    
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
   </head><body>
@@ -27,7 +25,7 @@
         <li class="right" >
           <a href="../../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../../index.html">molearn 1.3.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">molearn 2.0.1 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">molearn.data.pdb_data</a></li> 
       </ul>
@@ -43,16 +41,16 @@
 <span class="kn">import</span> <span class="nn">torch</span>
 <span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
 <span class="kn">import</span> <span class="nn">biobox</span> <span class="k">as</span> <span class="nn">bb</span>
-<span class="c1">#import os</span>
 
 <div class="viewcode-block" id="PDBData"><a class="viewcode-back" href="../../../data.html#molearn.data.PDBData">[docs]</a><span class="k">class</span> <span class="nc">PDBData</span><span class="p">:</span>
     
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">fix_terminal</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">atoms</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        Create PDBData object. </span>
-<span class="sd">        :param filename: str or list of strings, self.import_pdb(file) is called on each</span>
-<span class="sd">        :param fix_terminal: default False, if true calles self.fix_terminal after import, before atomselect</span>
-<span class="sd">        :param atoms: calls self.atomselect(atoms=atoms)</span>
+<span class="sd">        Create object enabling the manipulation of multi-PDB files into a dataset suitable for training.</span>
+<span class="sd">        </span>
+<span class="sd">        :param filename: None, str or list of strings. If not None, :func:`import_pdb &lt;molearn.data.PDBData.import_pdb&gt;` is called on each filename provided.</span>
+<span class="sd">        :param fix_terminal: if True, calls :func:`fix_terminal &lt;molearn.data.PDBData.fix_terminal&gt;` after import, and before atomselect</span>
+<span class="sd">        :param atoms: if not None, calls :func:`atomselect &lt;molearn.data.PDBData.atomselect&gt;`</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">import_pdb</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
@@ -90,8 +88,8 @@
 
 <div class="viewcode-block" id="PDBData.atomselect"><a class="viewcode-back" href="../../../data.html#molearn.data.PDBData.atomselect">[docs]</a>    <span class="k">def</span> <span class="nf">atomselect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">atoms</span><span class="p">,</span> <span class="n">ignore_atoms</span><span class="o">=</span><span class="p">[]):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        From imported PDBs, cut out only atoms of interest.</span>
-<span class="sd">        :func:`import_pdb &lt;molearn.data.PDBData.import_pdb&gt;` must have been called at least once.</span>
+<span class="sd">        From all imported PDBs, extract only atoms of interest.</span>
+<span class="sd">        :func:`import_pdb &lt;molearn.data.PDBData.import_pdb&gt;` must have been called at least once, either at class instantiation or as a separate call.</span>
 <span class="sd">        </span>
 <span class="sd">        :param atoms: list of atom names, or &quot;no_hydrogen&quot;.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -190,9 +188,9 @@
 <span class="sd">        Split :func:`PDBData &lt;molearn.data.PDBData&gt;` into two other :func:`PDBData &lt;molearn.data.PDBData&gt;` objects corresponding to train and valid sets.</span>
 <span class="sd">        </span>
 <span class="sd">        :param manual_seed: manual seed used to split dataset</span>
-<span class="sd">        :param validation_split: default 0.1 ratio of valid to train structures data points</span>
-<span class="sd">        :param train_size: default None, specify number of train structures to be returned</span>
-<span class="sd">        :param valid_size: default None, speficy number of valid structures to be returned</span>
+<span class="sd">        :param validation_split: ratio of data to randomly assigned as validation</span>
+<span class="sd">        :param train_size: if not None, specify number of train structures to be returned</span>
+<span class="sd">        :param valid_size: if not None, speficy number of valid structures to be returned</span>
 <span class="sd">        :return: :func:`PDBData &lt;molearn.data.PDBData&gt;` object corresponding to train set</span>
 <span class="sd">        :return: :func:`PDBData &lt;molearn.data.PDBData&gt;` object corresponding to validation set</span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -209,10 +207,12 @@
 
 <div class="viewcode-block" id="PDBData.get_datasets"><a class="viewcode-back" href="../../../data.html#molearn.data.PDBData.get_datasets">[docs]</a>    <span class="k">def</span> <span class="nf">get_datasets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">validation_split</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">valid_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">train_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">manual_seed</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        :param validation_split:</span>
-<span class="sd">        :param valid_size:</span>
-<span class="sd">        :param train_size:</span>
-<span class="sd">        :param manual_seed:</span>
+<span class="sd">        Create a training and validation set from the imported data</span>
+<span class="sd">        </span>
+<span class="sd">        :param validation_split: ratio of data to randomly assigned as validation</span>
+<span class="sd">        :param valid_size: if not None, specify number of train structures to be returned</span>
+<span class="sd">        :param train_size: if not None, speficy number of valid structures to be returned</span>
+<span class="sd">        :param manual_seed: seed to initialise the random number generator used for splitting the dataset. Useful to replicate a specific split.</span>
 <span class="sd">        :Return: two `torch.Tensor`, for training and validation structures.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;dataset&#39;</span><span class="p">):</span>
@@ -280,13 +280,13 @@
         <li class="right" >
           <a href="../../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../../index.html">molearn 1.3.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">molearn 2.0.1 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">molearn.data.pdb_data</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2021, V. K. Ramaswamy, S. C. Musson, M. T. Degiacomi.
+        &#169; Copyright 2021, S. C. Musson, M. T. Degiacomi.
       Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.0.2.
     </div>
   </body>

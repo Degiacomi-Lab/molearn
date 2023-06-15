@@ -2,16 +2,16 @@ import numpy as np
 import torch
 from copy import deepcopy
 import biobox as bb
-#import os
 
 class PDBData:
     
     def __init__(self, filename = None, fix_terminal = False, atoms = None, ):
         '''
-        Create PDBData object. 
-        :param filename: str or list of strings, self.import_pdb(file) is called on each
-        :param fix_terminal: default False, if true calles self.fix_terminal after import, before atomselect
-        :param atoms: calls self.atomselect(atoms=atoms)
+        Create object enabling the manipulation of multi-PDB files into a dataset suitable for training.
+        
+        :param filename: None, str or list of strings. If not None, :func:`import_pdb <molearn.data.PDBData.import_pdb>` is called on each filename provided.
+        :param fix_terminal: if True, calls :func:`fix_terminal <molearn.data.PDBData.fix_terminal>` after import, and before atomselect
+        :param atoms: if not None, calls :func:`atomselect <molearn.data.PDBData.atomselect>`
         '''
         if isinstance(filename, str):
             self.import_pdb(filename)
@@ -49,8 +49,8 @@ class PDBData:
 
     def atomselect(self, atoms, ignore_atoms=[]):
         '''
-        From imported PDBs, cut out only atoms of interest.
-        :func:`import_pdb <molearn.data.PDBData.import_pdb>` must have been called at least once.
+        From all imported PDBs, extract only atoms of interest.
+        :func:`import_pdb <molearn.data.PDBData.import_pdb>` must have been called at least once, either at class instantiation or as a separate call.
         
         :param atoms: list of atom names, or "no_hydrogen".
         '''
@@ -149,9 +149,9 @@ class PDBData:
         Split :func:`PDBData <molearn.data.PDBData>` into two other :func:`PDBData <molearn.data.PDBData>` objects corresponding to train and valid sets.
         
         :param manual_seed: manual seed used to split dataset
-        :param validation_split: default 0.1 ratio of valid to train structures data points
-        :param train_size: default None, specify number of train structures to be returned
-        :param valid_size: default None, speficy number of valid structures to be returned
+        :param validation_split: ratio of data to randomly assigned as validation
+        :param train_size: if not None, specify number of train structures to be returned
+        :param valid_size: if not None, speficy number of valid structures to be returned
         :return: :func:`PDBData <molearn.data.PDBData>` object corresponding to train set
         :return: :func:`PDBData <molearn.data.PDBData>` object corresponding to validation set
         '''
@@ -168,10 +168,12 @@ class PDBData:
 
     def get_datasets(self, validation_split=0.1, valid_size=None, train_size=None, manual_seed = None):
         '''
-        :param validation_split:
-        :param valid_size:
-        :param train_size:
-        :param manual_seed:
+        Create a training and validation set from the imported data
+        
+        :param validation_split: ratio of data to randomly assigned as validation
+        :param valid_size: if not None, specify number of train structures to be returned
+        :param train_size: if not None, speficy number of valid structures to be returned
+        :param manual_seed: seed to initialise the random number generator used for splitting the dataset. Useful to replicate a specific split.
         :Return: two `torch.Tensor`, for training and validation structures.
         '''
         if not hasattr(self, 'dataset'):

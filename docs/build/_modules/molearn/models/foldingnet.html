@@ -178,9 +178,7 @@
 
     <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">            grids: reshaped 2D grids or intermediam reconstructed point clouds</span>
+<span class="sd">        :param grids: reshaped 2D grids or intermediam reconstructed point clouds</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># concatenate</span>
         <span class="c1">#try:</span>
@@ -276,7 +274,7 @@
 
 <div class="viewcode-block" id="AutoEncoder"><a class="viewcode-back" href="../../../models.html#molearn.models.foldingnet.AutoEncoder">[docs]</a><span class="k">class</span> <span class="nc">AutoEncoder</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
     <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">    autoencoder architecture derived from FoldingNet.</span>
+<span class="sd">    Autoencoder architecture derived from FoldingNet.</span>
 <span class="sd">    &#39;&#39;&#39;</span>
     
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
