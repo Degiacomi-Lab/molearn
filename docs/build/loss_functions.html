@@ -49,13 +49,10 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="molearn.loss_functions.openmm_thread.ModifiedForceField">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ModifiedForceField</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alternative_residue_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/loss_functions/openmm_thread.html#ModifiedForceField"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.loss_functions.openmm_thread.ModifiedForceField" title="Permalink to this definition">¶</a></dt>
-<dd><p>Load one or more XML files and create a ForceField object based on them.</p>
-<dl class="simple">
-<dt>files<span class="classifier">list</span></dt><dd><p>A list of XML files defining the force field.  Each entry may
-be an absolute file path, a path relative to the current working
-directory, a path relative to this module’s data subdirectory
-(for built in force fields), or an open file-like object with a
-read() method from which the forcefield XML data can be loaded.</p>
+<dd><p>Takes all <cite>*args</cite> and <cite>**kwargs</cite> of <cite>openmm.app.ForceField</cite>, plus an optional parameter described here.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>alternative_residue_names</strong> (<em>dict</em>) – aliases for resnames, e.g., <cite>{‘HIS’:’HIE’}</cite>.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -66,11 +63,13 @@ read() method from which the forcefield XML data can be loaded.</p>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>mol</strong> – (biobox.Molecule, default None) If pldataloader is not given, then a biobox object will be taken from this parameter. If neither are given then an error  will be thrown.</p></li>
-<li><p><strong>data_dir</strong> – (string, default None) if pldataloader is not given then this will be used to find files such as ‘variants.npy’</p></li>
-<li><p><strong>xml_file</strong> – (string, default: “amber14-all.xml”) xml parameter file</p></li>
-<li><p><strong>platform</strong> – (string, default ‘CUDA’) either ‘CUDA’ or ‘Reference’.</p></li>
-<li><p><strong>remove_NB</strong> – (bool, default False) remove NonbondedForce, CustomGBForce, CMMotionRemover else just remove CustomGBForce</p></li>
+<li><p><strong>mol</strong> (<em>biobox.Molecule</em>) – if pldataloader is not given, then a biobox object will be taken from this parameter. If neither are given then an error  will be thrown.</p></li>
+<li><p><strong>xml_file</strong> (<em>str</em>) – xml parameter file</p></li>
+<li><p><strong>platform</strong> (<em>str</em>) – ‘CUDA’ or ‘Reference’.</p></li>
+<li><p><strong>remove_NB</strong> (<em>bool</em>) – if True remove NonbondedForce, CustomGBForce and CMMotionRemover, else just remove CustomGBForce</p></li>
+<li><p><strong>alternative_residue_names</strong> (<em>dict</em>) – aliases for resnames, e.g., <cite>{‘HIS’:’HIE’}</cite>.</p></li>
+<li><p><strong>atoms</strong> – </p></li>
+<li><p><strong>soft</strong> – </p></li>
 </ul>
 </dd>
 </dl>
@@ -79,16 +78,18 @@ read() method from which the forcefield XML data can be loaded.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="molearn.loss_functions.openmm_thread.OpenmmPluginScore">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">OpenmmPluginScore</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xml_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['amber14-all.xml']</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">platform</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'CUDA'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">remove_NB</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alternative_residue_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{'HIS':</span> <span class="pre">'HIE',</span> <span class="pre">'HSE':</span> <span class="pre">'HIE'}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">atoms</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['CA',</span> <span class="pre">'C',</span> <span class="pre">'N',</span> <span class="pre">'CB',</span> <span class="pre">'O']</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">soft</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/loss_functions/openmm_thread.html#OpenmmPluginScore"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.loss_functions.openmm_thread.OpenmmPluginScore" title="Permalink to this definition">¶</a></dt>
-<dd><p>This will use the new Openmm Plugin to calculate forces and energy. The intention is that this will be fast enough to be able to calculate forces and energy during training.
-NB. The current torchintegratorplugin only supports float on GPU and double on CPU.</p>
+<dd><p>This will use the new OpenMM Plugin to calculate forces and energy. The intention is that this will be fast enough to be able to calculate forces and energy during training.
+N.B.: The current torchintegratorplugin only supports float on GPU and double on CPU.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>mol</strong> – (biobox.Molecule, default None) If pldataloader is not given, then a biobox object will be taken from this parameter. If neither are given then an error  will be thrown.</p></li>
-<li><p><strong>data_dir</strong> – (string, default None) if pldataloader is not given then this will be used to find files such as ‘variants.npy’</p></li>
-<li><p><strong>xml_file</strong> – (string, default: “amber14-all.xml”) xml parameter file</p></li>
-<li><p><strong>platform</strong> – (string, default ‘CUDA’) either ‘CUDA’ or ‘Reference’.</p></li>
-<li><p><strong>remove_NB</strong> – (bool, default False) remove NonbondedForce, CustomGBForce, CMMotionRemover else just remove CustomGBForce</p></li>
+<li><p><strong>mol</strong> (<em>biobox.Molecule</em>) – if pldataloader is not given, then a biobox object will be taken from this parameter. If neither are given then an error  will be thrown.</p></li>
+<li><p><strong>xml_file</strong> (<em>str</em>) – xml parameter file</p></li>
+<li><p><strong>platform</strong> (<em>str</em>) – ‘CUDA’ or ‘Reference’.</p></li>
+<li><p><strong>remove_NB</strong> (<em>bool</em>) – if True remove NonbondedForce, CustomGBForce and CMMotionRemover, else just remove CustomGBForce</p></li>
+<li><p><strong>alternative_residue_names</strong> (<em>dict</em>) – aliases for resnames, e.g., <cite>{‘HIS’:’HIE’}</cite>.</p></li>
+<li><p><strong>atoms</strong> – </p></li>
+<li><p><strong>soft</strong> – </p></li>
 </ul>
 </dd>
 </dl>
@@ -97,7 +98,7 @@ NB. The current torchintegratorplugin only supports float on GPU and double on C
 <span class="sig-name descname"><span class="pre">execute</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/loss_functions/openmm_thread.html#OpenmmPluginScore.execute"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.loss_functions.openmm_thread.OpenmmPluginScore.execute" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>x</strong> – torch tensor shape [b, N, 3]. dtype=float. device = gpu</p>
+<dd class="field-odd"><p><strong>x</strong> (<em>torch.Tensor</em>) – shape [b, N, 3]. dtype=float. device = gpu</p>
 </dd>
 </dl>
 </dd></dl>
@@ -111,8 +112,8 @@ NB. The current torchintegratorplugin only supports float on GPU and double on C
 <li><p><strong>pos_ptr</strong> – tensor.data_ptr()</p></li>
 <li><p><strong>force_ptr</strong> – tensor.data_ptr()</p></li>
 <li><p><strong>energy_ptr</strong> – tensor.data_ptr()</p></li>
-<li><p><strong>n_particles</strong> – int</p></li>
-<li><p><strong>batch_size</strong> – int</p></li>
+<li><p><strong>n_particles</strong> (<em>int</em>) – number of particles</p></li>
+<li><p><strong>batch_size</strong> (<em>int</em>) – batch size</p></li>
 </ul>
 </dd>
 </dl>
@@ -126,11 +127,13 @@ NB. The current torchintegratorplugin only supports float on GPU and double on C
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>mol</strong> – (biobox.Molecule, default None) If pldataloader is not given, then a biobox object will be taken from this parameter. If neither are given then an error  will be thrown.</p></li>
-<li><p><strong>data_dir</strong> – (string, default None) if pldataloader is not given then this will be used to find files such as ‘variants.npy’</p></li>
-<li><p><strong>xml_file</strong> – (string, default: “amber14-all.xml”) xml parameter file</p></li>
-<li><p><strong>platform</strong> – (string, default ‘CUDA’) either ‘CUDA’ or ‘Reference’.</p></li>
-<li><p><strong>remove_NB</strong> – (bool, default False) remove NonbondedForce, CustomGBForce, CMMotionRemover else just remove CustomGBForce</p></li>
+<li><p><strong>mol</strong> (<em>biobox.Molecule</em>) – if pldataloader is not given, then a biobox object will be taken from this parameter. If neither are given then an error  will be thrown.</p></li>
+<li><p><strong>xml_file</strong> (<em>str</em>) – xml parameter file</p></li>
+<li><p><strong>platform</strong> (<em>str</em>) – ‘CUDA’ or ‘Reference’.</p></li>
+<li><p><strong>remove_NB</strong> (<em>bool</em>) – if True remove NonbondedForce, CustomGBForce and CMMotionRemover, else just remove CustomGBForce</p></li>
+<li><p><strong>alternative_residue_names</strong> (<em>dict</em>) – aliases for resnames, e.g., <cite>{‘HIS’:’HIE’}</cite>.</p></li>
+<li><p><strong>atoms</strong> – </p></li>
+<li><p><strong>soft</strong> – </p></li>
 </ul>
 </dd>
 </dl>
@@ -167,8 +170,8 @@ output.</p>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>plugin</strong> – # OpenmmPluginScore instance</p></li>
-<li><p><strong>x</strong> – torch tensor, dtype = float, shape = [B, N, 3], device = Cuda</p></li>
+<li><p><strong>plugin</strong> – OpenmmPluginScore instance</p></li>
+<li><p><strong>x</strong> (<em>torch.Tensor</em>) – dtype = float, shape = [B, N, 3], device = cuda</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -216,8 +219,8 @@ output.</p>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>plugin</strong> – # OpenmmPluginScore instance</p></li>
-<li><p><strong>x</strong> – torch tensor, dtype = float, shape = [B, N, 3], device = any</p></li>
+<li><p><strong>plugin</strong> – OpenmmPluginScore instance</p></li>
+<li><p><strong>x</strong> (<em>torch.Tensor</em>) – dtype = float, shape = [B, N, 3], device = any</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>

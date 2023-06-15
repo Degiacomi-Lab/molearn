@@ -1,8 +1,8 @@
 import os
-#from openmm.unit import kelvin, picosecond
+
 try:
     from openmm import Platform
-    from openmm.app import ForceField, PDBFile, Simulation #, OBC2
+    from openmm.app import ForceField, PDBFile, Simulation
     from openmm.app import element as elem
     import openmm
     from openmm.app.forcefield import _createResidueSignature
@@ -14,11 +14,16 @@ except ImportError as e:
     
 import torch
 import numpy as np
-#from math import ceil
 
 
 class ModifiedForceField(ForceField):
+    
     def __init__(self, *args, alternative_residue_names = None, **kwargs):
+        '''
+        Takes all `*args` and `**kwargs` of `openmm.app.ForceField`, plus an optional parameter described here.
+        
+        :param dict  alternative_residue_names: aliases for resnames, e.g., `{'HIS':'HIE'}`.
+        '''
         super().__init__(*args, **kwargs)
         if isinstance(alternative_residue_names, dict):
             self._alternative_residue_names = alternative_residue_names
@@ -26,23 +31,15 @@ class ModifiedForceField(ForceField):
             self._alternative_residue_names = {'HIS':'HIE'}
 
     def _getResidueTemplateMatches(self, res, bondedToAtom, templateSignatures=None, ignoreExternalBonds=False, ignoreExtraParticles=False):
-        """Return the templates that match a residue, or None if none are found.
+        """
+        Return the templates that match a residue, or None if none are found.
 
-        Parameters
-        ----------
-        res : Topology.Residue
-            The residue for which template matches are to be retrieved.
-        bondedToAtom : list of set of int
-            bondedToAtom[i] is the set of atoms bonded to atom index i
-
-        Returns
-        -------
-        template : _TemplateData
-            The matching forcefield residue template, or None if no matches are found.
-        matches : list
-            a list specifying which atom of the template each atom of the residue
-            corresponds to, or None if it does not match the template
-
+        :param res: Topology.Residue, the residue for which template matches are to be retrieved.
+        :param bondedToAtom: list of set of int, bondedToAtom[i] is the set of atoms bonded to atom index i
+        :returns: list with two elements [template, matches]. 
+                  _TemplateData is the matching forcefield residue template, or None if no matches are found.
+                  matches is a list specifying which atom of the template each atom of the residue corresponds to,
+                  or None if it does not match the template.
         """
         template = None
         matches = None
@@ -82,7 +79,7 @@ class ModifiedForceField(ForceField):
                         template = t
                         matches = m
                         return [template, matches]
-                print(f'multpile for {t.name}')
+                print(f'multiple for {t.name}')
                 # We found multiple matches.  This is OK if and only if they assign identical types and parameters to all atoms.
                 t1, m1 = allMatches[0]
 
@@ -95,20 +92,21 @@ class ModifiedForceField(ForceField):
 
 class OpenmmPluginScore():
     '''
-    This will use the new Openmm Plugin to calculate forces and energy. The intention is that this will be fast enough to be able to calculate forces and energy during training.
-    NB. The current torchintegratorplugin only supports float on GPU and double on CPU.
+    This will use the new OpenMM Plugin to calculate forces and energy. The intention is that this will be fast enough to be able to calculate forces and energy during training.
+    N.B.: The current torchintegratorplugin only supports float on GPU and double on CPU.
     '''
     
-    def __init__(self, mol=None, xml_file = ['amber14-all.xml'], platform = 'CUDA', remove_NB=False, alternative_residue_names = dict(HIS='HIE', HSE='HIE'), atoms=['CA', 'C', 'N',
-                                                                                                                                                                              'CB',
-                                                                                                                                                                              'O'],
+    def __init__(self, mol=None, xml_file = ['amber14-all.xml'], platform = 'CUDA', remove_NB=False,
+                 alternative_residue_names = dict(HIS='HIE', HSE='HIE'), atoms=['CA', 'C', 'N', 'CB','O'],
                 soft=False):
         '''
-        :param mol: (biobox.Molecule, default None) If pldataloader is not given, then a biobox object will be taken from this parameter. If neither are given then an error  will be thrown.
-        :param data_dir: (string, default None) if pldataloader is not given then this will be used to find files such as 'variants.npy'
-        :param xml_file: (string, default: "amber14-all.xml") xml parameter file
-        :param platform: (string, default 'CUDA') either 'CUDA' or 'Reference'.
-        :param remove_NB: (bool, default False) remove NonbondedForce, CustomGBForce, CMMotionRemover else just remove CustomGBForce
+        :param `biobox.Molecule` mol: if pldataloader is not given, then a biobox object will be taken from this parameter. If neither are given then an error  will be thrown.
+        :param str xml_file: xml parameter file
+        :param str platform: 'CUDA' or 'Reference'.
+        :param bool remove_NB: if True remove NonbondedForce, CustomGBForce and CMMotionRemover, else just remove CustomGBForce
+        :param dict alternative_residue_names: aliases for resnames, e.g., `{'HIS':'HIE'}`.
+        :param atoms:
+        :param soft:
         '''
         self.mol = mol
         for key, value in alternative_residue_names.items():
@@ -223,8 +221,8 @@ class OpenmmPluginScore():
         :param pos_ptr: tensor.data_ptr()
         :param force_ptr: tensor.data_ptr()
         :param energy_ptr: tensor.data_ptr()
-        :param n_particles: int
-        :param batch_size: int
+        :param int n_particles: number of particles
+        :param int batch_size: batch size
         '''
         assert n_particles == self.n_particles
         torch.cuda.synchronize()
@@ -233,7 +231,7 @@ class OpenmmPluginScore():
 
     def execute(self, x):
         '''
-        :param x: torch tensor shape [b, N, 3]. dtype=float. device = gpu
+        :param `torch.Tensor` x: shape [b, N, 3]. dtype=float. device = gpu
         '''
         force = torch.zeros_like(x)
         energy = torch.zeros(x.shape[0], device = torch.device('cpu'), dtype=torch.double)
@@ -265,7 +263,7 @@ class OpenmmTorchEnergyMinimizer(OpenmmPluginScore):
 
 
 class OpenMMPluginScoreSoftForceField(OpenmmPluginScore):
-    def __init__(self, mol=None, platform='CUDA', atoms=['CA','C','N','CB','O',]):
+    def __init__(self, mol=None, platform='CUDA', atoms=['CA','C','N','CB','O']):
         self.mol = mol
         tmp_file = 'tmp.pdb'
         self.atoms = atoms
@@ -291,8 +289,8 @@ class openmm_energy_function(torch.autograd.Function):
     @staticmethod
     def forward(ctx, plugin, x):
         '''
-        :param plugin: # OpenmmPluginScore instance
-        :param x: torch tensor, dtype = float, shape = [B, N, 3], device = any
+        :param plugin: OpenmmPluginScore instance
+        :param `torch.Tensor` x: dtype = float, shape = [B, N, 3], device = any
         :returns: energy tensor, dtype = float, shape = [B], device  = any
         '''
         if x.device == torch.device('cpu'):
@@ -324,8 +322,8 @@ class openmm_clamped_energy_function(torch.autograd.Function):
     @staticmethod
     def forward(ctx, plugin, x, clamp):
         '''
-        :param plugin: # OpenmmPluginScore instance
-        :param x: torch tensor, dtype = float, shape = [B, N, 3], device = Cuda
+        :param plugin: OpenmmPluginScore instance
+        :param `torch.Tensor` x: dtype = float, shape = [B, N, 3], device = cuda
         :returns: energy tensor, dtype = double, shape = [B], device CPU
         '''
         if x.device == torch.device('cpu'):
@@ -364,7 +362,7 @@ class openmm_energy(torch.nn.Module):
 
     def _forward(self, x):
         '''
-        :param x: torch tensor dtype=torch.float, device=CUDA, shape B, 3, N 
+        :param `torch.Tensor` x: dtype=torch.float, device=CUDA, shape B, 3, N 
         :returns: torch energy tensor dtype should be float and on same device as x
         '''
         _x = (x*self.std).permute(0,2,1).contiguous()
@@ -373,7 +371,7 @@ class openmm_energy(torch.nn.Module):
 
     def _clamp_forward(self, x):
         '''
-        :param x: torch tensor dtype=torch.float, device=CUDA, shape B, 3, N 
+        :param `torch.Tensor` x: dtype=torch.float, device=CUDA, shape B, 3, N 
         :returns: torch energy tensor dtype should be float and on same device as x
         '''
         _x = (x*self.std).permute(0,2,1).contiguous()

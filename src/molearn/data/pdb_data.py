@@ -174,7 +174,7 @@ class PDBData:
         :param valid_size: if not None, specify number of train structures to be returned
         :param train_size: if not None, speficy number of valid structures to be returned
         :param manual_seed: seed to initialise the random number generator used for splitting the dataset. Useful to replicate a specific split.
-        :Return: two `torch.Tensor`, for training and validation structures.
+        :return: two `torch.Tensor`, for training and validation structures.
         '''
         if not hasattr(self, 'dataset'):
             self.prepare_dataset()
