@@ -1,5 +1,5 @@
 import torch
-
+import os
 from molearn.models.foldingnet import AutoEncoder
 from molearn.analysis import MolearnAnalysis
 from molearn.data import PDBData
@@ -7,7 +7,7 @@ from molearn.data import PDBData
 
 print("> Loading network parameters...")
 
-fname = 'xbb_foldingnet_checkpoints\\checkpoint_no_optimizer_state_dict_epoch167_loss0.003259085263643.ckpt'
+fname = f'xbb_foldingnet_checkpoints{os.sep}checkpoint_no_optimizer_state_dict_epoch167_loss0.003259085263643.ckpt'
 checkpoint = torch.load(fname, map_location=torch.device('cpu'))
 net = AutoEncoder(**checkpoint['network_kwargs'])
 net.load_state_dict(checkpoint['model_state_dict'])
@@ -29,8 +29,8 @@ MA.processes = 2
 # by defining the manual see and loading the dataset in the same order as when
 #the neural network was trained, the same train-test split will be obtained
 data = PDBData()
-data.import_pdb('data\\MurD_closed_selection.pdb')
-data.import_pdb('data\\MurD_open_selection.pdb')
+data.import_pdb(f'data{os.sep}MurD_closed_selection.pdb')
+data.import_pdb(f'data{os.sep}MurD_open_selection.pdb')
 data.fix_terminal()
 data.atomselect(atoms = ['CA', 'C', 'N', 'CB', 'O'])
 data.prepare_dataset()
