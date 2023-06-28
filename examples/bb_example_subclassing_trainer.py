@@ -57,14 +57,14 @@ class CustomTrainer(OpenMM_Physics_Trainer):
             decoded_batch = (self._internal['decoded'].permute(0,2,1)*self.std).data.cpu().numpy()
             for f in decoded_batch:
                 if np.isfinite(f).all():
-                    self.dope_scores.append(self.dope_score_class.get_score(f,refine=True))
+                    self.dope_scores.append(self.dope_score_class.get_score(f,refine='both'))
 
             #Calcutate dope of interpolated/generated structures
             self.interp_dope_scores = []
             interpolated_batch = (self._internal['generated'].permute(0,2,1)*self.std).data.cpu().numpy()
             for f in interpolated_batch:
                 if np.isfinite(f).all():
-                    self.interp_dope_scores.append(self.dope_score_class.get_score(f,refine=True))
+                    self.interp_dope_scores.append(self.dope_score_class.get_score(f,refine='both'))
             # These will calculate in the background, synchronize at the end of the epoch.
         return results
 
