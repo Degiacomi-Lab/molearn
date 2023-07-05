@@ -25,7 +25,7 @@ from ..scoring import Parallel_DOPE_Score, Parallel_Ramachandran_Score
 from ..data import PDBData
 
 from ..utils import as_numpy
-
+from tqdm import tqdm
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -100,7 +100,7 @@ class MolearnAnalysis(object):
                 dataset = self.get_dataset(key)
                 batch_size = self.batch_size
                 encoded = None
-                for i in range(0, dataset.shape[0], batch_size):
+                for i in tqdm(range(0, dataset.shape[0], batch_size), desc=f'encoding {key}'):
                     z = self.network.encode(dataset[i:i+batch_size].to(self.device)).cpu()
                     if encoded is None:
                         encoded = torch.empty(dataset.shape[0], z.shape[1], z.shape[2])
@@ -124,7 +124,7 @@ class MolearnAnalysis(object):
                 batch_size = self.batch_size
                 encoded = self.get_encoded(key)
                 decoded = torch.empty(encoded.shape[0], *self.shape).float()
-                for i in range(0, encoded.shape[0], batch_size):
+                for i in tqdm(range(0, encoded.shape[0], batch_size), desc=f'Decoding {key}'):
                     decoded[i:i+batch_size] = self.network.decode(encoded[i:i+batch_size].to(self.device))[:,:,:self.shape[1]].cpu()
                 self._decoded[key] = decoded
         return self._decoded[key]
@@ -171,7 +171,7 @@ class MolearnAnalysis(object):
         return np.array(err)
 
 
-    def get_dope(self, key, refine=True):
+    def get_dope(self, key, refine=True, **kwargs):
         '''
         :param str key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
         :param bool refine: if True, refine structures before calculating DOPE score
@@ -180,8 +180,8 @@ class MolearnAnalysis(object):
         dataset = self.get_dataset(key)
         decoded = self.get_decoded(key)
         
-        dope_dataset = self.get_all_dope_score(dataset, refine=refine)
-        dope_decoded = self.get_all_dope_score(decoded, refine=refine)
+        dope_dataset = self.get_all_dope_score(dataset, refine=refine,**kwargs)
+        dope_decoded = self.get_all_dope_score(decoded, refine=refine,**kwargs)
 
         return dict(dataset_dope = dope_dataset, 
                     decoded_dope = dope_decoded)
@@ -265,7 +265,9 @@ class MolearnAnalysis(object):
         if s_key not in self.surfaces:
             assert 'grid' in self._encoded, 'make sure to call MolearnAnalysis.setup_grid first'
             target = self.get_dataset(key) if index is None else self.get_dataset(key)[index]
-            assert target.shape[0] == 1
+            assert target.shape[0] == 1, f'The key {key} points to more than one structure, '
+            +'either pass a key that points to a single structure or pass the index of the '
+            +'structure you want i.e. analyser.scan_error_from_target(key, index=0)'
             decoded = self.get_decoded('grid')
             if align:
                 crd_ref = as_numpy(target.permute(0,2,1))*self.stdval
@@ -331,7 +333,7 @@ class MolearnAnalysis(object):
         #return {'favored':nf, 'allowed':na, 'outliers':no, 'total':nt}
 
 
-    def _dope_score(self, frame, refine=True):
+    def _dope_score(self, frame, refine=True, **kwargs):
         '''
         returns multiprocessing AsyncResult
         AsyncResult.get() will return the result
@@ -348,7 +350,7 @@ class MolearnAnalysis(object):
         if isinstance(f,torch.Tensor):
             f = f.data.cpu().numpy()
 
-        return self.dope_score_class.get_score(f*self.stdval, refine=refine)
+        return self.dope_score_class.get_score(f*self.stdval, refine=refine, **kwargs)
 
     def get_all_ramachandran_score(self, tensor):
         '''
@@ -360,7 +362,7 @@ class MolearnAnalysis(object):
         results = []
         for f in tensor:
             results.append(self._ramachandran_score(f))
-        for r in results:
+        for r in tqdm(results,desc=f'Calc rama'):
             favored, allowed, outliers, total = r.get()
             rama['favored'].append(favored)
             rama['allowed'].append(allowed)
@@ -378,7 +380,7 @@ class MolearnAnalysis(object):
         results = []
         for f in tensor:
             results.append(self._dope_score(f, refine=refine))
-        results = np.array([r.get() for r in results])
+        results = np.array([r.get() for r in tqdm(results, desc=f'Calc Dope')])
         return results
 
     def reference_dope_score(self, frame):
@@ -409,7 +411,9 @@ class MolearnAnalysis(object):
         '''
         
         if key is None:
-            if refine:
+            if refine=='both':
+                key = "DOPE_both"
+            elif refine:
                 key = "DOPE_refined"
             else:
                 key = "DOPE_unrefined"
@@ -417,9 +421,11 @@ class MolearnAnalysis(object):
         if key not in self.surfaces:
             assert 'grid' in self._encoded, 'make sure to call MolearnAnalysis.setup_grid first'
             decoded = self.get_decoded('grid')
-            result = self.get_all_dope_score(decoded, **kwargs)
-            
-            self.surfaces[key] = as_numpy(result.reshape(self.n_samples, self.n_samples))
+            result = self.get_all_dope_score(decoded, refine=refine, **kwargs)
+            if refine=='both':
+                self.surfaces[key] = as_numpy(result.reshape(self.n_samples, self.n_samples,2))
+            else:
+                self.surfaces[key] = as_numpy(result.reshape(self.n_samples, self.n_samples))
             
         return self.surfaces[key], self.xvals, self.yvals
 
