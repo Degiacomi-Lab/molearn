@@ -112,7 +112,7 @@ trained model.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="molearn.analysis.MolearnAnalysis.get_dope">
-<span class="sig-name descname"><span class="pre">get_dope</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">refine</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/analysis/analyser.html#MolearnAnalysis.get_dope"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.MolearnAnalysis.get_dope" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">get_dope</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">refine</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/analysis/analyser.html#MolearnAnalysis.get_dope"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.analysis.MolearnAnalysis.get_dope" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -270,7 +270,11 @@ Requires a grid system to be defined via a prior call to <a class="reference int
 <dd><p>Calculate landscape of RMSD vs single target structure. Target should be previously loaded datset containing a single conformation.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>key</strong> (<em>str</em>) – key pointing to a dataset previously loaded with <a class="reference internal" href="#molearn.analysis.MolearnAnalysis.set_dataset" title="molearn.analysis.MolearnAnalysis.set_dataset"><code class="xref py py-func docutils literal notranslate"><span class="pre">set_dataset</span></code></a></p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<em>str</em>) – key pointing to a dataset previously loaded with <a class="reference internal" href="#molearn.analysis.MolearnAnalysis.set_dataset" title="molearn.analysis.MolearnAnalysis.set_dataset"><code class="xref py py-func docutils literal notranslate"><span class="pre">set_dataset</span></code></a></p></li>
+<li><p><strong>index</strong> (<em>int</em>) – index of conformation to be selected from dataset containing multiple conformations.</p></li>
+<li><p><strong>align</strong> (<em>bool</em>) – if True, structures generated from the grid are aligned to target prior RMSD calculation.</p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>RMSD latent space NxN surface</p>

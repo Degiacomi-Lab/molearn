@@ -45,7 +45,7 @@
 <div class="viewcode-block" id="PDBData"><a class="viewcode-back" href="../../../data.html#molearn.data.PDBData">[docs]</a><span class="k">class</span> <span class="nc">PDBData</span><span class="p">:</span>
     
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">fix_terminal</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">atoms</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Create object enabling the manipulation of multi-PDB files into a dataset suitable for training.</span>
 <span class="sd">        </span>
 <span class="sd">        :param filename: None, str or list of strings. If not None, :func:`import_pdb &lt;molearn.data.PDBData.import_pdb&gt;` is called on each filename provided.</span>
@@ -64,7 +64,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">atomselect</span><span class="p">(</span><span class="n">atoms</span> <span class="o">=</span> <span class="n">atoms</span><span class="p">)</span>
 
 <div class="viewcode-block" id="PDBData.import_pdb"><a class="viewcode-back" href="../../../data.html#molearn.data.PDBData.import_pdb">[docs]</a>    <span class="k">def</span> <span class="nf">import_pdb</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Load multiPDB file.</span>
 <span class="sd">        This command can be called multiple times to load many datasets, if these feature the same number of atoms</span>
 <span class="sd">        </span>
@@ -78,7 +78,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="PDBData.fix_terminal"><a class="viewcode-back" href="../../../data.html#molearn.data.PDBData.fix_terminal">[docs]</a>    <span class="k">def</span> <span class="nf">fix_terminal</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Rename OT1 N-terminal Oxygen to O if terminal oxygens are named OT1 and OT2 otherwise no oxygen will be selected during an atomselect using atoms = [&#39;CA&#39;, &#39;C&#39;,&#39;N&#39;,&#39;O&#39;,&#39;CB&#39;]. No template will be found for terminal residue in openmm_loss. Alternative solution is to use atoms = [&#39;CA&#39;, &#39;C&#39;, &#39;N&#39;, &#39;O&#39;, &#39;CB&#39;, &#39;OT1&#39;]. instead.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">ot1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_mol</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="o">==</span><span class="s1">&#39;OT1&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
@@ -87,7 +87,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">_mol</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">ot1</span><span class="p">,</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="o">=</span><span class="s1">&#39;O&#39;</span></div>
 
 <div class="viewcode-block" id="PDBData.atomselect"><a class="viewcode-back" href="../../../data.html#molearn.data.PDBData.atomselect">[docs]</a>    <span class="k">def</span> <span class="nf">atomselect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">atoms</span><span class="p">,</span> <span class="n">ignore_atoms</span><span class="o">=</span><span class="p">[]):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        From all imported PDBs, extract only atoms of interest.</span>
 <span class="sd">        :func:`import_pdb &lt;molearn.data.PDBData.import_pdb&gt;` must have been called at least once, either at class instantiation or as a separate call.</span>
 <span class="sd">        </span>
@@ -116,7 +116,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_mol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mol</span><span class="o">.</span><span class="n">get_subset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_idxs</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="PDBData.prepare_dataset"><a class="viewcode-back" href="../../../data.html#molearn.data.PDBData.prepare_dataset">[docs]</a>    <span class="k">def</span> <span class="nf">prepare_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Once all datasets have been loaded, normalise data and convert into `torch.Tensor` (ready for training)</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;dataset&#39;</span><span class="p">):</span>
@@ -135,7 +135,7 @@
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;mean: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mean</span><span class="p">)</span><span class="si">}</span><span class="s1">, std: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">std</span><span class="p">)</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="PDBData.get_atominfo"><a class="viewcode-back" href="../../../data.html#molearn.data.PDBData.get_atominfo">[docs]</a>    <span class="k">def</span> <span class="nf">get_atominfo</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        generate list of all atoms in dataset, where every line contains [atom name, residue name, resid]</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;atominfo&#39;</span><span class="p">):</span>
@@ -144,7 +144,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">atominfo</span></div>
 
 <div class="viewcode-block" id="PDBData.frame"><a class="viewcode-back" href="../../../data.html#molearn.data.PDBData.frame">[docs]</a>    <span class="k">def</span> <span class="nf">frame</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        return `biobox.Molecule` object with loaded data</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">M</span> <span class="o">=</span> <span class="n">bb</span><span class="o">.</span><span class="n">Molecule</span><span class="p">()</span>
@@ -157,7 +157,7 @@
         <span class="k">return</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">M</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="PDBData.get_dataloader"><a class="viewcode-back" href="../../../data.html#molearn.data.PDBData.get_dataloader">[docs]</a>    <span class="k">def</span> <span class="nf">get_dataloader</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">,</span> <span class="n">validation_split</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">pin_memory</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dataset_sample_size</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">manual_seed</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">sampler</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        :param batch_size:</span>
 <span class="sd">        :param validation_split:</span>
 <span class="sd">        :param pin_memory:</span>
@@ -184,7 +184,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_dataloader</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">valid_dataloader</span></div>
     
 <div class="viewcode-block" id="PDBData.split"><a class="viewcode-back" href="../../../data.html#molearn.data.PDBData.split">[docs]</a>    <span class="k">def</span> <span class="nf">split</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Split :func:`PDBData &lt;molearn.data.PDBData&gt;` into two other :func:`PDBData &lt;molearn.data.PDBData&gt;` objects corresponding to train and valid sets.</span>
 <span class="sd">        </span>
 <span class="sd">        :param manual_seed: manual seed used to split dataset</span>
@@ -206,7 +206,7 @@
         <span class="k">return</span> <span class="n">train</span><span class="p">,</span> <span class="n">valid</span></div>
 
 <div class="viewcode-block" id="PDBData.get_datasets"><a class="viewcode-back" href="../../../data.html#molearn.data.PDBData.get_datasets">[docs]</a>    <span class="k">def</span> <span class="nf">get_datasets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">validation_split</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">valid_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">train_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">manual_seed</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Create a training and validation set from the imported data</span>
 <span class="sd">        </span>
 <span class="sd">        :param validation_split: ratio of data to randomly assigned as validation</span>

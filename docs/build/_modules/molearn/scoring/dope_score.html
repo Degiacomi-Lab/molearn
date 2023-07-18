@@ -55,12 +55,12 @@
 <span class="kn">import</span> <span class="nn">os</span>
     
 <div class="viewcode-block" id="DOPE_Score"><a class="viewcode-back" href="../../../scoring.html#molearn.scoring.DOPE_Score">[docs]</a><span class="k">class</span> <span class="nc">DOPE_Score</span><span class="p">:</span>
-    <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    This class contains methods to calculate dope without saving to save and load PDB files for every structure. Atoms in a biobox coordinate tensor are mapped to the coordinates in the modeller model directly.</span>
 <span class="sd">    &#39;&#39;&#39;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mol</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        :param biobox.Molecule mol: One example frame to gain access to the topology. Mol will also be used to save a temporary pdb file that will be reloaded in modeller to create the initial modeller Model.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
 
@@ -105,7 +105,7 @@
         <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">tmp_file</span><span class="p">)</span>
 
 <div class="viewcode-block" id="DOPE_Score.get_dope"><a class="viewcode-back" href="../../../scoring.html#molearn.scoring.DOPE_Score.get_dope">[docs]</a>    <span class="k">def</span> <span class="nf">get_dope</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">frame</span><span class="p">,</span> <span class="n">refine</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Get the dope score. Injects coordinates into modeller and uses `mdl.build(build_method=&#39;INTERNAL_COORDINATES&#39;, initialize_xyz=False)` to reconstruct missing atoms.</span>
 <span class="sd">        If a error is thrown by modeller or at any stage, we just return a fixed large value of 1e10.</span>
 <span class="sd">        </span>
@@ -139,7 +139,7 @@
             <span class="k">return</span> <span class="mf">1e10</span></div>
         
 <div class="viewcode-block" id="DOPE_Score.get_all_dope"><a class="viewcode-back" href="../../../scoring.html#molearn.scoring.DOPE_Score.get_all_dope">[docs]</a>    <span class="k">def</span> <span class="nf">get_all_dope</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">refine</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Expect a array of frames. return array of DOPE score value.</span>
 <span class="sd">        </span>
 <span class="sd">        :param numpy.ndarray coords: shape [B, N, 3]</span>
@@ -165,7 +165,7 @@
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">dope_scores</span><span class="p">)</span></div></div>
 
 <span class="k">def</span> <span class="nf">set_global_score</span><span class="p">(</span><span class="n">score</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">):</span>
-    <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Make score a global variable.</span>
 <span class="sd">    This is used when initializing a multiprocessing process.</span>
 <span class="sd">    &#39;&#39;&#39;</span>
@@ -173,13 +173,13 @@
     <span class="n">worker_dope_score</span> <span class="o">=</span> <span class="n">score</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span><span class="c1">#mol = mol, data_dir=data_dir, **kwargs)</span>
 
 <span class="k">def</span> <span class="nf">process_dope</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">):</span>
-    <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Worker function for multiprocessing class</span>
 <span class="sd">    &#39;&#39;&#39;</span>
     <span class="k">return</span> <span class="n">worker_dope_score</span><span class="o">.</span><span class="n">get_dope</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
 <div class="viewcode-block" id="Parallel_DOPE_Score"><a class="viewcode-back" href="../../../scoring.html#molearn.scoring.Parallel_DOPE_Score">[docs]</a><span class="k">class</span> <span class="nc">Parallel_DOPE_Score</span><span class="p">():</span>
-    <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    a multiprocessing class to get modeller DOPE scores.</span>
 <span class="sd">    A typical use case would looke like::</span>
 
@@ -193,7 +193,7 @@
 
 <span class="sd">    &#39;&#39;&#39;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mol</span><span class="p">,</span> <span class="n">processes</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">context</span> <span class="o">=</span> <span class="s1">&#39;spawn&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        :param biobox.Molecule mol: biobox molecule containing one example frame of the protein to be analysed. This will be passed to DOPE_Score class instances in each thread.</span>
 <span class="sd">        :param int processes: (default: -1) Number of processes argument to pass to multiprocessing.pool. This controls the number of threads created.</span>
 <span class="sd">        :param \*\*kwargs: additional kwargs will be passed multiprocesing.pool during initialisation.</span>
@@ -218,7 +218,7 @@
         <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">,</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mol</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">processes</span><span class="p">))</span>
 
 <div class="viewcode-block" id="Parallel_DOPE_Score.get_score"><a class="viewcode-back" href="../../../scoring.html#molearn.scoring.Parallel_DOPE_Score.get_score">[docs]</a>    <span class="k">def</span> <span class="nf">get_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        :param np.array coords: # shape (N, 3) numpy array</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="c1">#is copy necessary?</span>

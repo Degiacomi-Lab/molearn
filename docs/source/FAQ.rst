@@ -50,6 +50,12 @@ The Nvidia website tabulates minimum driver versions required and version compat
 The GUI freezes when I use it/does not work as expected
 -------------------------------------------------------
 
-This is normally caused by an issue with the ipywidgets package.
-We have verified that the GUI operates correctly with the 7.7.1 version,
-older versions have been reported to lead to incorrect GUI behaviour.
+This is usually caused by an issue with packages handling communications between the GUI and Jupyter, `see here <https://discourse.jupyter.org/t/jupyter-notebook-zmq-message-arrived-on-closed-channel-error/17869/27>`_. 
+Currently, a workaround is to use older versions of `tornado`.
+In Python 3.10, the following packages have been observed to yield correct behaviour:
+
+.. code:: 
+
+    ipywidgets=8.0.7
+    nglview=3.0.6
+    tornado=6.1

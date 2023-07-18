@@ -50,11 +50,11 @@
 <span class="kn">import</span> <span class="nn">os</span>
 
 <div class="viewcode-block" id="Ramachandran_Score"><a class="viewcode-back" href="../../../scoring.html#molearn.scoring.Ramachandran_Score">[docs]</a><span class="k">class</span> <span class="nc">Ramachandran_Score</span><span class="p">():</span>
-    <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    This class contains methods that use iotbx/mmtbx to calulate the quality of phi and psi values in a protein.</span>
 <span class="sd">    &#39;&#39;&#39;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mol</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        :param biobox.Molecule mol: One example frame to gain access to the topology. Mol will also be used to save a temporary pdb file that will be reloaded to create the initial iotbx Model.</span>
 <span class="sd">        :param float threshold: (default: 1e-3) Threshold used to determine similarity between biobox.molecule coordinates and iotbx model coordinates. Determine that iotbx model was created successfully.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -78,7 +78,7 @@
         <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">tmp_file</span><span class="p">)</span>
 
 <div class="viewcode-block" id="Ramachandran_Score.get_score"><a class="viewcode-back" href="../../../scoring.html#molearn.scoring.Ramachandran_Score.get_score">[docs]</a>    <span class="k">def</span> <span class="nf">get_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">as_ratio</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">            Given coords (corresponding to self.mol) will calculate Ramachandran scores using cctbux ramalyze module</span>
 <span class="sd">            Returns the counts of number of torsion angles that fall within favored, allowed, and outlier regions and finally the total number of torsion angles analysed.</span>
 <span class="sd">            :param numpy.ndarray coords: shape (N, 3)</span>
@@ -101,7 +101,7 @@
 
 
 <span class="k">def</span> <span class="nf">set_global_score</span><span class="p">(</span><span class="n">score</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">):</span>
-    <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    make score a global variable</span>
 <span class="sd">    This is used when initializing a multiprocessing process</span>
 <span class="sd">    &#39;&#39;&#39;</span>
@@ -109,14 +109,14 @@
     <span class="n">worker_ramachandran_score</span> <span class="o">=</span> <span class="n">score</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span><span class="c1">#mol = mol, data_dir=data_dir, **kwargs)</span>
 
 <span class="k">def</span> <span class="nf">process_ramachandran</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">):</span>
-    <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    ramachandran worker</span>
 <span class="sd">    Worker function for multiprocessing class</span>
 <span class="sd">    &#39;&#39;&#39;</span>
     <span class="k">return</span> <span class="n">worker_ramachandran_score</span><span class="o">.</span><span class="n">get_score</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
 <div class="viewcode-block" id="Parallel_Ramachandran_Score"><a class="viewcode-back" href="../../../scoring.html#molearn.scoring.Parallel_Ramachandran_Score">[docs]</a><span class="k">class</span> <span class="nc">Parallel_Ramachandran_Score</span><span class="p">():</span>
-    <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    A multiprocessing class to get Ramachandran scores. </span>
 <span class="sd">    A typical use case would looke like::</span>
 
@@ -136,7 +136,7 @@
 <span class="sd">    &#39;&#39;&#39;</span>
     
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mol</span><span class="p">,</span> <span class="n">processes</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        :param biobox.Molecule mol: biobox melucel containing one example fram of the protein to be analysed. This will be passed to Ramachandran_Score instances in each thread.</span>
 <span class="sd">        :param int processes: (default: -1) Number of processes argument to pass to multiprocessing.pool. This controls the number of therads created.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -161,7 +161,7 @@
 
 
 <div class="viewcode-block" id="Parallel_Ramachandran_Score.get_score"><a class="viewcode-back" href="../../../scoring.html#molearn.scoring.Parallel_Ramachandran_Score.get_score">[docs]</a>    <span class="k">def</span> <span class="nf">get_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        :param coords: # shape (N, 3) numpy array</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="c1">#is copy necessary?</span>

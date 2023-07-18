@@ -72,14 +72,14 @@
 
 
 <div class="viewcode-block" id="MolearnGUI"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.MolearnGUI">[docs]</a><span class="k">class</span> <span class="nc">MolearnGUI</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    This class produces an interactive visualisation for data stored in a</span>
 <span class="sd">    :func:`MolearnAnalysis &lt;molearn.analysis.MolearnAnalysis&gt;` object,</span>
 <span class="sd">    viewable within a Jupyter notebook.</span>
 <span class="sd">    &#39;&#39;&#39;</span>
     
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">MA</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        :param MA: Either :func:`MolearnAnalysis &lt;molearn.analysis.MolearnAnalysis&gt;` instance, or None (default). If None an empty GUI will be produced.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
  
@@ -95,19 +95,19 @@
 
      
     <span class="k">def</span> <span class="nf">update_trails</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        update latent space representation with interpolation points</span>
 <span class="sd">        &#39;&#39;&#39;</span>
 
         <span class="k">try</span><span class="p">:</span>
             <span class="n">crd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_samples</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mybox</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">samplebox</span><span class="o">.</span><span class="n">value</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">drop_path</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">samples</span> <span class="o">=</span> <span class="n">crd</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-        <span class="k">except</span><span class="p">:</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">button_pdb</span><span class="o">.</span><span class="n">disabled</span> <span class="o">=</span> <span class="kc">False</span>
             <span class="k">return</span>
 
         <span class="c1"># update latent space plot</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">samples</span> <span class="o">==</span> <span class="p">[]:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">samples</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">latent</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">waypoints</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">latent</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">waypoints</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span>
         <span class="k">else</span><span class="p">:</span>
@@ -118,7 +118,7 @@
 
     
     <span class="k">def</span> <span class="nf">on_click</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trace</span><span class="p">,</span> <span class="n">points</span><span class="p">,</span> <span class="n">selector</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        control display of training set</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         
@@ -127,24 +127,25 @@
 
         <span class="c1"># add new waypoint to list</span>
         <span class="n">pt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="n">points</span><span class="o">.</span><span class="n">xs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">points</span><span class="o">.</span><span class="n">ys</span><span class="p">[</span><span class="mi">0</span><span class="p">]]])</span>
+       
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">waypoints</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">waypoints</span> <span class="o">=</span> <span class="n">pt</span>    
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">waypoints</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">waypoints</span><span class="p">,</span> <span class="n">pt</span><span class="p">))</span>
-
+            
         <span class="c1"># update textbox (triggering update of 3D representation)</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">pt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">waypoints</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">decimals</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
             <span class="c1">#pt = np.array([self.latent.data[3].x, self.latent.data[3].y]).T.flatten().round(decimals=4).astype(str)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">mybox</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">pt</span><span class="p">)</span>
-        <span class="k">except</span><span class="p">:</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
             <span class="k">return</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">update_trails</span><span class="p">()</span>    
         
 
     <span class="k">def</span> <span class="nf">get_samples</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mybox</span><span class="p">,</span> <span class="n">samplebox</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        provide a trail of point between list of waypoints, either connected</span>
 <span class="sd">        on a straight line or via a shortest path calculated with the A* algorithm</span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -182,7 +183,7 @@
 
         
     <span class="k">def</span> <span class="nf">interact_3D</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mybox</span><span class="p">,</span> <span class="n">samplebox</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        generate and display proteins according to latent space trail</span>
 <span class="sd">        &#39;&#39;&#39;</span> 
 
@@ -214,7 +215,7 @@
 
 
     <span class="k">def</span> <span class="nf">drop_background_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">change</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        control colouring style of latent space surface</span>
 <span class="sd">        &#39;&#39;&#39;</span> 
         
@@ -254,7 +255,7 @@
 
 
     <span class="k">def</span> <span class="nf">drop_dataset_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">change</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        control which dataset is displayed</span>
 <span class="sd">        &#39;&#39;&#39;</span>        
 
@@ -278,7 +279,7 @@
 
 
     <span class="k">def</span> <span class="nf">drop_path_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">change</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        control way paths are looked for</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         
@@ -291,7 +292,7 @@
 
 
     <span class="k">def</span> <span class="nf">range_slider_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">change</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        update surface colouring upon manipulation of range slider</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         
@@ -301,7 +302,7 @@
 
 
     <span class="k">def</span> <span class="nf">trail_update_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">change</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        update trails (waypoints and way they are connected)</span>
 <span class="sd">        &#39;&#39;&#39;</span>
 
@@ -318,7 +319,7 @@
 
 
     <span class="k">def</span> <span class="nf">button_pdb_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">check</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        save PDB file corresponding to the interpolation shown in the 3D view</span>
 <span class="sd">        &#39;&#39;&#39;</span>
 
@@ -347,7 +348,7 @@
 
 
     <span class="k">def</span> <span class="nf">button_save_state_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">check</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        save class state</span>
 <span class="sd">        &#39;&#39;&#39;</span>
 
@@ -363,7 +364,7 @@
 
 
     <span class="k">def</span> <span class="nf">button_load_state_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">check</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        load class state</span>
 <span class="sd">        &#39;&#39;&#39;</span>
 

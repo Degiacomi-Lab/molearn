@@ -5,16 +5,14 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>molearn.analysis.path &#8212; molearn 1.3.0 documentation</title>
+    <title>molearn.analysis.path &#8212; molearn 2.0.1 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/classic.css" />
-    
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinxdoc.css" />
     <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
     <script src="../../../_static/jquery.js"></script>
     <script src="../../../_static/underscore.js"></script>
     <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../_static/doctools.js"></script>
-    
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
   </head><body>
@@ -27,7 +25,7 @@
         <li class="right" >
           <a href="../../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../../index.html">molearn 1.3.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">molearn 2.0.1 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">molearn.analysis.path</a></li> 
       </ul>
@@ -48,7 +46,7 @@
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="k">class</span> <span class="nc">PriorityQueue</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Queue for shortest path algorithms.</span>
 <span class="sd">    </span>
 <span class="sd">    :meta private:</span>
@@ -58,13 +56,13 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">elements</span> <span class="o">=</span> <span class="p">[]</span>
 
     <span class="k">def</span> <span class="nf">empty</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        clear priority queue</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">elements</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span>
 
     <span class="k">def</span> <span class="nf">put</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">,</span> <span class="n">priority</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        add element in priority queue.</span>
 <span class="sd">        </span>
 <span class="sd">        :param item: item to add in queue</span>
@@ -73,14 +71,14 @@
         <span class="n">heapq</span><span class="o">.</span><span class="n">heappush</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">elements</span><span class="p">,</span> <span class="p">(</span><span class="n">priority</span><span class="p">,</span> <span class="n">item</span><span class="p">))</span>
 
     <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        :return: pop top priority element from queue</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">return</span> <span class="n">heapq</span><span class="o">.</span><span class="n">heappop</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">elements</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
 
     
 <span class="k">def</span> <span class="nf">_heuristic</span><span class="p">(</span><span class="n">pt1</span><span class="p">,</span> <span class="n">pt2</span><span class="p">,</span> <span class="n">graph</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">euclidean</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-    <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    :param pt1: 2D coordinate of starting point</span>
 <span class="sd">    :param pt2: 2D coordinate of end point</span>
 <span class="sd">    :param euclidean: if True, evaluate value of graph at regularly spaced points on a straight line between pt1 and pt2</span>
@@ -102,7 +100,7 @@
     
     
 <span class="k">def</span> <span class="nf">_neighbors</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">gridshape</span><span class="p">,</span> <span class="n">flattened</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-    <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    :param idx: index of point in a grid. Can be either a flattened index or a 2D coordinate.</span>
 <span class="sd">    :param gridshape: tuple defining grid shape</span>
 <span class="sd">    :param flattened: if False, return 2D coordinates, flattened index otherwise (default) </span>
@@ -141,7 +139,7 @@
 
     
 <span class="k">def</span> <span class="nf">_cost</span><span class="p">(</span><span class="n">pt</span><span class="p">,</span> <span class="n">graph</span><span class="p">):</span>
-    <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    :return: scalar value, reporting on the cost of moving onto a grid cell</span>
 <span class="sd">    &#39;&#39;&#39;</span>
     <span class="c1"># separate function for clarity, and in case in the future we want to alter this</span>
@@ -149,7 +147,7 @@
     
     
 <span class="k">def</span> <span class="nf">_astar</span><span class="p">(</span><span class="n">start_2d</span><span class="p">,</span> <span class="n">goal_2d</span><span class="p">,</span> <span class="n">in_graph</span><span class="p">,</span> <span class="n">euclidean</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-    <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    A* algorithm, find path connecting two points in a landscape.</span>
 <span class="sd">    </span>
 <span class="sd">    :param start: starting point</span>
@@ -195,7 +193,7 @@
 
 
 <div class="viewcode-block" id="get_path"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.path.get_path">[docs]</a><span class="k">def</span> <span class="nf">get_path</span><span class="p">(</span><span class="n">idx_start</span><span class="p">,</span> <span class="n">idx_end</span><span class="p">,</span> <span class="n">landscape</span><span class="p">,</span> <span class="n">xvals</span><span class="p">,</span> <span class="n">yvals</span><span class="p">,</span> <span class="n">smooth</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
-    <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Find shortest path between two points on a weighted grid</span>
 <span class="sd">    </span>
 <span class="sd">    :param int idx_start: index on a 2D grid, as start point for a path</span>
@@ -246,7 +244,7 @@
 
 
 <span class="k">def</span> <span class="nf">_get_point_index</span><span class="p">(</span><span class="n">crd</span><span class="p">,</span> <span class="n">xvals</span><span class="p">,</span> <span class="n">yvals</span><span class="p">):</span>
-    <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Extract index (of 2D surface) closest to a given real value coordinate</span>
 <span class="sd">    </span>
 <span class="sd">    :param numpy.array/list crd: coordinate</span>
@@ -261,7 +259,7 @@
 
 
 <div class="viewcode-block" id="get_path_aggregate"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.path.get_path_aggregate">[docs]</a><span class="k">def</span> <span class="nf">get_path_aggregate</span><span class="p">(</span><span class="n">crd</span><span class="p">,</span> <span class="n">landscape</span><span class="p">,</span> <span class="n">xvals</span><span class="p">,</span> <span class="n">yvals</span><span class="p">,</span> <span class="n">input_is_index</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-    <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Create a chain of shortest paths via give waypoints</span>
 <span class="sd">    </span>
 <span class="sd">    :param numpy.array crd: waypoints coordinates (Nx2 array)</span>
@@ -293,7 +291,7 @@
 
 
 <div class="viewcode-block" id="oversample"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.path.oversample">[docs]</a><span class="k">def</span> <span class="nf">oversample</span><span class="p">(</span><span class="n">crd</span><span class="p">,</span> <span class="n">pts</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
-    <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Add extra equally spaced points between a list of points.</span>
 <span class="sd">    </span>
 <span class="sd">    :param numpy.array crd: Nx2 numpy array with latent space coordinates</span>
@@ -340,13 +338,13 @@
         <li class="right" >
           <a href="../../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../../index.html">molearn 1.3.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">molearn 2.0.1 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">molearn.analysis.path</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2021, V. K. Ramaswamy, S. C. Musson, M. T. Degiacomi.
+        &#169; Copyright 2021, S. C. Musson, M. T. Degiacomi.
       Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.0.2.
     </div>
   </body>

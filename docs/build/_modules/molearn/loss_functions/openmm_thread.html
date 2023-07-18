@@ -58,7 +58,7 @@
 <div class="viewcode-block" id="ModifiedForceField"><a class="viewcode-back" href="../../../loss_functions.html#molearn.loss_functions.openmm_thread.ModifiedForceField">[docs]</a><span class="k">class</span> <span class="nc">ModifiedForceField</span><span class="p">(</span><span class="n">ForceField</span><span class="p">):</span>
     
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">alternative_residue_names</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Takes all `*args` and `**kwargs` of `openmm.app.ForceField`, plus an optional parameter described here.</span>
 <span class="sd">        </span>
 <span class="sd">        :param dict  alternative_residue_names: aliases for resnames, e.g., `{&#39;HIS&#39;:&#39;HIE&#39;}`.</span>
@@ -70,7 +70,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">_alternative_residue_names</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;HIS&#39;</span><span class="p">:</span><span class="s1">&#39;HIE&#39;</span><span class="p">}</span>
 
     <span class="k">def</span> <span class="nf">_getResidueTemplateMatches</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">res</span><span class="p">,</span> <span class="n">bondedToAtom</span><span class="p">,</span> <span class="n">templateSignatures</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ignoreExternalBonds</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ignoreExtraParticles</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return the templates that match a residue, or None if none are found.</span>
 
 <span class="sd">        :param res: Topology.Residue, the residue for which template matches are to be retrieved.</span>
@@ -130,7 +130,7 @@
         <span class="k">return</span> <span class="p">[</span><span class="n">template</span><span class="p">,</span> <span class="n">matches</span><span class="p">]</span></div>
 
 <div class="viewcode-block" id="OpenmmPluginScore"><a class="viewcode-back" href="../../../loss_functions.html#molearn.loss_functions.openmm_thread.OpenmmPluginScore">[docs]</a><span class="k">class</span> <span class="nc">OpenmmPluginScore</span><span class="p">():</span>
-    <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    This will use the new OpenMM Plugin to calculate forces and energy. The intention is that this will be fast enough to be able to calculate forces and energy during training.</span>
 <span class="sd">    N.B.: The current torchintegratorplugin only supports float on GPU and double on CPU.</span>
 <span class="sd">    &#39;&#39;&#39;</span>
@@ -138,7 +138,7 @@
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mol</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">xml_file</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;amber14-all.xml&#39;</span><span class="p">],</span> <span class="n">platform</span> <span class="o">=</span> <span class="s1">&#39;CUDA&#39;</span><span class="p">,</span> <span class="n">remove_NB</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                  <span class="n">alternative_residue_names</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">HIS</span><span class="o">=</span><span class="s1">&#39;HIE&#39;</span><span class="p">,</span> <span class="n">HSE</span><span class="o">=</span><span class="s1">&#39;HIE&#39;</span><span class="p">),</span> <span class="n">atoms</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;CA&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">,</span> <span class="s1">&#39;N&#39;</span><span class="p">,</span> <span class="s1">&#39;CB&#39;</span><span class="p">,</span><span class="s1">&#39;O&#39;</span><span class="p">],</span>
                 <span class="n">soft</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        :param `biobox.Molecule` mol: if pldataloader is not given, then a biobox object will be taken from this parameter. If neither are given then an error  will be thrown.</span>
 <span class="sd">        :param str xml_file: xml parameter file</span>
 <span class="sd">        :param str platform: &#39;CUDA&#39; or &#39;Reference&#39;.</span>
@@ -256,7 +256,7 @@
 
 
 <div class="viewcode-block" id="OpenmmPluginScore.get_energy"><a class="viewcode-back" href="../../../loss_functions.html#molearn.loss_functions.openmm_thread.OpenmmPluginScore.get_energy">[docs]</a>    <span class="k">def</span> <span class="nf">get_energy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pos_ptr</span><span class="p">,</span> <span class="n">force_ptr</span><span class="p">,</span> <span class="n">energy_ptr</span><span class="p">,</span> <span class="n">n_particles</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        :param pos_ptr: tensor.data_ptr()</span>
 <span class="sd">        :param force_ptr: tensor.data_ptr()</span>
 <span class="sd">        :param energy_ptr: tensor.data_ptr()</span>
@@ -269,7 +269,7 @@
         <span class="k">return</span> <span class="kc">True</span></div>
 
 <div class="viewcode-block" id="OpenmmPluginScore.execute"><a class="viewcode-back" href="../../../loss_functions.html#molearn.loss_functions.openmm_thread.OpenmmPluginScore.execute">[docs]</a>    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        :param `torch.Tensor` x: shape [b, N, 3]. dtype=float. device = gpu</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">force</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
@@ -327,7 +327,7 @@
 
 <div class="viewcode-block" id="openmm_energy_function.forward"><a class="viewcode-back" href="../../../loss_functions.html#molearn.loss_functions.openmm_thread.openmm_energy_function.forward">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="n">plugin</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        :param plugin: OpenmmPluginScore instance</span>
 <span class="sd">        :param `torch.Tensor` x: dtype = float, shape = [B, N, 3], device = any</span>
 <span class="sd">        :returns: energy tensor, dtype = float, shape = [B], device  = any</span>
@@ -360,7 +360,7 @@
 
 <div class="viewcode-block" id="openmm_clamped_energy_function.forward"><a class="viewcode-back" href="../../../loss_functions.html#molearn.loss_functions.openmm_thread.openmm_clamped_energy_function.forward">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="n">plugin</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">clamp</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        :param plugin: OpenmmPluginScore instance</span>
 <span class="sd">        :param `torch.Tensor` x: dtype = float, shape = [B, N, 3], device = cuda</span>
 <span class="sd">        :returns: energy tensor, dtype = double, shape = [B], device CPU</span>
@@ -400,7 +400,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">forward</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_forward</span>
 
     <span class="k">def</span> <span class="nf">_forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        :param `torch.Tensor` x: dtype=torch.float, device=CUDA, shape B, 3, N </span>
 <span class="sd">        :returns: torch energy tensor dtype should be float and on same device as x</span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -409,7 +409,7 @@
         <span class="k">return</span> <span class="n">energy</span>
 
     <span class="k">def</span> <span class="nf">_clamp_forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        :param `torch.Tensor` x: dtype=torch.float, device=CUDA, shape B, 3, N </span>
 <span class="sd">        :returns: torch energy tensor dtype should be float and on same device as x</span>
 <span class="sd">        &#39;&#39;&#39;</span>

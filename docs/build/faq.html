@@ -78,9 +78,14 @@ version 525.105.17 (see nvidia-smi output).</p>
 </section>
 <section id="the-gui-freezes-when-i-use-it-does-not-work-as-expected">
 <h2>The GUI freezes when I use it/does not work as expected<a class="headerlink" href="#the-gui-freezes-when-i-use-it-does-not-work-as-expected" title="Permalink to this heading">¶</a></h2>
-<p>This is normally caused by an issue with the ipywidgets package.
-We have verified that the GUI operates correctly with the 7.7.1 version,
-older versions have been reported to lead to incorrect GUI behaviour.</p>
+<p>This is usually caused by an issue with packages handling communications between the GUI and Jupyter, <a class="reference external" href="https://discourse.jupyter.org/t/jupyter-notebook-zmq-message-arrived-on-closed-channel-error/17869/27">see here</a>.
+Currently, a workaround is to use older versions of <cite>tornado</cite>.
+In Python 3.10, the following packages have been observed to yield correct behaviour:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ipywidgets</span><span class="o">=</span><span class="mf">8.0.7</span>
+<span class="n">nglview</span><span class="o">=</span><span class="mf">3.0.6</span>
+<span class="n">tornado</span><span class="o">=</span><span class="mf">6.1</span>
+</pre></div>
+</div>
 </section>
 </section>
 
