@@ -141,7 +141,7 @@ class MolearnAnalysis(object):
         '''
         return sum(p.numel() for p in self.network.parameters() if p.requires_grad)
 
-    def get_error(self, key, align=False):
+    def get_error(self, key, align=True):
         '''
         Calculate the reconstruction error of a dataset encoded and decoded by a trained neural network.
         
@@ -252,7 +252,7 @@ class MolearnAnalysis(object):
         xmax, ymax = max(xmax), max(ymax)
         return xmin, xmax, ymin, ymax
 
-    def scan_error_from_target(self, key, index=None, align=False):
+    def scan_error_from_target(self, key, index=None, align=True):
         '''
         Calculate landscape of RMSD vs single target structure. Target should be previously loaded datset containing a single conformation.  
   
@@ -284,7 +284,7 @@ structure you want, e.g., analyser.scan_error_from_target(key, index=0)'
                 rmsd = np.array([m.rmsd(0,i) for i in range(1, len(m.coordinates))])
             else:
                 rmsd = (((decoded-target)*self.stdval)**2).sum(axis=1).mean(axis=-1).sqrt()
-            self.surfaces[s_key] = rmsd.reshape(self.n_samples, self.n_samples).numpy()
+            self.surfaces[s_key] = as_numpy(rmsd.reshape(self.n_samples, self.n_samples))
             
         return self.surfaces[s_key], self.xvals, self.yvals
 
