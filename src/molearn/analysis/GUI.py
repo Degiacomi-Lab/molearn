@@ -63,12 +63,12 @@ class MolearnGUI(object):
         try:
             crd = self.get_samples(self.mybox.value, int(self.samplebox.value), self.drop_path.value)
             self.samples = crd.copy()
-        except:
+        except Exception:
             self.button_pdb.disabled = False
             return
 
         # update latent space plot
-        if self.samples == []:
+        if len(self.samples) == 0:
             self.latent.data[2].x = self.waypoints[:, 0]
             self.latent.data[2].y = self.waypoints[:, 1]
         else:
@@ -88,17 +88,18 @@ class MolearnGUI(object):
 
         # add new waypoint to list
         pt = np.array([[points.xs[0], points.ys[0]]])
+       
         if len(self.waypoints) == 0:
             self.waypoints = pt    
         else:
             self.waypoints = np.concatenate((self.waypoints, pt))
-
+            
         # update textbox (triggering update of 3D representation)
         try:
             pt = self.waypoints.flatten().round(decimals=4).astype(str)
             #pt = np.array([self.latent.data[3].x, self.latent.data[3].y]).T.flatten().round(decimals=4).astype(str)
             self.mybox.value = " ".join(pt)
-        except:
+        except Exception:
             return
 
         self.update_trails()    
