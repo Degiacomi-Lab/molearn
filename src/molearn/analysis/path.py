@@ -6,7 +6,8 @@ import numpy as np
    :synopsis: Tools for linking waypoints with paths in latent space
 """
 
-class PriorityQueue(object):
+
+class PriorityQueue:
     '''
     Queue for shortest path algorithms.
     
@@ -73,7 +74,7 @@ def _neighbors(idx, gridshape, flattened=True):
             idx = np.unravel_index(idx, gridshape)
         elif len(idx) != 2:
             raise Exception("Expecting 2D coordinates")
-    except:
+    except Exception:
         raise Exception("idx should be either integer or an iterable")
 
     # generate neighbour list
@@ -103,6 +104,7 @@ def _cost(pt, graph):
     '''
     :return: scalar value, reporting on the cost of moving onto a grid cell
     '''
+    
     # separate function for clarity, and in case in the future we want to alter this
     return graph[pt]
     
@@ -177,7 +179,9 @@ def get_path(idx_start, idx_end, landscape, xvals, yvals, smooth=3):
     coords = []
     score = []
     idx_flat = np.ravel_multi_index(idx_end, landscape.shape)
-    while cnt<1000: #safeguad for (unlikely) unfinished paths
+    
+    # safeguard for (unlikely) unfinished paths
+    while cnt<1000:
 
         if idx_flat == mypath[idx_flat]:
             break
@@ -201,7 +205,6 @@ def get_path(idx_start, idx_end, landscape, xvals, yvals, smooth=3):
         
         traj_smooth = np.concatenate((np.array([traj[0]]), traj_smooth, np.array([traj[-1]])))
         return traj_smooth, np.array(score)[::-1]
-
 
 
 def _get_point_index(crd, xvals, yvals):
@@ -259,6 +262,7 @@ def oversample(crd, pts=10):
     :param int pts: number of extra points to add in each interval
     :return: Mx2 numpy array, with M>=N.
     ''' 
+    
     pts += 1
     steps = np.linspace(1./pts, 1, pts)
     pts = [crd[0]]

@@ -16,26 +16,30 @@ class ResidualBlock(nn.Module):
     def __init__(self, f):
         super(ResidualBlock, self).__init__()
 
-        conv_block = [  nn.Conv1d(f,f, 3, stride=1, padding=1, bias=False),
-                        nn.BatchNorm1d(f),
-                        nn.ReLU(inplace=True),
-                        nn.Conv1d(f,f, 3, stride=1, padding=1, bias=False),
-                        nn.BatchNorm1d(f) ]
+        conv_block = [nn.Conv1d(f, f, 3, stride=1, padding=1, bias=False),
+                      nn.BatchNorm1d(f),
+                      nn.ReLU(inplace=True),
+                      nn.Conv1d(f, f, 3, stride=1, padding=1, bias=False),
+                      nn.BatchNorm1d(f)]
 
         self.conv_block = nn.Sequential(*conv_block)
 
     def forward(self, x):
         return x + self.conv_block(x)
-        #return torch.relu(x + self.conv_block(x))       #earlier runs were with 'return x + self.conv_block(x)' but not an issue (really?)
+        # return torch.relu(x + self.conv_block(x))       #earlier runs were with 'return x + self.conv_block(x)' but not an issue (really?)
+
 
 class To2D(nn.Module):
+    
     def __init__(self):
         super(To2D, self).__init__()
         pass
+    
     def forward(self, x):
-        z = torch.nn.functional.adaptive_avg_pool2d(x, output_size=(2,1))
+        z = torch.nn.functional.adaptive_avg_pool2d(x, output_size=(2, 1))
         z = torch.sigmoid(z)
         return z
+
 
 class From2D(nn.Module):
     def __init__(self):
@@ -47,8 +51,6 @@ class From2D(nn.Module):
         x = self.f(x)
         x = x.view(x.size(0), 2, 26)
         return x
-
-
 
 
 class Autoencoder(nn.Module):    

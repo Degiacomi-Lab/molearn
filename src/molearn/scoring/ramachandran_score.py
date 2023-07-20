@@ -1,35 +1,38 @@
 import numpy as np
 from copy import deepcopy
-from multiprocessing import Pool, Event, get_context
+from multiprocessing import get_context
 from scipy.spatial.distance import cdist
 
 from iotbx.data_manager import DataManager
 from mmtbx.validation.ramalyze import ramalyze
 from scitbx.array_family import flex
 
-from ..utils import cpu_count, random_string
+from ..utils import random_string
 import os
 
-class Ramachandran_Score():
+
+class Ramachandran_Score:
     '''
     This class contains methods that use iotbx/mmtbx to calulate the quality of phi and psi values in a protein.
     '''
+    
     def __init__(self, mol, threshold=1e-3):
         '''
         :param biobox.Molecule mol: One example frame to gain access to the topology. Mol will also be used to save a temporary pdb file that will be reloaded to create the initial iotbx Model.
         :param float threshold: (default: 1e-3) Threshold used to determine similarity between biobox.molecule coordinates and iotbx model coordinates. Determine that iotbx model was created successfully.
         '''
+        
         tmp_file = f'rama_tmp{random_string()}.pdb'
-        mol.write_pdb(tmp_file, split_struc = False)#'rama_tmp.pdb')
-        filename = tmp_file#'rama_tmp.pdb'
+        mol.write_pdb(tmp_file, split_struc=False)
+        filename = tmp_file
         self.mol = mol
-        self.dm = DataManager(datatypes = ['model'])
+        self.dm = DataManager(datatypes=['model'])
         self.dm.process_model_file(filename)
         self.model = self.dm.get_model(filename)
-        self.score = ramalyze(self.model.get_hierarchy()) # get score to see if this works
+        self.score = ramalyze(self.model.get_hierarchy())  # get score to see if this works
         self.shape = self.model.get_sites_cart().as_numpy_array().shape
 
-        #tests
+        # tests
         x = self.mol.coordinates[0]
         m = self.model.get_sites_cart().as_numpy_array()
         assert m.shape == x.shape
@@ -38,15 +41,15 @@ class Ramachandran_Score():
         assert not np.any(((m-x[self.idxs])>threshold))
         os.remove(tmp_file)
 
-    def get_score(self, coords, as_ratio = False):
+    def get_score(self, coords, as_ratio=False):
         '''
             Given coords (corresponding to self.mol) will calculate Ramachandran scores using cctbux ramalyze module
             Returns the counts of number of torsion angles that fall within favored, allowed, and outlier regions and finally the total number of torsion angles analysed.
             :param numpy.ndarray coords: shape (N, 3)
             :returns: (favored, allowed, outliers, total)
             :rtype: tuple of ints
-
         '''
+        
         assert coords.shape == self.shape
         self.model.set_sites_cart(flex.vec3_double(coords[self.idxs].astype(np.double)))
         self.score = ramalyze(self.model.get_hierarchy())
@@ -60,23 +63,26 @@ class Ramachandran_Score():
             return nf, na, no, nt
 
 
-
 def set_global_score(score, kwargs):
     '''
     make score a global variable
     This is used when initializing a multiprocessing process
     '''
+    
     global worker_ramachandran_score
-    worker_ramachandran_score = score(**kwargs)#mol = mol, data_dir=data_dir, **kwargs)
+    worker_ramachandran_score = score(**kwargs)  # mol = mol, data_dir=data_dir, **kwargs)
+
 
 def process_ramachandran(coords, kwargs):
     '''
     ramachandran worker
     Worker function for multiprocessing class
     '''
-    return worker_ramachandran_score.get_score(coords,**kwargs)
+    
+    return worker_ramachandran_score.get_score(coords, **kwargs)
 
-class Parallel_Ramachandran_Score():
+
+class Parallel_Ramachandran_Score:
     '''
     A multiprocessing class to get Ramachandran scores. 
     A typical use case would looke like::
@@ -104,29 +110,24 @@ class Parallel_Ramachandran_Score():
         
         # set a number of processes as user desires, capped on number of CPUs
         if processes > 0:
-            processes = min(processes, cpu_count())
+            processes = min(processes, os.cpu_count())
         else:
-            processes = cpu_count()
+            processes = os.cpu_count()
         
         self.mol = deepcopy(mol)
         score = Ramachandran_Score
         ctx = get_context('spawn')
         
         self.pool = ctx.Pool(processes=processes, initializer=set_global_score,
-                         initargs=(score, dict(mol=mol)),
-                         )
+                         initargs=(score, dict(mol=mol)))
         self.process_function = process_ramachandran
 
     def __reduce__(self):
         return (self.__class__, (self.mol,))
 
-
-    def get_score(self, coords,**kwargs):
+    def get_score(self, coords, **kwargs):
         '''
         :param coords: # shape (N, 3) numpy array
         '''
-        #is copy necessary?
+        # is copy necessary?
         return self.pool.apply_async(self.process_function, (coords.copy(), kwargs))
-
-
-

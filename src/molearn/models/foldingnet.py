@@ -1,7 +1,7 @@
 import torch
-import biobox as bb
 from torch import nn
 import torch.nn.functional as F
+
 
 def index_points(point_clouds, index):
     '''
@@ -34,7 +34,7 @@ def knn(x, k):
     xx = torch.sum(x ** 2, dim=1, keepdim=True)  # (B, 1, N)
     pairwise_distance = -xx - inner - xx.transpose(2, 1)  # (B, 1, N), (B, N, N), (B, N, 1) -> (B, N, N)
 
-    idx = pairwise_distance.topk(k=k, dim=-1)[1]   # (B, N, k)
+    idx = pairwise_distance.topk(k=k, dim=-1)[1]  # (B, N, k)
     return idx
 
 
@@ -70,7 +70,7 @@ class Encoder(nn.Module):
     '''
     Graph based encoder
     '''
-    def __init__(self, latent_dimension = 2,**kwargs):
+    def __init__(self, latent_dimension=2, **kwargs):
         super(Encoder, self).__init__()
         self.latent_dimension = latent_dimension
         self.conv1 = nn.Conv1d(12, 64, 1)
@@ -103,7 +103,6 @@ class Encoder(nn.Module):
         x = F.relu(self.bn1(self.conv1(x)))
         x = F.relu(self.bn2(self.conv2(x)))
         x = F.relu(self.bn3(self.conv3(x)))
-
 
         # two consecutive graph layers
         x = self.graph_layer1(x)
@@ -142,9 +141,9 @@ class FoldingLayer(nn.Module):
         :param grids: reshaped 2D grids or intermediam reconstructed point clouds
         """
         # concatenate
-        #try:
+        # try:
         #    x = torch.cat([*args], dim=1)
-        #except:
+        # except:
         #    for arg in args:
         #        print(arg.shape)
         #    raise
@@ -153,6 +152,7 @@ class FoldingLayer(nn.Module):
         x = self.layers(x)
 
         return x
+
 
 class Decoder_Layer(nn.Module):
     '''
@@ -163,14 +163,14 @@ class Decoder_Layer(nn.Module):
         super(Decoder_Layer, self).__init__()
 
         # Sample the grids in 2D space
-        #xx = np.linspace(-0.3, 0.3, 45, dtype=np.float32)
-        #yy = np.linspace(-0.3, 0.3, 45, dtype=np.float32)
-        #self.grid = np.meshgrid(xx, yy)   # (2, 45, 45)
+        # xx = np.linspace(-0.3, 0.3, 45, dtype=np.float32)
+        # yy = np.linspace(-0.3, 0.3, 45, dtype=np.float32)
+        # self.grid = np.meshgrid(xx, yy)   # (2, 45, 45)
         self.out_points = out_points
         self.grid = torch.linspace(-0.5, 0.5, out_points).view(1,-1)
         # reshape
-        #self.grid = torch.Tensor(self.grid).view(2, -1)  # (2, 45, 45) -> (2, 45 * 45)
-        assert out_points%in_points==0
+        # self.grid = torch.Tensor(self.grid).view(2, -1)  # (2, 45, 45) -> (2, 45 * 45)
+        assert out_points % in_points == 0
         self.m = out_points//in_points
 
         self.fold1 = FoldingLayer(in_channel + 1, [512, 512, out_channel])
@@ -195,6 +195,7 @@ class Decoder_Layer(nn.Module):
 
         return recon2
 
+
 class Decoder(nn.Module):
     '''
     Decoder Module of FoldingNet
@@ -205,13 +206,11 @@ class Decoder(nn.Module):
         self.latent_dimension = latent_dimension
 
         # Sample the grids in 2D space
-        #xx = np.linspace(-0.3, 0.3, 45, dtype=np.float32)
-        #yy = np.linspace(-0.3, 0.3, 45, dtype=np.float32)
-        #self.grid = np.meshgrid(xx, yy)   # (2, 45, 45)
+        # xx = np.linspace(-0.3, 0.3, 45, dtype=np.float32)
+        # yy = np.linspace(-0.3, 0.3, 45, dtype=np.float32)
+        # self.grid = np.meshgrid(xx, yy)   # (2, 45, 45)
 
-        
         start_out = (out_points//128) +1
-
 
         self.out_points = out_points
 
