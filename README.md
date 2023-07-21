@@ -42,14 +42,20 @@ To run the GUI:
 
 ## Installation ##
 
+#### Anaconda installation from conda-forge ####
+
 The most recent release can be obtained through Anaconda:
 
 `conda install molearn -c conda-forge` or the much faster `mamba install -c conda-forge molearn`
 
+#### Clone the repo and manually install ####
+
 Manual installation requires the following three steps:
-* Clone the repository 
+* Clone the repository `git clone https://github.com/Degiacomi-Lab/molearn.git`
 * Install the necessary requirements with `mamba install -c conda-forge --only-deps molearn`. The option `--only-deps` will install the molearn dependencies but not molearn itself.
 * Use pip to install molearn from within the molearn directory `python -m pip install .`
+
+#### Using molearn without installation ####
 
 Molearn can used without installation by making the sure the requirements above are met, and adding the `src` directory to your path at the beginning of every script, e.g.:
 ```
@@ -57,6 +63,8 @@ import sys
 sys.path.insert(0, 'path/to/molearn/src')
 import molearn
 ```
+
+
 
 ## Usage ##
 
