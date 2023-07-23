@@ -3,9 +3,10 @@ import torch
 from copy import deepcopy
 import biobox as bb
 
+
 class PDBData:
     
-    def __init__(self, filename = None, fix_terminal = False, atoms = None, ):
+    def __init__(self, filename=None, fix_terminal=False, atoms=None):
         '''
         Create object enabling the manipulation of multi-PDB files into a dataset suitable for training.
         
@@ -22,7 +23,7 @@ class PDBData:
         if fix_terminal:
             self.fix_terminal()
         if atoms is not None:
-            self.atomselect(atoms = atoms)
+            self.atomselect(atoms=atoms)
 
     def import_pdb(self, filename):
         '''
@@ -60,7 +61,7 @@ class PDBData:
                 if to_remove in _atoms:
                     _atoms.remove(to_remove)
         elif atoms == "no_hydrogen":
-            _atoms = self.atoms #list(np.unique(self._mol.data["name"].values))    #all the atoms
+            _atoms = self.atoms  # list(np.unique(self._mol.data["name"].values))    #all the atoms
             _plain_atoms = []
             for a in _atoms:
                 if a in self._mol.knowledge['atomtype']:
@@ -72,7 +73,7 @@ class PDBData:
                     _plain_atoms.append(self._mol.knowledge['atomtype'][a[:-2]])
                     print(f'Could not find {a}. I am assuming you meant {a[:-2]} instead.')
                 else:
-                    _plain_atoms.append(self._mol.knowledge['atomtype'][a]) # if above failed just raise the keyerror
+                    _plain_atoms.append(self._mol.knowledge['atomtype'][a])  # if above failed just raise the keyerror
             _atoms = [atom for atom, element in zip(_atoms, _plain_atoms) if element != 'H']
         else:
             _atoms = [_a for _a in atoms if _a not in ignore_atoms]
@@ -159,7 +160,7 @@ class PDBData:
         :return: :func:`PDBData <molearn.data.PDBData>` object corresponding to train set
         :return: :func:`PDBData <molearn.data.PDBData>` object corresponding to validation set
         '''
-        #validation_split=0.1, valid_size=None, train_size=None, manual_seed = None):
+        # validation_split=0.1, valid_size=None, train_size=None, manual_seed = None):
         train_dataset, valid_dataset = self.get_datasets(*args, **kwargs)
         train = PDBData()
         valid = PDBData()
@@ -170,7 +171,7 @@ class PDBData:
         valid.dataset = valid_dataset
         return train, valid
 
-    def get_datasets(self, validation_split=0.1, valid_size=None, train_size=None, manual_seed = None):
+    def get_datasets(self, validation_split=0.1, valid_size=None, train_size=None, manual_seed=None):
         '''
         Create a training and validation set from the imported data
         
@@ -194,7 +195,7 @@ class PDBData:
                 _valid_size = valid_size
         from torch import randperm
         if manual_seed is not None:
-            indices = randperm(len(self.dataset), generator = torch.Generator().manual_seed(manual_seed))
+            indices = randperm(len(self.dataset), generator=torch.Generator().manual_seed(manual_seed))
         else:
             indices = randperm(len(self.dataset))
 
@@ -205,12 +206,8 @@ class PDBData:
 
     @property
     def atoms(self):
-        return list(np.unique(self._mol.data["name"].values))    #all the atoms
+        return list(np.unique(self._mol.data["name"].values))  # all the atoms
     
     @property
     def mol(self):
         return self.frame()
-        
-
-
-

@@ -1,4 +1,3 @@
-import sys
 import os 
 import glob 
 import numpy as np 
@@ -6,7 +5,6 @@ import torch
 from molearn.loss_functions import openmm_energy
 from molearn.data import PDBData
 import json
-import biobox as bb
 from time import time
 try:
     from geomloss import SamplesLoss
@@ -17,10 +15,14 @@ except ImportError as e:
 import shutil
 from copy import deepcopy
 
+
 class TrainingFailure(Exception):
     pass
+
+
 class Sinkhorn_Trainer():
-    def __init__(self, device = None, latent_dim=2, log_filename = 'default_log_file.dat'):
+
+    def __init__(self, device=None, latent_dim=2, log_filename='default_log_file.dat'):
         if not device:
             self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
         else:
@@ -32,28 +34,26 @@ class Sinkhorn_Trainer():
         self.verbose = True
         self.log_filename = log_filename
         self.latent_dim = latent_dim
-        self.sinkhorn = SamplesLoss(loss = 'sinkhorn', p=2, blur=0.05)
+        self.sinkhorn = SamplesLoss(loss='sinkhorn', p=2, blur=0.05)
         self.save_time = time()
 
-
-    def prepare_physics(self, physics_scaling_factor=0.1, clamp_threshold = 10000, clamp=False, start_physics_at=0, **kwargs):
+    def prepare_physics(self, physics_scaling_factor=0.1, clamp_threshold=10000, clamp=False, start_physics_at=0, **kwargs):
         self.start_physics_at = start_physics_at
         self.psf = physics_scaling_factor
         if clamp:
-            clamp_kwargs = dict(max=clamp_threshold, min = -clamp_threshold)
+            clamp_kwargs = dict(max=clamp_threshold, min=-clamp_threshold)
         else:
             clamp_kwargs = None
-        self.physics_loss = openmm_energy(self.mol, self.std, clamp=clamp_kwargs, platform = 'CUDA' if self.device == torch.device('cuda') else 'Reference', atoms = self._data.atoms, **kwargs)
+        self.physics_loss = openmm_energy(self.mol, self.std, clamp=clamp_kwargs, platform='CUDA' if self.device == torch.device('cuda') else 'Reference', atoms=self._data.atoms, **kwargs)
         
     def get_network_summary(self,):
+        
         def get_parameters(trainable_only, model):
             return sum(p.numel() for p in model.parameters() if (p.requires_grad and trainable_only))
 
         return dict(
-            decoder_trainable = get_parameters(True, self.decoder),
-            decoder_total = get_parameters(False, self.decoder),
-                      )
-
+            decoder_trainable=get_parameters(True, self.decoder),
+            decoder_total=get_parameters(False, self.decoder))
 
     def set_data(self, data,*args, **kwargs):
         if isinstance(data, PDBData):
@@ -69,10 +69,12 @@ class Sinkhorn_Trainer():
     def set_dataloader(self, data, *args, **kwargs):
         if isinstance(data, PDBData):
             train_dataloader, valid_dataloader = data.get_dataloader(*args, **kwargs)
+            
             def cycle(iterable):
                 while True:
                     for x in iterable:
                         yield x
+                        
             self.train_iterator = iter(cycle(train_dataloader))
             self.valid_iterator = iter(cycle(valid_dataloader))
         else:
@@ -81,7 +83,6 @@ class Sinkhorn_Trainer():
         self.mean = data.mean
         self.mol = data.mol
         self._data = data
-
 
     def get_adam_opt(self, *args, **kwargs):
         self.opt = torch.optim.AdamW(self.decoder.parameters(), *args, **kwargs)
@@ -93,8 +94,7 @@ class Sinkhorn_Trainer():
         with open(self.log_filename, 'a') as f:
             f.write(dump+'\n')
 
-
-    def run(self, steps=100, validate_every=10, log_filename = None, checkpoint_frequency=1, checkpoint_folder='checkpoints', verbose=None):
+    def run(self, steps=100, validate_every=10, log_filename=None, checkpoint_frequency=1, checkpoint_folder='checkpoints', verbose=None):
         if log_filename is not None:
             self.log_filename = log_filename
         if verbose is not None:
@@ -104,7 +104,7 @@ class Sinkhorn_Trainer():
         number_of_validations = 0
         while self.step<finish_step:
             time1 = time()
-            train_logs = self.training_n_steps(steps = validate_every)
+            train_logs = self.training_n_steps(steps=validate_every)
             memory = torch.cuda.max_memory_allocated()/1000000.0
             time2 = time()
             valid_logs = self.validation_one_step()
@@ -112,7 +112,7 @@ class Sinkhorn_Trainer():
             time3 = time()
             if self.best is None or self.best > valid_logs['valid_loss']:
                 self.checkpoint(valid_logs, checkpoint_folder)
-            elif number_of_validations%checkpoint_frequency==0:
+            elif number_of_validations % checkpoint_frequency==0:
                 self.checkpoint(valid_logs, checkpoint_folder)
             time4 = time()
             logs = {'step':self.step, **train_logs, **valid_logs,
@@ -141,8 +141,6 @@ class Sinkhorn_Trainer():
                     results[key] += train_result[key].item()
         return {f'train_{key}': results[key]/steps for key in results.keys()}
 
-
-
     def validation_one_step(self):
         self.decoder.eval()
         result = self.valid_step()
@@ -152,7 +150,7 @@ class Sinkhorn_Trainer():
         data = self.train_data
         z = torch.randn(data.shape[0], self.latent_dim,1).to(self.device)
         structures = self.decoder(z)[:,:,:data.shape[2]]
-        loss = self.sinkhorn(structures.reshape(structures.size(0),-1), data.reshape(data.size(0),-1))
+        loss = self.sinkhorn(structures.reshape(structures.size(0), -1), data.reshape(data.size(0), -1))
         return dict(loss=loss)
 
     def valid_step(self):
@@ -160,14 +158,14 @@ class Sinkhorn_Trainer():
             data = self.valid_data
             z = torch.randn(data.shape[0], self.latent_dim).to(self.device)
             structures = self.decoder(z)[:,:,:data.shape[2]]
-            loss = self.sinkhorn(structures.reshape(structures.size(0),-1), data.reshape(data.size(0),-1))
+            loss = self.sinkhorn(structures.reshape(structures.size(0), -1), data.reshape(data.size(0), -1))
             energy = self.physics_loss(structures)
-            energy[energy.isinf()]=1e35
+            energy[energy.isinf()] = 1e35
             energy = torch.clamp(energy, max=1e34)
             energy = energy.nanmean()
 
         z_0 = torch.zeros_like(z).requires_grad_()
-        structures_0 = self.decoder(z_0)[:,:,:data.shape[2]]
+        structures_0 = self.decoder(z_0)[:, :, :data.shape[2]]
         inner_loss = ((structures_0-data)**2).sum(1).mean()
         encoded = -torch.autograd.grad(inner_loss, [z_0], create_graph=True, retain_graph=True)[0]
         with torch.no_grad():
@@ -176,28 +174,25 @@ class Sinkhorn_Trainer():
         mse_loss = se.mean()
         rmsd = se.sum(1).mean().sqrt()*self.std
         if time()-self.save_time>120.:
-            coords = []
+            # coords = []
             with torch.no_grad():
                 z1_index, z2_index = self.get_extrema()
                 z1 = encoded[z1_index].unsqueeze(0)
                 z2 = encoded[z2_index].unsqueeze(0)
                 frames = 20
                 ts = torch.linspace(0,1,frames).to(self.device).unsqueeze(-1)
-                #from IPython import embed
-                #embed(headre='valid')
+                # from IPython import embed
+                # embed(headre='valid')
                 zinterp =(1-ts)*z1 + ts*z2
                 if zinterp.shape == (2,frames):
                     zinterp = zinterp.permute(1,0)
-                interp_structures = self.decoder(zinterp)[:,:,:data.shape[2]]
+                interp_structures = self.decoder(zinterp)[:, :, :data.shape[2]]
             mol = deepcopy(self.mol)
-            mol.coordinates = (interp_structures.permute(0,2,1)*self.std).detach().cpu().numpy()
-            mol.write_pdb('sample_interp.pdb', split_struc = False)
+            mol.coordinates = (interp_structures.permute(0, 2, 1)*self.std).detach().cpu().numpy()
+            mol.write_pdb('sample_interp.pdb', split_struc=False)
             self.save_time = time()
 
-        
         return dict(loss=loss, physics_loss=energy,mse_loss=mse_loss, rmsd=rmsd)
-
-
 
     def update_optimiser_hyperparameters(self, **kwargs):
         for g in self.opt.param_groups:
@@ -252,13 +247,13 @@ class Sinkhorn_Trainer():
         step = checkpoint['step']
         self.step = step
 
-    def get_extrema(self, ):
-        #self.train_data [B, 3, N]
+    def get_extrema(self):
+        # self.train_data [B, 3, N]
         if hasattr(self, '_extrema'):
             return self._extrema
         a = self.valid_data
         B = a.shape[0]
         with torch.no_grad():
-            m = ((a.repeat_interleave(B,dim=0)-a.repeat(B,1,1))**2).sum(1).mean(-1).argmax()
-        self._extrema = (m//B, m%B)
+            m = ((a.repeat_interleave(B,dim=0)-a.repeat(B, 1, 1))**2).sum(1).mean(-1).argmax()
+        self._extrema = (m//B, m % B)
         return self._extrema

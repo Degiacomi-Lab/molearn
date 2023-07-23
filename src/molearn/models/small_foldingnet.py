@@ -1,7 +1,4 @@
-import torch
-import biobox as bb
 from torch import nn
-import torch.nn.functional as F
 from .foldingnet import *
 
 
@@ -11,14 +8,14 @@ class Small_Decoder(nn.Module):
     '''
 
     def __init__(self, out_points, in_channel=2, **kwargs):
+        
         super().__init__()
 
         # Sample the grids in 2D space
-        #xx = np.linspace(-0.3, 0.3, 45, dtype=np.float32)
-        #yy = np.linspace(-0.3, 0.3, 45, dtype=np.float32)
-        #self.grid = np.meshgrid(xx, yy)   # (2, 45, 45)
+        # xx = np.linspace(-0.3, 0.3, 45, dtype=np.float32)
+        # yy = np.linspace(-0.3, 0.3, 45, dtype=np.float32)
+        # self.grid = np.meshgrid(xx, yy)   # (2, 45, 45)
         start_out = (out_points//8) +1
-
 
         self.out_points = out_points
 
@@ -35,16 +32,19 @@ class Small_Decoder(nn.Module):
 
         return x
 
+
 class Small_AutoEncoder(AutoEncoder):
     '''
     autoencoder architecture derived from FoldingNet.
     '''
     
     def __init__(self, *args, **kwargs):
+        
         super(AutoEncoder, self).__init__()
 
         self.encoder = Encoder(*args, **kwargs)
         self.decoder = Small_Decoder(*args, **kwargs)
+    
     
 class Big_Skinny_Decoder(nn.Module):
     '''
@@ -55,7 +55,7 @@ class Big_Skinny_Decoder(nn.Module):
         super(Decoder, self).__init__()
         self.latent_dimension = latent_dimension
 
-        start_out = (out_points//16) +1
+        start_out = (out_points//16)+1
 
         self.out_points = out_points
 
@@ -75,6 +75,7 @@ class Big_Skinny_Decoder(nn.Module):
         x = self.layer4(x)
 
         return x
+
 
 if __name__=='__main__':
     print('Nothing to see here')

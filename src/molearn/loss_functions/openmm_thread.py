@@ -18,7 +18,7 @@ import numpy as np
 
 class ModifiedForceField(ForceField):
     
-    def __init__(self, *args, alternative_residue_names = None, **kwargs):
+    def __init__(self, *args, alternative_residue_names=None, **kwargs):
         '''
         Takes all `*args` and `**kwargs` of `openmm.app.ForceField`, plus an optional parameter described here.
         
@@ -80,7 +80,7 @@ class ModifiedForceField(ForceField):
                         matches = m
                         return [template, matches]
                 print(f'multiple for {t.name}')
-                # We found multiple matches.  This is OK if and only if they assign identical types and parameters to all atoms.
+                # We found multiple matches. This is OK if and only if they assign identical types and parameters to all atoms.
                 t1, m1 = allMatches[0]
 
                 for t2, m2 in allMatches[1:]:
@@ -90,15 +90,16 @@ class ModifiedForceField(ForceField):
                 matches = allMatches[0][1]
         return [template, matches]
 
+
 class OpenmmPluginScore():
     '''
     This will use the new OpenMM Plugin to calculate forces and energy. The intention is that this will be fast enough to be able to calculate forces and energy during training.
     N.B.: The current torchintegratorplugin only supports float on GPU and double on CPU.
     '''
     
-    def __init__(self, mol=None, xml_file = ['amber14-all.xml'], platform = 'CUDA', remove_NB=False,
-                 alternative_residue_names = dict(HIS='HIE', HSE='HIE'), atoms=['CA', 'C', 'N', 'CB','O'],
-                soft=False):
+    def __init__(self, mol=None, xml_file=['amber14-all.xml'], platform='CUDA', remove_NB=False,
+                 alternative_residue_names=dict(HIS='HIE', HSE='HIE'), atoms=['CA', 'C', 'N', 'CB','O'],
+                 soft=False):
         '''
         :param `biobox.Molecule` mol: if pldataloader is not given, then a biobox object will be taken from this parameter. If neither are given then an error  will be thrown.
         :param str xml_file: xml parameter file
@@ -110,12 +111,12 @@ class OpenmmPluginScore():
         '''
         self.mol = mol
         for key, value in alternative_residue_names.items():
-            #self.mol.data.loc[:,'resname'][self.mol.data['resname']==key]=value
+            # self.mol.data.loc[:,'resname'][self.mol.data['resname']==key]=value
             self.mol.data.loc[self.mol.data['resname']==key,'resname']=value
-            #self.mol.data.loc[lambda df: df['resname']==key, key]=value
+            # self.mol.data.loc[lambda df: df['resname']==key, key]=value
         tmp_file = f'tmp{np.random.randint(1e10)}.pdb'
         self.atoms = atoms
-        self.mol.write_pdb(tmp_file, split_struc = False)
+        self.mol.write_pdb(tmp_file, split_struc=False)
         self.pdb = PDBFile(tmp_file)
         if soft:
             print('attempting soft forcefield')
@@ -125,9 +126,9 @@ class OpenmmPluginScore():
             self.system = self.forcefield.createSystem(self.pdb.topology)
         else:
             if isinstance(xml_file,str):
-                self.forcefield = ModifiedForceField(xml_file, alternative_residue_names = alternative_residue_names)
+                self.forcefield = ModifiedForceField(xml_file, alternative_residue_names=alternative_residue_names)
             elif len(xml_file)>0:
-                self.forcefield = ModifiedForceField(*xml_file, alternative_residue_names = alternative_residue_names)
+                self.forcefield = ModifiedForceField(*xml_file, alternative_residue_names=alternative_residue_names)
             else:
                 raise ValueError(f'xml_file: {xml_file} needs to be a str or a list of str')
 
@@ -135,14 +136,14 @@ class OpenmmPluginScore():
                 self.ignore_hydrogen()
             else:
                 self.atomselect(atoms)
-            #save pdb and reload in modeller
+            # save pdb and reload in modeller
             templates, unique_unmatched_residues = self.forcefield.generateTemplatesForUnmatchedResidues(self.pdb.topology)
             self.system = self.forcefield.createSystem(self.pdb.topology)
             if remove_NB:
                 forces = self.system.getForces()
                 for idx in reversed(range(len(forces))):
                     force = forces[idx]
-                    if isinstance(force, (#openmm.PeriodicTorsionForce,
+                    if isinstance(force, (  # openmm.PeriodicTorsionForce,
                                           openmm.CustomGBForce,
                                           openmm.NonbondedForce,
                                           openmm.CMMotionRemover)):
@@ -153,7 +154,6 @@ class OpenmmPluginScore():
                     force = forces[idx]
                     if isinstance(force, openmm.CustomGBForce):
                         self.system.removeForce(idx)
-
 
         self.integrator = TorchExposedIntegrator()
         self.platform = Platform.getPlatformByName(platform)
@@ -167,7 +167,7 @@ class OpenmmPluginScore():
         os.remove(tmp_file)
     
     def ignore_hydrogen(self):
-        #ignore = ['ASH', 'LYN', 'GLH', 'HID', 'HIP', 'CYM', ]
+        # ignore = ['ASH', 'LYN', 'GLH', 'HID', 'HIP', 'CYM', ]
         ignore = []
         for name, template in self.forcefield._templates.items():
             if name in ignore:
@@ -215,7 +215,6 @@ class OpenmmPluginScore():
             self.forcefield.registerTemplatePatch(name, name+'_leave_only_'+'_'.join(atoms), 0)
             self.forcefield.registerPatch(patchData)
 
-
     def get_energy(self, pos_ptr, force_ptr, energy_ptr, n_particles, batch_size):
         '''
         :param pos_ptr: tensor.data_ptr()
@@ -234,12 +233,13 @@ class OpenmmPluginScore():
         :param `torch.Tensor` x: shape [b, N, 3]. dtype=float. device = gpu
         '''
         force = torch.zeros_like(x)
-        energy = torch.zeros(x.shape[0], device = torch.device('cpu'), dtype=torch.double)
+        energy = torch.zeros(x.shape[0], device=torch.device('cpu'), dtype=torch.double)
         self.get_energy(x.data_ptr(), force.data_ptr(), energy.data_ptr(), x.shape[1], x.shape[0])
         return force, energy
 
 
 class OpenmmTorchEnergyMinimizer(OpenmmPluginScore):
+    
     def minimize(self, x, maxIterations=10, threshold=10000):
         minimized_x = torch.empty_like(x)
         for i,s in enumerate(x.unsqueeze(1)):
@@ -261,13 +261,13 @@ class OpenmmTorchEnergyMinimizer(OpenmmPluginScore):
         return minimized_x
 
 
-
 class OpenMMPluginScoreSoftForceField(OpenmmPluginScore):
+    
     def __init__(self, mol=None, platform='CUDA', atoms=['CA','C','N','CB','O']):
         self.mol = mol
         tmp_file = 'tmp.pdb'
         self.atoms = atoms
-        self.mol.write_pdb(tmp_file, split_struc = False)
+        self.mol.write_pdb(tmp_file, split_struc=False)
         self.pdb = PDBFile(tmp_file)
         from pdbfixer import PDBFixer
         f = PDBFixer(tmp_file)
@@ -304,18 +304,19 @@ class openmm_energy_function(torch.autograd.Function):
             force = torch.tensor(force).float()
             energy = torch.tensor(energy).float()
         else:
-            #torch.cuda.synchronize(x.device)
+            # torch.cuda.synchronize(x.device)
             force, energy = plugin.execute(x)
-            #torch.cuda.synchronize(x.device)
+            # torch.cuda.synchronize(x.device)
         ctx.save_for_backward(force)
         energy = energy.float().to(x.device)
         return energy
 
     @staticmethod
     def backward(ctx, grad_output):
-        force = ctx.saved_tensors[0] # force shape [B, N, 3]
-        #embed(header='23 openmm_loss_function')
+        force = ctx.saved_tensors[0]  # force shape [B, N, 3]
+        # embed(header='23 openmm_loss_function')
         return None, -force*grad_output.view(-1,1,1)
+
 
 class openmm_clamped_energy_function(torch.autograd.Function):
 
@@ -347,10 +348,12 @@ class openmm_clamped_energy_function(torch.autograd.Function):
     @staticmethod
     def backward(ctx, grad_output):
         force = ctx.saved_tensors[0]
-        return None, -force*grad_output.view(-1,1,1), None
+        return None, -force*grad_output.view(-1, 1, 1), None
+
 
 class openmm_energy(torch.nn.Module):
-    def __init__(self, mol, std, clamp = None, **kwargs):
+    
+    def __init__(self, mol, std, clamp=None, **kwargs):
         super().__init__()
         self.openmmplugin = OpenmmPluginScore(mol, **kwargs)
         self.std = std/10
@@ -365,7 +368,7 @@ class openmm_energy(torch.nn.Module):
         :param `torch.Tensor` x: dtype=torch.float, device=CUDA, shape B, 3, N 
         :returns: torch energy tensor dtype should be float and on same device as x
         '''
-        _x = (x*self.std).permute(0,2,1).contiguous()
+        _x = (x*self.std).permute(0, 2, 1).contiguous()
         energy = openmm_energy_function.apply(self.openmmplugin, _x)
         return energy
 
@@ -374,7 +377,6 @@ class openmm_energy(torch.nn.Module):
         :param `torch.Tensor` x: dtype=torch.float, device=CUDA, shape B, 3, N 
         :returns: torch energy tensor dtype should be float and on same device as x
         '''
-        _x = (x*self.std).permute(0,2,1).contiguous()
+        _x = (x*self.std).permute(0, 2, 1).contiguous()
         energy = openmm_clamped_energy_function.apply(self.openmmplugin, _x, self.clamp)
         return energy
-

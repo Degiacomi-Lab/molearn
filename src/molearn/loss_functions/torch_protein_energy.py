@@ -9,18 +9,16 @@
 # You should have received a copy of the GNU General Public License along with molearn ;
 # if not, write to the Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
 
-
-import numpy as np
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from copy import deepcopy
+# import torch.nn as nn
+# import torch.nn.functional as F
 from molearn.loss_functions.torch_protein_energy_utils import get_convolutions
+
 
 class TorchProteinEnergy():
     def __init__(self, frame, pdb_atom_names,
                 padded_residues=False,
-                method =('indexed', 'convolutional', 'roll')[2],
+                method=('indexed', 'convolutional', 'roll')[2],
                 device=torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu'), fix_h=False,alt_vdw=[], NB='repulsive'):
 
         '''
@@ -45,7 +43,7 @@ class TorchProteinEnergy():
         '''
         self.device = device
         self.method = method
-        if padded_residues == True:
+        if padded_residues:
             if method == 'indexed':
                 self._padded_indexed_init(frame, pdb_atom_names)
         else:
@@ -69,61 +67,60 @@ class TorchProteinEnergy():
         else:
             return self.get_bonded_energy(x)
 
-
-    def _roll_init(self, frame, pdb_atom_names, NB='full', fix_h=False,alt_vdw=[]):
+    def _roll_init(self, frame, pdb_atom_names, NB='full', fix_h=False, alt_vdw=[]):
         (b_masks, b_equil, b_force, b_weights,
             a_masks, a_equil, a_force, a_weights,
             t_masks, t_para, t_weights,
             vdw_R, vdw_e, vdw_14R, vdw_14e,
-            q1q2, q1q2_14 )=get_convolutions(frame, pdb_atom_names, fix_slice_method=True, fix_h=fix_h,alt_vdw=alt_vdw)
+            q1q2, q1q2_14) = get_convolutions(frame, pdb_atom_names, fix_slice_method=True, fix_h=fix_h, alt_vdw=alt_vdw)
 
-        self.brdiff=[]
-        self.br_equil=[]
-        self.br_force=[]
+        self.brdiff = []
+        self.br_equil = []
+        self.br_force = []
         for i,j in enumerate(b_weights):
-            atom1=j.index(1)
-            atom2=j.index(-1)
+            atom1 = j.index(1)
+            atom2 = j.index(-1)
             d = j.index(-1)-j.index(1)
-            padding=len(j)-2
+            padding = len(j)-2
             self.brdiff.append(d)
-            #b_equil[:,0] is just padding so can roll(-1,1) to get correct padding
-            self.br_equil.append(torch.tensor(b_equil[i,padding-1:]).roll(-1).to(self.device).float())
-            self.br_force.append(torch.tensor(b_force[i,padding-1:]).roll(-1).to(self.device).float())
-        self.ardiff=[]
-        self.arsign=[]
-        self.arroll=[]
-        self.ar_equil=[]
-        self.ar_force=[]
-        self.ar_masks=[]
+            # b_equil[:,0] is just padding so can roll(-1,1) to get correct padding
+            self.br_equil.append(torch.tensor(b_equil[i, padding-1:]).roll(-1).to(self.device).float())
+            self.br_force.append(torch.tensor(b_force[i, padding-1:]).roll(-1).to(self.device).float())
+        self.ardiff = []
+        self.arsign = []
+        self.arroll = []
+        self.ar_equil = []
+        self.ar_force = []
+        self.ar_masks = []
         for i, j in enumerate(a_weights):
-            atom1=j[0].index(1)
-            atom2=j[0].index(-1)
-            atom3=j[1].index(1)
-            diff1=atom2-atom1
-            diff2=atom2-atom3
-            padding=len(j[0])-3
+            atom1 = j[0].index(1)
+            atom2 = j[0].index(-1)
+            atom3 = j[1].index(1)
+            diff1 = atom2-atom1
+            diff2 = atom2-atom3
+            padding = len(j[0])-3
             self.arroll.append([min(atom1,atom2), min(atom2,atom3)])
             self.ardiff.append([abs(diff1)-1, abs(diff2)-1])
             self.arsign.append([diff1/abs(diff1), diff2/abs(diff2)])
             self.ar_equil.append(torch.tensor(a_equil[i,padding-2:]).roll(-2).to(self.device).float())
             self.ar_force.append(torch.tensor(a_force[i,padding-2:]).roll(-2).to(self.device).float())
-        self.trdiff=[]
-        self.trsign=[]
-        self.trroll=[]
-        self.tr_para=[]
+        self.trdiff = []
+        self.trsign = []
+        self.trroll = []
+        self.tr_para = []
         for i, j in enumerate(t_weights):
-            atom1=j[0].index(1) #i-j 0
-            atom2=j[0].index(-1) #i-j 2
-            atom3=j[1].index(-1) #j-k 3
-            atom4=j[2].index(1)  #l-k 4
-            diff1=atom2-atom1 #ij 2
-            diff2=atom3-atom2 #jk 1
-            diff3=(atom4-atom3)*-1 #lk 1
-            padding=len(j[0])-4
-            self.trroll.append([min(atom1,atom2),min(atom2,atom3),min(atom3,atom4)])
+            atom1 = j[0].index(1)     # i-j 0
+            atom2 = j[0].index(-1)    # i-j 2
+            atom3 = j[1].index(-1)    # j-k 3
+            atom4 = j[2].index(1)     # l-k 4
+            diff1 = atom2-atom1       # ij 2
+            diff2 = atom3-atom2       # jk 1
+            diff3 = (atom4-atom3)*-1  # lk 1
+            padding = len(j[0])-4
+            self.trroll.append([min(atom1,atom2), min(atom2,atom3), min(atom3,atom4)])
             self.trsign.append([diff1/abs(diff1), diff2/abs(diff2), diff3/abs(diff3)])
             self.trdiff.append([abs(diff1)-1, abs(diff2)-1, abs(diff3)-1])
-            self.tr_para.append(torch.tensor(t_para[i,padding-3:]).roll(-3,0).to(self.device).float())
+            self.tr_para.append(torch.tensor(t_para[i, padding-3:]).roll(-3, 0).to(self.device).float())
 
         self.vdw_A = (vdw_e*(vdw_R**12)).to(self.device)
         self.vdw_B = (2*vdw_e*(vdw_R**6)).to(self.device)
@@ -135,24 +132,24 @@ class TorchProteinEnergy():
         elif NB == 'repulsive':
             self._nb_loss = self._cdist_nb
 
-    def _convolutional_init(self, frame, pdb_atom_names, NB='full', fix_h=False,alt_vdw=[]):
+    def _convolutional_init(self, frame, pdb_atom_names, NB='full', fix_h=False, alt_vdw=[]):
         (b_masks, b_equil, b_force, b_weights,
          a_masks, a_equil, a_force, a_weights,
          t_masks, t_para, t_weights,
          vdw_R, vdw_e, vdw_14R, vdw_14e,
-         q1q2, q1q2_14 )=get_convolutions(frame, pdb_atom_names, fix_slice_method=False, fix_h=fix_h, alt_vdw=alt_vdw)
+         q1q2, q1q2_14) = get_convolutions(frame, pdb_atom_names, fix_slice_method=False, fix_h=fix_h, alt_vdw=alt_vdw)
 
-        self.b_equil  =torch.tensor(b_equil  ).to(self.device)
-        self.b_force  =torch.tensor(b_force  ).to(self.device)
-        self.b_weights=torch.tensor(b_weights).to(self.device)
+        self.b_equil   = torch.tensor(b_equil  ).to(self.device)
+        self.b_force   = torch.tensor(b_force  ).to(self.device)
+        self.b_weights = torch.tensor(b_weights).to(self.device)
 
-        self.a_equil  =torch.tensor(a_equil  ).to(self.device).float()
-        self.a_force  =torch.tensor(a_force  ).to(self.device).float()
-        self.a_weights=torch.tensor(a_weights).to(self.device)
-        self.a_masks  =torch.tensor(a_masks  ).to(self.device)
+        self.a_equil   = torch.tensor(a_equil  ).to(self.device).float()
+        self.a_force   = torch.tensor(a_force  ).to(self.device).float()
+        self.a_weights = torch.tensor(a_weights).to(self.device)
+        self.a_masks   = torch.tensor(a_masks  ).to(self.device)
 
-        self.t_para   =torch.tensor(t_para   ).to(self.device)
-        self.t_weights=torch.tensor(t_weights).to(self.device)
+        self.t_para    = torch.tensor(t_para   ).to(self.device)
+        self.t_weights = torch.tensor(t_weights).to(self.device)
 
         self.vdw_A = (vdw_e*(vdw_R**12)).to(self.device)
         self.vdw_B = (2*vdw_e*(vdw_R**6)).to(self.device)
@@ -164,7 +161,7 @@ class TorchProteinEnergy():
         elif NB == 'repulsive':
             self._nb_loss = self._cdist_nb
 
-    def _padded_indexed_init(self, frame, pdb_atom_names, NB = 'full'):
+    def _padded_indexed_init(self, frame, pdb_atom_names, NB='full'):
         from molearn import get_conv_pad_res
         (bond_idxs, bond_para,
              angle_idxs, angle_para, angle_mask, ij_jk,
@@ -203,12 +200,12 @@ class TorchProteinEnergy():
         return bloss/bs, aloss/bs, tloss/bs
 
     def _bonded_padded_residues_loss(self, x):
-        #x.shape [B, R, M, 3]
+        # x.shape [B, R, M, 3]
         x = x.view(x.shape[0], -1, 3)[:,]
-        v = x[:,self.bond_idxs[:,1]]-x[:,self.bond_idxs[:,0]] #j-i == i->j
+        v = x[:,self.bond_idxs[:,1]]-x[:,self.bond_idxs[:,0]]  # j-i == i->j
         bloss = (((v.norm(dim=2)-self.bond_para[:,0])**2)*self.bond_para[:,1]).sum()
-        v1 = v[:,self.ij_jk[0]]*self.angle_mask[0].view(1,-1,1)
-        v2 = v[:,self.ij_jk[1]]*self.angle_mask[1].view(1,-1,1)
+        v1 = v[:,self.ij_jk[0]]*self.angle_mask[0].view(1, -1, 1)
+        v2 = v[:,self.ij_jk[1]]*self.angle_mask[1].view(1, -1, 1)
         xyz=torch.sum(v1*v2, dim=2) / (torch.norm(v1, dim=2) * torch.norm(v2, dim=2))
         theta = torch.acos(torch.clamp(xyz, min=-0.999999, max=0.999999))
         aloss = (((theta-self.angle_para[:,0])**2)*self.angle_para[:,1]).sum()
@@ -233,51 +230,51 @@ class TorchProteinEnergy():
         return torch.nansum(LJpA-LJpB+Cp)
 
     def _cdist_nb(self, x, cutoff=9.0, mask=False):
-        dmat = torch.cdist(x.permute(0,2,1),x.permute(0,2,1))
+        dmat = torch.cdist(x.permute(0, 2, 1),x.permute(0, 2, 1))
         LJp = self.vdw_A/(self._warp_domain(dmat, 1.9)**12)
         Cp = (self.q1q2/self._warp_domain(dmat, 0.4))
         return torch.nansum(LJp+Cp)
 
-    def _warp_domain(self,x,k):
+    def _warp_domain(self, x, k):
         return torch.nn.functional.elu(x-k, 1.0)+k
 
     def _conv_bond_loss(self, x):
-        #x shape[B, 3, N]
+        # x shape[B, 3, N]
         loss=torch.tensor(0.0).float().to(self.device)
         for i, weight in enumerate(self.b_weights):
-            y = torch.nn.functional.conv1d(x, weight.view(1,1,-1).repeat(3,1,1).to(self.device), groups=3, padding=(len(weight)-2))
+            y = torch.nn.functional.conv1d(x, weight.view(1, 1, -1).repeat(3, 1, 1).to(self.device), groups=3, padding=(len(weight)-2))
             loss+=(self.b_force[i]*((y.norm(dim=1)-self.b_equil[i])**2)).sum()
         return loss
 
     def _conv_angle_loss(self, x):
-        #x shape[X, 3, N]
+        # x shape[X, 3, N]
         loss=torch.tensor(0.0).float().to(self.device)
         for i, weight in enumerate(self.a_weights):
-            v1 = torch.nn.functional.conv1d(x, weight[0].view(1,1,-1).repeat(3,1,1).to(self.device), groups=3, padding=(len(weight[0])-3))
-            v2 = torch.nn.functional.conv1d(x, weight[1].view(1,1,-1).repeat(3,1,1).to(self.device), groups=3, padding=(len(weight[1])-3))
-            xyz=torch.sum(v1*v2, dim=1) / (torch.norm(v1, dim=1) * torch.norm(v2, dim=1))
+            v1 = torch.nn.functional.conv1d(x, weight[0].view(1, 1, -1).repeat(3, 1, 1).to(self.device), groups=3, padding=(len(weight[0])-3))
+            v2 = torch.nn.functional.conv1d(x, weight[1].view(1, 1, -1).repeat(3, 1, 1).to(self.device), groups=3, padding=(len(weight[1])-3))
+            xyz = torch.sum(v1*v2, dim=1) / (torch.norm(v1, dim=1) * torch.norm(v2, dim=1))
             theta = torch.acos(torch.clamp(xyz, min=-0.999999, max=0.999999))
             energy = (self.a_force[i]*((theta-self.a_equil[i])**2)).sum(dim=0)[self.a_masks[i]].sum()
             loss+=energy
         return loss
 
     def _conv_torsion_loss(self, x):
-        #x shape[X, 3, N]
+        # x shape[X, 3, N]
         loss=torch.tensor(0.0).float().to(self.device)
         for i, weight in enumerate(self.t_weights):
-            b1 = torch.nn.functional.conv1d(x, weight[0].view(1,1,-1).repeat(3,1,1).to(self.device), groups=3, padding=(len(weight[0])-4))#i-j
-            b2 = torch.nn.functional.conv1d(x, weight[1].view(1,1,-1).repeat(3,1,1).to(self.device), groups=3, padding=(len(weight[1])-4))#j-k
-            b3 = torch.nn.functional.conv1d(x, weight[2].view(1,1,-1).repeat(3,1,1).to(self.device), groups=3, padding=(len(weight[2])-4))#l-k
-            c32=torch.cross(b3,b2)
-            c12=torch.cross(b1,b2)
-            torsion=torch.atan2((b2*torch.cross(c32,c12)).sum(dim=1),
+            b1 = torch.nn.functional.conv1d(x, weight[0].view(1, 1, -1).repeat(3, 1, 1).to(self.device), groups=3, padding=(len(weight[0])-4))  # i-j
+            b2 = torch.nn.functional.conv1d(x, weight[1].view(1, 1, -1).repeat(3, 1, 1).to(self.device), groups=3, padding=(len(weight[1])-4))  # j-k
+            b3 = torch.nn.functional.conv1d(x, weight[2].view(1, 1, -1).repeat(3, 1, 1).to(self.device), groups=3, padding=(len(weight[2])-4))  # l-k
+            c32 = torch.cross(b3,b2)
+            c12 = torch.cross(b1,b2)
+            torsion = torch.atan2((b2*torch.cross(c32,c12)).sum(dim=1),
                                   b2.norm(dim=1)*((c12*c32).sum(dim=1)))
             p = self.t_para[i,:,:,:].unsqueeze(0)
-            loss+=((p[:,:,1]/p[:,:,0])*(1+torch.cos((p[:,:,3]*torsion.unsqueeze(2))-p[:,:,2]))).sum()
+            loss+=((p[:,:,1]/p[:, :, 0])*(1+torch.cos((p[:, :, 3]*torsion.unsqueeze(2))-p[:, :, 2]))).sum()
         return loss
 
     def _roll_bond_angle_torsion_loss(self, x):
-        #x.shape [5,3,2145]
+        # x.shape [5,3,2145]
         bloss = torch.tensor(0.0).float().to(self.device)
         aloss = torch.tensor(0.0).float().to(self.device)
         tloss = torch.tensor(0.0).float().to(self.device)
@@ -289,21 +286,20 @@ class TorchProteinEnergy():
         for i, diff in enumerate(self.ardiff):
             v1 = self.arsign[i][0]*(v[diff[0]].roll(-self.arroll[i][0],2))
             v2 = self.arsign[i][1]*(v[diff[1]].roll(-self.arroll[i][1],2))
-            xyz=torch.sum(v1*v2, dim=1) / (torch.norm(v1, dim=1) * torch.norm(v2, dim=1))
+            xyz = torch.sum(v1*v2, dim=1)/(torch.norm(v1, dim=1)*torch.norm(v2, dim=1))
             theta = torch.acos(torch.clamp(xyz, min=-0.999999, max=0.999999)) 
             energy=(self.ar_force[i]*((theta-self.ar_equil[i])**2))
             sum_e = energy.sum()
-            aloss+=(sum_e)
+            aloss += (sum_e)
 
         for i, diff in enumerate(self.trdiff):
-            b1 = self.trsign[i][0]*(v[diff[0]].roll(-self.trroll[i][0],2))
-            b2 = self.trsign[i][1]*(v[diff[1]].roll(-self.trroll[i][1],2))
-            b3 = self.trsign[i][2]*(v[diff[2]].roll(-self.trroll[i][2],2))
-            c32=torch.cross(b3,b2)
-            c12=torch.cross(b1,b2)
-            torsion=torch.atan2((b2*torch.cross(c32,c12)).sum(dim=1),
+            b1 = self.trsign[i][0]*(v[diff[0]].roll(-self.trroll[i][0], 2))
+            b2 = self.trsign[i][1]*(v[diff[1]].roll(-self.trroll[i][1], 2))
+            b3 = self.trsign[i][2]*(v[diff[2]].roll(-self.trroll[i][2], 2))
+            c32 = torch.cross(b3,b2)
+            c12 = torch.cross(b1,b2)
+            torsion = torch.atan2((b2*torch.cross(c32,c12)).sum(dim=1),
                                   b2.norm(dim=1)*((c12*c32).sum(dim=1)))
             p = self.tr_para[i].unsqueeze(0)
-            tloss+=( ((p[:,:,1]/p[:,:,0])*(1+torch.cos((p[:,:,3]*torsion.unsqueeze(2))-p[:,:,2]))).sum())
-        return bloss,aloss,tloss
-
+            tloss += (((p[:, :, 1]/p[:, :, 0])*(1+torch.cos((p[:, :, 3]*torsion.unsqueeze(2))-p[:, :, 2]))).sum())
+        return bloss, aloss, tloss
