@@ -67,6 +67,10 @@ class PDBData:
                     _plain_atoms.append(self._mol.knowledge['atomtype'][a])
                 elif a[:-1] in self._mol.knowledge['atomtype']:
                     _plain_atoms.append(self._mol.knowledge['atomtype'][a[:-1]])
+                    print(f'Could not find {a}. I am assuing you meant {a[:-1]} instead.')
+                elif a[:-2] in self._mol.knowledge['atomtype']:
+                    _plain_atoms.append(self._mol.knowledge['atomtype'][a[:-2]])
+                    print(f'Could not find {a}. I am assuming you meant {a[:-2]} instead.')
                 else:
                     _plain_atoms.append(self._mol.knowledge['atomtype'][a]) # if above failed just raise the keyerror
             _atoms = [atom for atom, element in zip(_atoms, _plain_atoms) if element != 'H']
