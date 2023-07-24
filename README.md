@@ -52,7 +52,7 @@ The most recent release can be obtained through Anaconda:
 
 Manual installation requires the following three steps:
 * Clone the repository `git clone https://github.com/Degiacomi-Lab/molearn.git`
-* Install the necessary requirements with `mamba install -c conda-forge --only-deps molearn`. The option `--only-deps` will install the molearn dependencies but not molearn itself.
+* Install all required packages (see section *Dependencies > Required Packages*, above). The easiest way is by calling `mamba install -c conda-forge --only-deps molearn`, where the option `--only-deps` will install the molearn required dependencies but not molearn itself. Optionally, packages enabling additional molearn functionalities can also be installed. This has to be done manually (see links in *Dependencies > Optional Packages*).
 * Use pip to install molearn from within the molearn directory `python -m pip install .`
 
 #### Using molearn without installation ####
