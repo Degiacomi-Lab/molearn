@@ -68,8 +68,9 @@ class MolearnGUI:
 
         # update latent space plot
         if len(self.samples) == 0:
-            self.latent.data[2].x = self.waypoints[:, 0]
-            self.latent.data[2].y = self.waypoints[:, 1]
+            if len(self.waypoints)>0:
+                self.latent.data[2].x = self.waypoints[:, 0]
+                self.latent.data[2].y = self.waypoints[:, 1]
         else:
             self.latent.data[2].x = self.samples[:, 0]
             self.latent.data[2].y = self.samples[:, 1]
