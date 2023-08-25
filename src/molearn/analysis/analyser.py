@@ -21,7 +21,16 @@ except Exception as e:
     print('Error importing modeller: ')
     print(e)
     
-from ..scoring import Parallel_DOPE_Score, Parallel_Ramachandran_Score
+try:
+    from ..scoring import Parallel_DOPE_Score
+except ImportError as e:
+    print('Import Error captured while trying to import Parallel_DOPE_Score, it is likely that you dont have Modeller installed')
+    print(e)
+try:
+    from ..scoring import Parallel_Ramachandran_Score
+except ImportError as e:
+    print('Import Error captured while trying to import Parallel_Ramachandran_Score, it is likely that you dont have cctbx/iotbx installed')
+    print(e)
 from ..data import PDBData
 
 from ..utils import as_numpy
