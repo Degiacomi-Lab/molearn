@@ -17,7 +17,7 @@ authors:
     corresponding: true
     affiliation: 1
 affiliations:
- - name: Department of Physics, Durham University, UK
+ - name: Department of Physics, Durham University, United Kingdom
    index: 1
 date: 09 May 2023
 bibliography: paper.bib
