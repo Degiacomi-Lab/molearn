@@ -81,6 +81,7 @@ If you use molearn in your work, please cite:
 [V.K. Ramaswamy, S.C. Musson, C.G. Willcocks, M.T. Degiacomi (2021). Learning protein conformational space with convolutions and latent interpolations, Physical Review X 11](
 https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.011052)
 
-## Contact ##
+## Contributing ##
 
-For any question please contact samuel.musson@durham.ac.uk
+For information on how to report bugs, request new features, or contribute to the code, please see [CONTRIBUTING.md](CONTRIBUTING.md).
+For any other question please contact matteo.t.degiacomi@durham.ac.uk.
