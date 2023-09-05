@@ -75,9 +75,11 @@ import molearn
 * Jupyter notebook tutorials describing the usage of a trained neural network are available [here](https://github.com/Degiacomi-Lab/molearn_notebook).
 * software API and a FAQ page are available at [molearn.readthedocs.io](https://molearn.readthedocs.io/).
 
-## Reference ##
+## References ##
 
-If you use molearn in your work, please cite:
+If you use `molearn` in your work, please cite: [S.C. Musson and M.T. Degiacomi (2023). Molearn: a Python package streamlining the design of generative models of biomolecular dynamics. Journal of Open Source Software, 8(89), 5523](https://doi.org/10.21105/joss.05523)
+
+Theory and benchmarks of a neural network training against protein conformational spaces are presented here:
 [V.K. Ramaswamy, S.C. Musson, C.G. Willcocks, M.T. Degiacomi (2021). Learning protein conformational space with convolutions and latent interpolations, Physical Review X 11](
 https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.011052)
 
