@@ -1,18 +1,15 @@
-
 <!DOCTYPE html>
 
-<html lang="en">
+<html lang="en" data-content_root="../../../">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>molearn.analysis.path &#8212; molearn 2.0.1 documentation</title>
-    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/sphinxdoc.css" />
-    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
-    <script src="../../../_static/jquery.js"></script>
-    <script src="../../../_static/underscore.js"></script>
-    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
-    <script src="../../../_static/doctools.js"></script>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinxdoc.css?v=d59dc883" />
+    <script src="../../../_static/documentation_options.js?v=f5cff4aa"></script>
+    <script src="../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
   </head><body>
@@ -45,7 +42,8 @@
 <span class="sd">   :synopsis: Tools for linking waypoints with paths in latent space</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="k">class</span> <span class="nc">PriorityQueue</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+<span class="k">class</span> <span class="nc">PriorityQueue</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Queue for shortest path algorithms.</span>
 <span class="sd">    </span>
@@ -112,7 +110,7 @@
             <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unravel_index</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">gridshape</span><span class="p">)</span>
         <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Expecting 2D coordinates&quot;</span><span class="p">)</span>
-    <span class="k">except</span><span class="p">:</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;idx should be either integer or an iterable&quot;</span><span class="p">)</span>
 
     <span class="c1"># generate neighbour list</span>
@@ -142,6 +140,7 @@
 <span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    :return: scalar value, reporting on the cost of moving onto a grid cell</span>
 <span class="sd">    &#39;&#39;&#39;</span>
+    
     <span class="c1"># separate function for clarity, and in case in the future we want to alter this</span>
     <span class="k">return</span> <span class="n">graph</span><span class="p">[</span><span class="n">pt</span><span class="p">]</span>
     
@@ -192,7 +191,9 @@
     <span class="k">return</span> <span class="n">came_from</span><span class="p">,</span> <span class="n">cost_so_far</span>
 
 
-<div class="viewcode-block" id="get_path"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.path.get_path">[docs]</a><span class="k">def</span> <span class="nf">get_path</span><span class="p">(</span><span class="n">idx_start</span><span class="p">,</span> <span class="n">idx_end</span><span class="p">,</span> <span class="n">landscape</span><span class="p">,</span> <span class="n">xvals</span><span class="p">,</span> <span class="n">yvals</span><span class="p">,</span> <span class="n">smooth</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
+<div class="viewcode-block" id="get_path">
+<a class="viewcode-back" href="../../../analysis.html#molearn.analysis.path.get_path">[docs]</a>
+<span class="k">def</span> <span class="nf">get_path</span><span class="p">(</span><span class="n">idx_start</span><span class="p">,</span> <span class="n">idx_end</span><span class="p">,</span> <span class="n">landscape</span><span class="p">,</span> <span class="n">xvals</span><span class="p">,</span> <span class="n">yvals</span><span class="p">,</span> <span class="n">smooth</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Find shortest path between two points on a weighted grid</span>
 <span class="sd">    </span>
@@ -216,7 +217,9 @@
     <span class="n">coords</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">score</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">idx_flat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ravel_multi_index</span><span class="p">(</span><span class="n">idx_end</span><span class="p">,</span> <span class="n">landscape</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
-    <span class="k">while</span> <span class="n">cnt</span><span class="o">&lt;</span><span class="mi">1000</span><span class="p">:</span> <span class="c1">#safeguad for (unlikely) unfinished paths</span>
+    
+    <span class="c1"># safeguard for (unlikely) unfinished paths</span>
+    <span class="k">while</span> <span class="n">cnt</span><span class="o">&lt;</span><span class="mi">1000</span><span class="p">:</span>
 
         <span class="k">if</span> <span class="n">idx_flat</span> <span class="o">==</span> <span class="n">mypath</span><span class="p">[</span><span class="n">idx_flat</span><span class="p">]:</span>
             <span class="k">break</span>
@@ -258,7 +261,9 @@
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">my_x</span><span class="p">,</span> <span class="n">my_y</span><span class="p">])</span>
 
 
-<div class="viewcode-block" id="get_path_aggregate"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.path.get_path_aggregate">[docs]</a><span class="k">def</span> <span class="nf">get_path_aggregate</span><span class="p">(</span><span class="n">crd</span><span class="p">,</span> <span class="n">landscape</span><span class="p">,</span> <span class="n">xvals</span><span class="p">,</span> <span class="n">yvals</span><span class="p">,</span> <span class="n">input_is_index</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="get_path_aggregate">
+<a class="viewcode-back" href="../../../analysis.html#molearn.analysis.path.get_path_aggregate">[docs]</a>
+<span class="k">def</span> <span class="nf">get_path_aggregate</span><span class="p">(</span><span class="n">crd</span><span class="p">,</span> <span class="n">landscape</span><span class="p">,</span> <span class="n">xvals</span><span class="p">,</span> <span class="n">yvals</span><span class="p">,</span> <span class="n">input_is_index</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Create a chain of shortest paths via give waypoints</span>
 <span class="sd">    </span>
@@ -290,7 +295,10 @@
     <span class="k">return</span> <span class="n">crd</span></div>
 
 
-<div class="viewcode-block" id="oversample"><a class="viewcode-back" href="../../../analysis.html#molearn.analysis.path.oversample">[docs]</a><span class="k">def</span> <span class="nf">oversample</span><span class="p">(</span><span class="n">crd</span><span class="p">,</span> <span class="n">pts</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+
+<div class="viewcode-block" id="oversample">
+<a class="viewcode-back" href="../../../analysis.html#molearn.analysis.path.oversample">[docs]</a>
+<span class="k">def</span> <span class="nf">oversample</span><span class="p">(</span><span class="n">crd</span><span class="p">,</span> <span class="n">pts</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Add extra equally spaced points between a list of points.</span>
 <span class="sd">    </span>
@@ -298,6 +306,7 @@
 <span class="sd">    :param int pts: number of extra points to add in each interval</span>
 <span class="sd">    :return: Mx2 numpy array, with M&gt;=N.</span>
 <span class="sd">    &#39;&#39;&#39;</span> 
+    
     <span class="n">pts</span> <span class="o">+=</span> <span class="mi">1</span>
     <span class="n">steps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="n">pts</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">pts</span><span class="p">)</span>
     <span class="n">pts</span> <span class="o">=</span> <span class="p">[</span><span class="n">crd</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
@@ -307,6 +316,7 @@
             <span class="n">pts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">newpt</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">pts</span><span class="p">)</span></div>
+
 </pre></div>
 
             <div class="clearer"></div>
@@ -344,8 +354,8 @@
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2021, S. C. Musson, M. T. Degiacomi.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.0.2.
+    &#169; Copyright 2021, S. C. Musson, M. T. Degiacomi.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.5.
     </div>
   </body>
 </html>

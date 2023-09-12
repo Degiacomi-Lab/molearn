@@ -1,19 +1,16 @@
-
 <!DOCTYPE html>
 
-<html lang="en">
+<html lang="en" data-content_root="./">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <title>Frequently Asked Questions &#8212; molearn 2.0.1 documentation</title>
-    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="_static/sphinxdoc.css" />
-    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-    <script src="_static/jquery.js"></script>
-    <script src="_static/underscore.js"></script>
-    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
-    <script src="_static/doctools.js"></script>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinxdoc.css?v=d59dc883" />
+    <script src="_static/documentation_options.js?v=f5cff4aa"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="prev" title="Analysis" href="analysis.html" /> 
@@ -41,9 +38,33 @@
           <div class="body" role="main">
             
   <section id="frequently-asked-questions">
-<h1>Frequently Asked Questions<a class="headerlink" href="#frequently-asked-questions" title="Permalink to this heading">¶</a></h1>
+<h1>Frequently Asked Questions<a class="headerlink" href="#frequently-asked-questions" title="Link to this heading">¶</a></h1>
+<section id="i-cannot-install-openmmtorchplugin">
+<h2>I cannot install openmmtorchplugin<a class="headerlink" href="#i-cannot-install-openmmtorchplugin" title="Link to this heading">¶</a></h2>
+<p>openmmtorchplugin depends on conda-forge builds of pyTorch and OpenMM.
+Due to this dependency, Windows cannot be supported.</p>
+<p>Installation can be carried out via terminal with conda-forge:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">install</span> <span class="o">-</span><span class="n">c</span> <span class="n">conda</span><span class="o">-</span><span class="n">forge</span> <span class="n">openmmtorchplugin</span>
+</pre></div>
+</div>
+<p>The following Python versions are supported: 3.8, 3.9, 3.10, 3.11.</p>
+<p>If you run into any issue, either at installation or runtime, ensure you have a
+plugin version &gt;=1.1.3, as previous ones have known  compatibility with OpenMM.
+The easiest way to ensure the most up to date version of molearn and the
+openmmtorchplugin are installed, is to run a fresh install in a new conda
+environment:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">create</span> <span class="o">--</span><span class="n">name</span> <span class="n">test_env</span> <span class="n">python</span><span class="o">=</span><span class="mf">3.10</span>
+<span class="n">conda</span> <span class="n">install</span> <span class="o">-</span><span class="n">n</span> <span class="n">test_env</span> <span class="o">-</span><span class="n">c</span> <span class="n">conda</span><span class="o">-</span><span class="n">forge</span> <span class="n">openmmtorchplugin</span> <span class="n">molearn</span>
+</pre></div>
+</div>
+<p>openmmtorchplugin is built with cuda_compiler_version=11.2 in conda-forge CI tools.
+This has been successfully tested on Ubuntu machines running with the driver
+version 525.105.17 (see nvidia-smi output).</p>
+<p>The Nvidia website tabulates minimum driver versions required and version compatibility:
+<a class="reference external" href="https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/index.html">NVIDIA CUDA Toolkit Minimum driver versions</a></p>
+</section>
 <section id="i-get-an-indexerror-when-i-try-loading-a-multipdb">
-<h2>I get an IndexError when I try loading a multiPDB<a class="headerlink" href="#i-get-an-indexerror-when-i-try-loading-a-multipdb" title="Permalink to this heading">¶</a></h2>
+<h2>I get an IndexError when I try loading a multiPDB<a class="headerlink" href="#i-get-an-indexerror-when-i-try-loading-a-multipdb" title="Link to this heading">¶</a></h2>
 <p>This is likely an error thrown by MDAnalysis. Typically this happens when
 attempting to load a multiPDB file saved with software like VMD, which uses a
 different syntax to indicate the end of a conformer in the file. A way to get
@@ -55,29 +76,8 @@ loading and re-saving the file via biobox.</p>
 </pre></div>
 </div>
 </section>
-<section id="i-cannot-install-openmmtorchplugin">
-<h2>I cannot install openmmtorchplugin<a class="headerlink" href="#i-cannot-install-openmmtorchplugin" title="Permalink to this heading">¶</a></h2>
-<p>openmmtorchplugin depends on conda-forge builds of pyTorch and OpenMM.
-Due to this dependency, Windows cannot be supported.
-Installation can be carried out via terminal with conda-forge:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">install</span> <span class="o">-</span><span class="n">c</span> <span class="n">conda</span><span class="o">-</span><span class="n">forge</span> <span class="n">openmmtorchplugin</span>
-</pre></div>
-</div>
-<p>The following Python versions are supported: 3.8, 3.9, 3.10, 3.11.
-If you are running into any issue, attempt a fresh install in a new conda
-environment:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">create</span> <span class="o">--</span><span class="n">name</span> <span class="n">test_env</span> <span class="n">python</span><span class="o">=</span><span class="mf">3.10</span>
-<span class="n">conda</span> <span class="n">install</span> <span class="o">-</span><span class="n">c</span> <span class="n">conda</span><span class="o">-</span><span class="n">forge</span> <span class="n">openmmtorchplugin</span> <span class="n">molearn</span>
-</pre></div>
-</div>
-<p>openmmtorchplugin is built with cuda_compiler_version=11.2 in conda-forge CI tools.
-This has been successfully tested on Ubuntu machines running with the driver
-version 525.105.17 (see nvidia-smi output).</p>
-<p>The Nvidia website tabulates minimum driver versions required and version compatibility:
-<a class="reference external" href="https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/index.html">NVIDIA CUDA Toolkit Minimum driver versions</a></p>
-</section>
 <section id="the-gui-freezes-when-i-use-it-does-not-work-as-expected">
-<h2>The GUI freezes when I use it/does not work as expected<a class="headerlink" href="#the-gui-freezes-when-i-use-it-does-not-work-as-expected" title="Permalink to this heading">¶</a></h2>
+<h2>The GUI freezes when I use it/does not work as expected<a class="headerlink" href="#the-gui-freezes-when-i-use-it-does-not-work-as-expected" title="Link to this heading">¶</a></h2>
 <p>This is usually caused by an issue with packages handling communications between the GUI and Jupyter, <a class="reference external" href="https://discourse.jupyter.org/t/jupyter-notebook-zmq-message-arrived-on-closed-channel-error/17869/27">see here</a>.
 Currently, a workaround is to use older versions of <cite>tornado</cite>.
 In Python 3.10, the following packages have been observed to yield correct behaviour:</p>
@@ -100,8 +100,8 @@ In Python 3.10, the following packages have been observed to yield correct behav
     <h3><a href="index.html">Table of Contents</a></h3>
     <ul>
 <li><a class="reference internal" href="#">Frequently Asked Questions</a><ul>
-<li><a class="reference internal" href="#i-get-an-indexerror-when-i-try-loading-a-multipdb">I get an IndexError when I try loading a multiPDB</a></li>
 <li><a class="reference internal" href="#i-cannot-install-openmmtorchplugin">I cannot install openmmtorchplugin</a></li>
+<li><a class="reference internal" href="#i-get-an-indexerror-when-i-try-loading-a-multipdb">I get an IndexError when I try loading a multiPDB</a></li>
 <li><a class="reference internal" href="#the-gui-freezes-when-i-use-it-does-not-work-as-expected">The GUI freezes when I use it/does not work as expected</a></li>
 </ul>
 </li>
@@ -151,8 +151,8 @@ In Python 3.10, the following packages have been observed to yield correct behav
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2021, S. C. Musson, M. T. Degiacomi.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.0.2.
+    &#169; Copyright 2021, S. C. Musson, M. T. Degiacomi.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.5.
     </div>
   </body>
 </html>

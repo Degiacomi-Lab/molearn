@@ -67,6 +67,8 @@ sys.path.insert(0, 'path/to/molearn/src')
 import molearn
 ```
 
+> **Note**
+> in case of installation issues, please consult our FAQ [molearn.readthedocs.io](https://molearn.readthedocs.io/en/latest/FAQ.html)
 
 
 ## Usage ##
