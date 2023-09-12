@@ -19,6 +19,7 @@ class DOPE_Score:
     '''
     This class contains methods to calculate dope without saving to save and load PDB files for every structure. Atoms in a biobox coordinate tensor are mapped to the coordinates in the modeller model directly.
     '''
+    atom_map = {('ILE', 'CD1'):('ILE', 'CD')}
 
     def __init__(self, mol):
         '''
@@ -55,12 +56,20 @@ class DOPE_Score:
                     else:
                         where_arg = (atom_residue==(np.array([j.name, j_residue_name, j.residue.index+offset], dtype=object))).all(axis=1)
                         where = np.where(where_arg)[0]
+                        if len(where)==0:
+                            if (j_residue_name, j.name) in self.atom_map:
+                                alt_residue_name, alt_name = self.atom_map[(j_residue_name, j.name)]
+                                where_arg = (atom_residue==(np.array([alt_name, alt_residue_name, j.residue.index+offset], dtype=object))).all(axis=1)
+                                where = np.where(where_arg)[0]
+                            else:
+                                print(f'Cant find {j.name} in the atoms {atom_residue[atom_residue[:,2]==j.residue.index+offset]} try adding a mapping to DOPE_Score.atom_map')
                         atom_order.append(int(where))
         self.fast_atom_order = atom_order
         # check fast dope atoms
+        reverse_map = {value:key for key, value in self.atom_map.items()}
         for i, j in enumerate(self.fast_ss):
             if i<len(atom_residue):
-                assert _mol.data['name'][atom_order[i]]==j.name
+                assert _mol.data['name'][atom_order[i]]==j.name or reverse_map[(_mol.data['resname'][atom_order[i]], _mol.data['name'][atom_order[i]])][1]==j.name
         self.cg = ConjugateGradients()
         os.remove(tmp_file)
 

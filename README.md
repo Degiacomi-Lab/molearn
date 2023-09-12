@@ -2,6 +2,9 @@
 
 [![status](https://joss.theoj.org/papers/781a409020f1c37417067aef6fbc3217/status.svg)](https://joss.theoj.org/papers/781a409020f1c37417067aef6fbc3217)
 [![Documentation Status](https://readthedocs.org/projects/molearn/badge/?version=latest)](https://molearn.readthedocs.io/en/latest/?badge=latest)
+[![DOI](https://zenodo.org/badge/145391811.svg)](https://zenodo.org/badge/latestdoi/145391811)
+
+
 
 *protein conformational spaces meet machine learning*
 
@@ -42,14 +45,20 @@ To run the GUI:
 
 ## Installation ##
 
+#### Anaconda installation from conda-forge ####
+
 The most recent release can be obtained through Anaconda:
 
 `conda install molearn -c conda-forge` or the much faster `mamba install -c conda-forge molearn`
 
+#### Clone the repo and manually install ####
+
 Manual installation requires the following three steps:
-* Clone the repository 
-* Install the necessary requirements with `mamba install -c conda-forge --only-deps molearn`. The option `--only-deps` will install the molearn dependencies but not molearn itself.
+* Clone the repository `git clone https://github.com/Degiacomi-Lab/molearn.git`
+* Install all required packages (see section *Dependencies > Required Packages*, above). The easiest way is by calling `mamba install -c conda-forge --only-deps molearn`, where the option `--only-deps` will install the molearn required dependencies but not molearn itself. Optionally, packages enabling additional molearn functionalities can also be installed. This has to be done manually (see links in *Dependencies > Optional Packages*).
 * Use pip to install molearn from within the molearn directory `python -m pip install .`
+
+#### Using molearn without installation ####
 
 Molearn can used without installation by making the sure the requirements above are met, and adding the `src` directory to your path at the beginning of every script, e.g.:
 ```
@@ -58,18 +67,23 @@ sys.path.insert(0, 'path/to/molearn/src')
 import molearn
 ```
 
+
+
 ## Usage ##
 
 * See example scripts in the `examples` folder.
 * Jupyter notebook tutorials describing the usage of a trained neural network are available [here](https://github.com/Degiacomi-Lab/molearn_notebook).
 * software API and a FAQ page are available at [molearn.readthedocs.io](https://molearn.readthedocs.io/).
 
-## Reference ##
+## References ##
 
-If you use molearn in your work, please cite:
+If you use `molearn` in your work, please cite: [S.C. Musson and M.T. Degiacomi (2023). Molearn: a Python package streamlining the design of generative models of biomolecular dynamics. Journal of Open Source Software, 8(89), 5523](https://doi.org/10.21105/joss.05523)
+
+Theory and benchmarks of a neural network training against protein conformational spaces are presented here:
 [V.K. Ramaswamy, S.C. Musson, C.G. Willcocks, M.T. Degiacomi (2021). Learning protein conformational space with convolutions and latent interpolations, Physical Review X 11](
 https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.011052)
 
-## Contact ##
+## Contributing ##
 
-For any question please contact samuel.musson@durham.ac.uk
+For information on how to report bugs, request new features, or contribute to the code, please see [CONTRIBUTING.md](CONTRIBUTING.md).
+For any other question please contact matteo.t.degiacomi@durham.ac.uk.

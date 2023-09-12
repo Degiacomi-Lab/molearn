@@ -14,6 +14,7 @@ except ImportError as e:
     
 import torch
 import numpy as np
+from copy import deepcopy
 
 
 class ModifiedForceField(ForceField):
@@ -193,6 +194,12 @@ class OpenmmPluginScore():
             self.forcefield.registerPatch(patchData)
 
     def atomselect(self, atoms):
+        atoms = deepcopy(atoms)
+        if 'OT2' in atoms:
+            atoms.append('OXT')
+        if 'OT1' in atoms:
+            atoms.append('OXT')
+
         for name, template in self.forcefield._templates.items():
             patchData = ForceField._PatchData(name+'_leave_only_'+'_'.join(atoms), 1)
 
