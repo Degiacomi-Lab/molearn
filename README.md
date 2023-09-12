@@ -51,6 +51,8 @@ The most recent release can be obtained through Anaconda:
 
 `conda install molearn -c conda-forge` or the much faster `mamba install -c conda-forge molearn`
 
+We advise the installation is carried out in a new environment.
+
 #### Clone the repo and manually install ####
 
 Manual installation requires the following three steps:
@@ -68,8 +70,7 @@ import molearn
 ```
 
 > **Note**
-> in case of installation issues, please consult our FAQ [molearn.readthedocs.io](https://molearn.readthedocs.io/en/latest/FAQ.html)
-
+> in case of any installation issue, please consult our [FAQ](https://molearn.readthedocs.io/en/latest/FAQ.html)
 
 ## Usage ##
 
