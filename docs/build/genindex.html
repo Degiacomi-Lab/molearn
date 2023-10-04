@@ -1,18 +1,15 @@
-
 <!DOCTYPE html>
 
-<html lang="en">
+<html lang="en" data-content_root="./">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Index &#8212; molearn 2.0.1 documentation</title>
-    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="_static/sphinxdoc.css" />
-    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-    <script src="_static/jquery.js"></script>
-    <script src="_static/underscore.js"></script>
-    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
-    <script src="_static/doctools.js"></script>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinxdoc.css?v=d59dc883" />
+    <script src="_static/documentation_options.js?v=f5cff4aa"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="#" />
     <link rel="search" title="Search" href="search.html" /> 
   </head><body>
@@ -42,6 +39,7 @@
  <a href="#A"><strong>A</strong></a>
  | <a href="#B"><strong>B</strong></a>
  | <a href="#C"><strong>C</strong></a>
+ | <a href="#D"><strong>D</strong></a>
  | <a href="#E"><strong>E</strong></a>
  | <a href="#F"><strong>F</strong></a>
  | <a href="#G"><strong>G</strong></a>
@@ -102,6 +100,14 @@
   </ul></td>
 </tr></table>
 
+<h2 id="D">D</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="scoring.html#molearn.scoring.DOPE_Score">DOPE_Score (class in molearn.scoring)</a>
+</li>
+  </ul></td>
+</tr></table>
+
 <h2 id="E">E</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
@@ -135,6 +141,8 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="analysis.html#molearn.analysis.MolearnAnalysis.generate">generate() (MolearnAnalysis method)</a>
 </li>
+      <li><a href="scoring.html#molearn.scoring.DOPE_Score.get_all_dope">get_all_dope() (DOPE_Score method)</a>
+</li>
       <li><a href="analysis.html#molearn.analysis.MolearnAnalysis.get_all_dope_score">get_all_dope_score() (MolearnAnalysis method)</a>
 </li>
       <li><a href="analysis.html#molearn.analysis.MolearnAnalysis.get_all_ramachandran_score">get_all_ramachandran_score() (MolearnAnalysis method)</a>
@@ -149,10 +157,14 @@
 </li>
       <li><a href="analysis.html#molearn.analysis.MolearnAnalysis.get_decoded">get_decoded() (MolearnAnalysis method)</a>
 </li>
+      <li><a href="scoring.html#molearn.scoring.DOPE_Score.get_dope">get_dope() (DOPE_Score method)</a>
+
+      <ul>
+        <li><a href="analysis.html#molearn.analysis.MolearnAnalysis.get_dope">(MolearnAnalysis method)</a>
+</li>
+      </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="analysis.html#molearn.analysis.MolearnAnalysis.get_dope">get_dope() (MolearnAnalysis method)</a>
-</li>
       <li><a href="analysis.html#molearn.analysis.MolearnAnalysis.get_encoded">get_encoded() (MolearnAnalysis method)</a>
 </li>
       <li><a href="loss_functions.html#molearn.loss_functions.openmm_thread.OpenmmPluginScore.get_energy">get_energy() (OpenmmPluginScore method)</a>
@@ -167,6 +179,14 @@
 </li>
       <li><a href="analysis.html#molearn.analysis.MolearnAnalysis.get_ramachandran">get_ramachandran() (MolearnAnalysis method)</a>
 </li>
+      <li><a href="scoring.html#molearn.scoring.Parallel_DOPE_Score.get_score">get_score() (Parallel_DOPE_Score method)</a>
+
+      <ul>
+        <li><a href="scoring.html#molearn.scoring.Parallel_Ramachandran_Score.get_score">(Parallel_Ramachandran_Score method)</a>
+</li>
+        <li><a href="scoring.html#molearn.scoring.Ramachandran_Score.get_score">(Ramachandran_Score method)</a>
+</li>
+      </ul></li>
   </ul></td>
 </tr></table>
 
@@ -207,14 +227,6 @@
 </li>
         <li><a href="loss_functions.html#module-molearn.loss_functions.torch_protein_energy">molearn.loss_functions.torch_protein_energy</a>
 </li>
-        <li><a href="scoring.html#module-molearn.scoring.DOPE_Score">molearn.scoring.DOPE_Score</a>
-</li>
-        <li><a href="scoring.html#module-molearn.scoring.Parallel_DOPE_Score">molearn.scoring.Parallel_DOPE_Score</a>
-</li>
-        <li><a href="scoring.html#module-molearn.scoring.Parallel_Ramachandran_Score">molearn.scoring.Parallel_Ramachandran_Score</a>
-</li>
-        <li><a href="scoring.html#module-molearn.scoring.Ramachandran_Score">molearn.scoring.Ramachandran_Score</a>
-</li>
       </ul></li>
       <li>
     molearn.analysis.path
@@ -223,6 +235,8 @@
         <li><a href="analysis.html#module-molearn.analysis.path">module</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     molearn.loss_functions.openmm_thread
 
@@ -230,41 +244,11 @@
         <li><a href="loss_functions.html#module-molearn.loss_functions.openmm_thread">module</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     molearn.loss_functions.torch_protein_energy
 
       <ul>
         <li><a href="loss_functions.html#module-molearn.loss_functions.torch_protein_energy">module</a>
-</li>
-      </ul></li>
-      <li>
-    molearn.scoring.DOPE_Score
-
-      <ul>
-        <li><a href="scoring.html#module-molearn.scoring.DOPE_Score">module</a>
-</li>
-      </ul></li>
-      <li>
-    molearn.scoring.Parallel_DOPE_Score
-
-      <ul>
-        <li><a href="scoring.html#module-molearn.scoring.Parallel_DOPE_Score">module</a>
-</li>
-      </ul></li>
-      <li>
-    molearn.scoring.Parallel_Ramachandran_Score
-
-      <ul>
-        <li><a href="scoring.html#module-molearn.scoring.Parallel_Ramachandran_Score">module</a>
-</li>
-      </ul></li>
-      <li>
-    molearn.scoring.Ramachandran_Score
-
-      <ul>
-        <li><a href="scoring.html#module-molearn.scoring.Ramachandran_Score">module</a>
 </li>
       </ul></li>
       <li><a href="analysis.html#molearn.analysis.MolearnAnalysis">MolearnAnalysis (class in molearn.analysis)</a>
@@ -309,12 +293,16 @@
 <h2 id="P">P</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="data.html#molearn.data.PDBData">PDBData (class in molearn.data)</a>
+      <li><a href="scoring.html#molearn.scoring.Parallel_DOPE_Score">Parallel_DOPE_Score (class in molearn.scoring)</a>
 </li>
-      <li><a href="data.html#molearn.data.PDBData.prepare_dataset">prepare_dataset() (PDBData method)</a>
+      <li><a href="scoring.html#molearn.scoring.Parallel_Ramachandran_Score">Parallel_Ramachandran_Score (class in molearn.scoring)</a>
+</li>
+      <li><a href="data.html#molearn.data.PDBData">PDBData (class in molearn.data)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="data.html#molearn.data.PDBData.prepare_dataset">prepare_dataset() (PDBData method)</a>
+</li>
       <li><a href="trainers.html#molearn.trainers.Trainer.prepare_optimiser">prepare_optimiser() (Trainer method)</a>
 </li>
       <li><a href="trainers.html#molearn.trainers.OpenMM_Physics_Trainer.prepare_physics">prepare_physics() (OpenMM_Physics_Trainer method)</a>
@@ -329,10 +317,12 @@
 <h2 id="R">R</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="analysis.html#molearn.analysis.MolearnAnalysis.reference_dope_score">reference_dope_score() (MolearnAnalysis method)</a>
+      <li><a href="scoring.html#molearn.scoring.Ramachandran_Score">Ramachandran_Score (class in molearn.scoring)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="analysis.html#molearn.analysis.MolearnAnalysis.reference_dope_score">reference_dope_score() (MolearnAnalysis method)</a>
+</li>
       <li><a href="trainers.html#molearn.trainers.Trainer.run">run() (Trainer method)</a>
 </li>
   </ul></td>
@@ -458,8 +448,8 @@
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2021, S. C. Musson, M. T. Degiacomi.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.0.2.
+    &#169; Copyright 2021, S. C. Musson, M. T. Degiacomi.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.5.
     </div>
   </body>
 </html>

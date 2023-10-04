@@ -7,6 +7,7 @@ import molearn
 
 import torch
 
+
 class Test_openmm_plugin(unittest.TestCase):
     def test_openmm_energy(self,):
 
@@ -27,7 +28,8 @@ class Test_openmm_plugin(unittest.TestCase):
         _d = data.dataset.to(device).float()
         #d = next(iter(dataloader))[0].to(device).float()
         para = mymodule(_d.clone())
-        openmmscore = molearn.openmm_energy(data.mol, data.std, clamp=None, platform = 'CUDA') #xml_file = ['modified_amber_protein.xml',])
+        from molearn.loss_functions import openmm_energy
+        openmmscore = openmm_energy(data.mol, data.std, clamp=None, platform = 'CUDA') #xml_file = ['modified_amber_protein.xml',])
         opt = torch.optim.SGD(para.parameters(), lr=0.0001)
         scores = []
         for i in range(1000):
@@ -42,7 +44,7 @@ class Test_openmm_plugin(unittest.TestCase):
             if i > 20:
                 ratio = (torch.tensor(scores)>loss.item()).sum()/i
                 self.assertGreater(ratio, 0.9)
-                if i%10==0:
+                if i%100==0:
                     print(ratio)
                     print(loss)
             scores.append(loss.item())

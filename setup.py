@@ -12,4 +12,9 @@ setuptools.setup(
     package_dir={"": "src"},
     packages=setuptools.find_packages(where='src',),
     package_data={'molearn':['parameters/*']},
+    #install_requires = ["numpy", "torch>=1.7", "biobox"],
+    #extras_require={
+    #    "gui": ["MDAnalysis", "plotly", "nglview"],
+    #    "geomloss": ["geomloss"],
+    #}
 )

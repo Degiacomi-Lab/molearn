@@ -5,14 +5,14 @@ import numpy as np
 import time
 import torch
 from molearn.data import PDBData
-import warnings
-from decimal import Decimal
 import json
+
 
 class TrainingFailure(Exception):
     pass
 
-class Trainer():
+
+class Trainer:
     '''
     Trainer class that defines a number of useful methods for training an autoencoder.
 
@@ -31,9 +31,7 @@ class Trainer():
 
     '''
     
-
-
-    def __init__(self, device = None, log_filename = 'log_file.dat'):
+    def __init__(self, device=None, log_filename='log_file.dat'):
         '''
         :param torch.Device device: if not given will be determinined automatically based on torch.cuda.is_available()
         :param str log_filename: (default: 'default_log_filename.json') file used to log outputs to
@@ -51,7 +49,7 @@ class Trainer():
         self.log_filename = 'default_log_filename.json'
         self.scheduler_key = None
 
-    def get_network_summary(self,):
+    def get_network_summary(self):
         '''
         returns a dictionary containing information about the size of the autoencoder.
         '''
@@ -59,13 +57,12 @@ class Trainer():
             return sum(p.numel() for p in model.parameters() if (p.requires_grad and trainable_only))
 
         return dict(
-            encoder_trainable = get_parameters(True, self.autoencoder.encoder),
-            encoder_total = get_parameters(False, self.autoencoder.encoder),
-            decoder_trainable = get_parameters(True, self.autoencoder.decoder),
-            decoder_total = get_parameters(False, self.autoencoder.decoder),
-            autoencoder_trainable = get_parameters(True, self.autoencoder),
-            autoencoder_total = get_parameters(False, self.autoencoder),
-                      )
+            encoder_trainable=get_parameters(True, self.autoencoder.encoder),
+            encoder_total=get_parameters(False, self.autoencoder.encoder),
+            decoder_trainable=get_parameters(True, self.autoencoder.decoder),
+            decoder_total=get_parameters(False, self.autoencoder.decoder),
+            autoencoder_trainable=get_parameters(True, self.autoencoder),
+            autoencoder_total=get_parameters(False, self.autoencoder))
 
     def set_autoencoder(self, autoencoder, **kwargs):
         '''
@@ -106,8 +103,7 @@ class Trainer():
         self.mol = data.mol
         self._data = data
 
-
-    def prepare_optimiser(self, lr = 1e-3, weight_decay = 0.0001, **optimiser_kwargs):
+    def prepare_optimiser(self, lr=1e-3, weight_decay=0.0001, **optimiser_kwargs):
         '''
         The Default optimiser is ``AdamW`` and is saved in ``self.optimiser``.
         With no optional arguments this function is the same as doing:
@@ -117,7 +113,7 @@ class Trainer():
         :param float weight_decay: (default: 0.0001) optimiser weight_decay
         :param \*\*optimiser_kwargs: other kwargs that are passed onto AdamW
         '''
-        self.optimiser = torch.optim.AdamW(self.autoencoder.parameters(), lr=lr, weight_decay = weight_decay, **optimiser_kwargs)
+        self.optimiser = torch.optim.AdamW(self.autoencoder.parameters(), lr=lr, weight_decay=weight_decay, **optimiser_kwargs)
 
     def log(self, log_dict, verbose=None):
         '''
@@ -142,7 +138,7 @@ class Trainer():
         '''
         pass
 
-    def run(self, max_epochs=100, log_filename = None, log_folder=None, checkpoint_frequency=1, checkpoint_folder='checkpoint_folder', allow_n_failures=10, verbose=None):
+    def run(self, max_epochs=100, log_filename=None, log_folder=None, checkpoint_frequency=1, checkpoint_folder='checkpoint_folder', allow_n_failures=10, verbose=None):
         '''
         Calls the following in a loop:
 
@@ -183,20 +179,20 @@ class Trainer():
                     self.scheduler_step(logs)
                     if self.best is None or self.best > logs['valid_loss']:
                         self.checkpoint(epoch, logs, checkpoint_folder)
-                    elif epoch%checkpoint_frequency==0:
+                    elif epoch % checkpoint_frequency == 0:
                         self.checkpoint(epoch, logs, checkpoint_folder)
                     time4 = time.time()
-                    logs.update(epoch = epoch,
+                    logs.update(epoch=epoch,
                             train_seconds=time2-time1,
                             valid_seconds=time3-time2,
-                            checkpoint_seconds= time4-time3,
+                            checkpoint_seconds=time4-time3,
                             total_seconds=time4-time1)
                     self.log(logs)
                     if np.isnan(logs['valid_loss']) or np.isnan(logs['train_loss']):
                         raise TrainingFailure('nan received, failing')
                     self.epoch+= 1
             except TrainingFailure:
-                if attempt==(allow_n_failures-1):
+                if attempt == (allow_n_failures-1):
                     failure_message = f'Training Failure due to Nan in attempt {attempt}, end now/n'
                     self.log({'Failure':failure_message})
                     raise TrainingFailure('nan received, failing')
@@ -206,7 +202,6 @@ class Trainer():
                     self.load_checkpoint('best', checkpoint_folder)
             else:
                 break
-
 
     def train_epoch(self,epoch):
         '''
@@ -270,10 +265,9 @@ class Trainer():
         self._internal['encoded'] = encoded
         decoded = self.autoencoder.decode(encoded)[:,:,:batch.size(2)]
         self._internal['decoded'] = decoded
-        return dict(mse_loss = ((batch-decoded)**2).mean())
+        return dict(mse_loss=((batch-decoded)**2).mean())
 
-
-    def valid_epoch(self,epoch):
+    def valid_epoch(self, epoch):
         '''
         Called once an epoch from :func:`trainer.run <molearn.trainers.Trainer.run>` within a no_grad context.
         This method performs the following functions:
@@ -313,7 +307,7 @@ class Trainer():
         results['loss'] = results['mse_loss']
         return results
 
-    def learning_rate_sweep(self, max_lr=100, min_lr=1e-5, number_of_iterations=1000, checkpoint_folder='checkpoint_sweep',train_on='mse_loss', save=['loss', 'mse_loss']):
+    def learning_rate_sweep(self, max_lr=100, min_lr=1e-5, number_of_iterations=1000, checkpoint_folder='checkpoint_sweep', train_on='mse_loss', save=['loss', 'mse_loss']):
         '''
         Deprecated method.
         Performs a sweep of learning rate between ``max_lr`` and ``min_lr`` over ``number_of_iterations``. 
@@ -328,10 +322,12 @@ class Trainer():
         :rtype: numpy.ndarray
         '''
         self.autoencoder.train()
+        
         def cycle(iterable):
             while True:
                 for i in iterable:
                     yield i
+                    
         init_loss = 0.0
         values = []
         data = iter(cycle(self.train_dataloader))
@@ -342,14 +338,13 @@ class Trainer():
 
             self.optimiser.zero_grad()
             result = self.train_step(batch)
-            #result['loss']/=len(batch)
+            # result['loss']/=len(batch)
             result[train_on].backward()
             self.optimiser.step()
             values.append((lr,)+tuple((result[name].item() for name in save)))
-            #print(i,lr, result['loss'].item())
             if i==0:
                 init_loss = result[train_on].item()
-            #if result[train_on].item()>1e6*init_loss:
+            # if result[train_on].item()>1e6*init_loss:
             #    break
         values = np.array(values)
         print('min value ', values[np.nanargmin(values[:,1])])
@@ -397,7 +392,7 @@ class Trainer():
             self.best_epoch = epoch
             self.best = valid_loss
 
-    def load_checkpoint(self, checkpoint_folder, checkpoint_name ='best', load_optimiser=True):
+    def load_checkpoint(self, checkpoint_name='best', checkpoint_folder='', load_optimiser=True):
         '''
         Load checkpoint. 
 
@@ -417,7 +412,7 @@ class Trainer():
             _name = f'{checkpoint_folder}/last.ckpt'
         else:
             _name = f'{checkpoint_folder}/{checkpoint_name}'
-        checkpoint = torch.load(_name, map_location = self.device)
+        checkpoint = torch.load(_name, map_location=self.device)
         if not hasattr(self, 'autoencoder'):
             raise NotImplementedError('self.autoencoder does not exist, I have no way of knowing what network you want to load checkoint weights into yet, please set the network first')
 
@@ -428,6 +423,7 @@ class Trainer():
             self.optimiser.load_state_dict(checkpoint['optimizer_state_dict'])
         epoch = checkpoint['epoch']
         self.epoch = epoch+1
+
 
 if __name__=='__main__':
     pass

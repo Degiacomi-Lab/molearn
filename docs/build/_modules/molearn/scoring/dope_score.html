@@ -1,20 +1,15 @@
-
 <!DOCTYPE html>
 
-<html lang="en">
+<html lang="en" data-content_root="../../../">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>molearn.scoring.dope_score &#8212; molearn 1.3.0 documentation</title>
-    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/classic.css" />
-    
-    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
-    <script src="../../../_static/jquery.js"></script>
-    <script src="../../../_static/underscore.js"></script>
-    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
-    <script src="../../../_static/doctools.js"></script>
-    
+    <title>molearn.scoring.dope_score &#8212; molearn 2.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinxdoc.css?v=d59dc883" />
+    <script src="../../../_static/documentation_options.js?v=f5cff4aa"></script>
+    <script src="../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
   </head><body>
@@ -27,7 +22,7 @@
         <li class="right" >
           <a href="../../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../../index.html">molearn 1.3.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">molearn 2.0.1 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">molearn.scoring.dope_score</a></li> 
       </ul>
@@ -42,21 +37,34 @@
 <span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
 
-<span class="kn">from</span> <span class="nn">..utils</span> <span class="kn">import</span> <span class="n">ShutUp</span><span class="p">,</span> <span class="n">cpu_count</span><span class="p">,</span> <span class="n">random_string</span>
+<span class="kn">from</span> <span class="nn">..utils</span> <span class="kn">import</span> <span class="n">ShutUp</span><span class="p">,</span> <span class="n">random_string</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">modeller</span>
+    <span class="kn">from</span> <span class="nn">modeller</span> <span class="kn">import</span> <span class="o">*</span>
+    <span class="kn">from</span> <span class="nn">modeller.scripts</span> <span class="kn">import</span> <span class="n">complete_pdb</span>
+    <span class="kn">from</span> <span class="nn">modeller.optimizers</span> <span class="kn">import</span> <span class="n">ConjugateGradients</span>
+<span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Error importing modeller: &#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
 
-<span class="kn">import</span> <span class="nn">modeller</span>
-<span class="kn">from</span> <span class="nn">modeller</span> <span class="kn">import</span> <span class="o">*</span>
-<span class="kn">from</span> <span class="nn">modeller.scripts</span> <span class="kn">import</span> <span class="n">complete_pdb</span>
-<span class="kn">from</span> <span class="nn">modeller.optimizers</span> <span class="kn">import</span> <span class="n">ConjugateGradients</span>
-
-<span class="kn">from</span> <span class="nn">multiprocessing</span> <span class="kn">import</span> <span class="n">Pool</span><span class="p">,</span> <span class="n">Event</span><span class="p">,</span> <span class="n">get_context</span>
+<span class="kn">from</span> <span class="nn">multiprocessing</span> <span class="kn">import</span> <span class="n">get_context</span>
 <span class="kn">import</span> <span class="nn">os</span>
     
+
+<div class="viewcode-block" id="DOPE_Score">
+<a class="viewcode-back" href="../../../scoring.html#molearn.scoring.DOPE_Score">[docs]</a>
 <span class="k">class</span> <span class="nc">DOPE_Score</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    This class contains methods to calculate dope without saving to save and load PDB files for every structure. Atoms in a biobox coordinate tensor are mapped to the coordinates in the modeller model directly.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">atom_map</span> <span class="o">=</span> <span class="p">{(</span><span class="s1">&#39;ILE&#39;</span><span class="p">,</span> <span class="s1">&#39;CD1&#39;</span><span class="p">):(</span><span class="s1">&#39;ILE&#39;</span><span class="p">,</span> <span class="s1">&#39;CD&#39;</span><span class="p">)}</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mol</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        :param biobox.Molecule mol: One example frame to gain access to the topology. Mol will also be used to save a temporary pdb file that will be reloaded in modeller to create the initial modeller Model.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
 
-        <span class="c1">#set residues names with protonated histidines back to generic HIS name (needed by DOPE score function)</span>
+        <span class="c1"># set residues names with protonated histidines back to generic HIS name (needed by DOPE score function)</span>
         <span class="n">testH</span> <span class="o">=</span> <span class="n">mol</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;resname&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
         <span class="n">testH</span><span class="p">[</span><span class="n">testH</span> <span class="o">==</span> <span class="s2">&quot;HIE&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;HIS&quot;</span>
         <span class="n">testH</span><span class="p">[</span><span class="n">testH</span> <span class="o">==</span> <span class="s2">&quot;HID&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;HIS&quot;</span>
@@ -65,10 +73,9 @@
 
         <span class="n">alternate_residue_names</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">CSS</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;CYX&#39;</span><span class="p">,))</span>
         <span class="n">atoms</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">_mol</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">()))</span>
-        <span class="c1">#tmp_file = f&#39;tmp{np.random.randint(1e10)}.pdb&#39;</span>
         <span class="n">tmp_file</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;tmp</span><span class="si">{</span><span class="n">random_string</span><span class="p">()</span><span class="si">}</span><span class="s1">.pdb&#39;</span>
-        <span class="n">_mol</span><span class="o">.</span><span class="n">write_pdb</span><span class="p">(</span><span class="n">tmp_file</span><span class="p">,</span> <span class="n">conformations</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-        <span class="n">log</span><span class="o">.</span><span class="n">level</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">_mol</span><span class="o">.</span><span class="n">write_pdb</span><span class="p">(</span><span class="n">tmp_file</span><span class="p">,</span> <span class="n">conformations</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">split_struc</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">log</span><span class="o">.</span><span class="n">level</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
         <span class="n">env</span> <span class="o">=</span> <span class="n">environ</span><span class="p">()</span>
         <span class="n">env</span><span class="o">.</span><span class="n">libs</span><span class="o">.</span><span class="n">topology</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">file</span><span class="o">=</span><span class="s1">&#39;$(LIB)/top_heav.lib&#39;</span><span class="p">)</span>
         <span class="n">env</span><span class="o">.</span><span class="n">libs</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">file</span><span class="o">=</span><span class="s1">&#39;$(LIB)/par.lib&#39;</span><span class="p">)</span>
@@ -78,7 +85,7 @@
         <span class="n">atom_residue</span> <span class="o">=</span> <span class="n">_mol</span><span class="o">.</span><span class="n">get_data</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="s1">&#39;resname&#39;</span><span class="p">,</span> <span class="s1">&#39;resid&#39;</span><span class="p">])</span>
         <span class="n">atom_order</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">first_index</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fast_ss</span><span class="p">))</span><span class="o">.</span><span class="n">residue</span><span class="o">.</span><span class="n">index</span>
-        <span class="n">offset</span> <span class="o">=</span> <span class="n">atom_residue</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span><span class="o">-</span><span class="n">first_index</span>
+        <span class="n">offset</span> <span class="o">=</span> <span class="n">atom_residue</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span><span class="o">-</span><span class="n">first_index</span>
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fast_ss</span><span class="p">):</span>
             <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">atom_residue</span><span class="p">):</span>
                 <span class="k">for</span> <span class="n">j_residue_name</span> <span class="ow">in</span> <span class="n">alternate_residue_names</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">j</span><span class="o">.</span><span class="n">residue</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="p">(</span><span class="n">j</span><span class="o">.</span><span class="n">residue</span><span class="o">.</span><span class="n">name</span><span class="p">,)):</span>
@@ -87,16 +94,36 @@
                     <span class="k">else</span><span class="p">:</span>
                         <span class="n">where_arg</span> <span class="o">=</span> <span class="p">(</span><span class="n">atom_residue</span><span class="o">==</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">j</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">j_residue_name</span><span class="p">,</span> <span class="n">j</span><span class="o">.</span><span class="n">residue</span><span class="o">.</span><span class="n">index</span><span class="o">+</span><span class="n">offset</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">object</span><span class="p">)))</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
                         <span class="n">where</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">where_arg</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">where</span><span class="p">)</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
+                            <span class="k">if</span> <span class="p">(</span><span class="n">j_residue_name</span><span class="p">,</span> <span class="n">j</span><span class="o">.</span><span class="n">name</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">atom_map</span><span class="p">:</span>
+                                <span class="n">alt_residue_name</span><span class="p">,</span> <span class="n">alt_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">atom_map</span><span class="p">[(</span><span class="n">j_residue_name</span><span class="p">,</span> <span class="n">j</span><span class="o">.</span><span class="n">name</span><span class="p">)]</span>
+                                <span class="n">where_arg</span> <span class="o">=</span> <span class="p">(</span><span class="n">atom_residue</span><span class="o">==</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">alt_name</span><span class="p">,</span> <span class="n">alt_residue_name</span><span class="p">,</span> <span class="n">j</span><span class="o">.</span><span class="n">residue</span><span class="o">.</span><span class="n">index</span><span class="o">+</span><span class="n">offset</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">object</span><span class="p">)))</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+                                <span class="n">where</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">where_arg</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                            <span class="k">else</span><span class="p">:</span>
+                                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Cant find </span><span class="si">{</span><span class="n">j</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1"> in the atoms </span><span class="si">{</span><span class="n">atom_residue</span><span class="p">[</span><span class="n">atom_residue</span><span class="p">[:,</span><span class="mi">2</span><span class="p">]</span><span class="o">==</span><span class="n">j</span><span class="o">.</span><span class="n">residue</span><span class="o">.</span><span class="n">index</span><span class="o">+</span><span class="n">offset</span><span class="p">]</span><span class="si">}</span><span class="s1"> try adding a mapping to DOPE_Score.atom_map&#39;</span><span class="p">)</span>
                         <span class="n">atom_order</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">where</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">fast_atom_order</span> <span class="o">=</span> <span class="n">atom_order</span>
         <span class="c1"># check fast dope atoms</span>
-        <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">j</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fast_ss</span><span class="p">):</span>
+        <span class="n">reverse_map</span> <span class="o">=</span> <span class="p">{</span><span class="n">value</span><span class="p">:</span><span class="n">key</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">atom_map</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fast_ss</span><span class="p">):</span>
             <span class="k">if</span> <span class="n">i</span><span class="o">&lt;</span><span class="nb">len</span><span class="p">(</span><span class="n">atom_residue</span><span class="p">):</span>
-                <span class="k">assert</span> <span class="n">_mol</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">][</span><span class="n">atom_order</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span><span class="o">==</span><span class="n">j</span><span class="o">.</span><span class="n">name</span>
+                <span class="k">assert</span> <span class="n">_mol</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">][</span><span class="n">atom_order</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span><span class="o">==</span><span class="n">j</span><span class="o">.</span><span class="n">name</span> <span class="ow">or</span> <span class="n">reverse_map</span><span class="p">[(</span><span class="n">_mol</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;resname&#39;</span><span class="p">][</span><span class="n">atom_order</span><span class="p">[</span><span class="n">i</span><span class="p">]],</span> <span class="n">_mol</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">][</span><span class="n">atom_order</span><span class="p">[</span><span class="n">i</span><span class="p">]])][</span><span class="mi">1</span><span class="p">]</span><span class="o">==</span><span class="n">j</span><span class="o">.</span><span class="n">name</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cg</span> <span class="o">=</span> <span class="n">ConjugateGradients</span><span class="p">()</span>
         <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">tmp_file</span><span class="p">)</span>
 
+<div class="viewcode-block" id="DOPE_Score.get_dope">
+<a class="viewcode-back" href="../../../scoring.html#molearn.scoring.DOPE_Score.get_dope">[docs]</a>
     <span class="k">def</span> <span class="nf">get_dope</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">frame</span><span class="p">,</span> <span class="n">refine</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Get the dope score. Injects coordinates into modeller and uses `mdl.build(build_method=&#39;INTERNAL_COORDINATES&#39;, initialize_xyz=False)` to reconstruct missing atoms.</span>
+<span class="sd">        If a error is thrown by modeller or at any stage, we just return a fixed large value of 1e10.</span>
+<span class="sd">        </span>
+<span class="sd">        :param numpy.ndarray frame: shape [N, 3]</span>
+<span class="sd">        :param bool refine: (default: False) If True, relax the structures using a maximum of 50 steps of ConjugateGradient descent</span>
+<span class="sd">        :returns: Dope score as calculated by modeller. If error is thrown we just simply return 1e10.</span>
+<span class="sd">        :rtype: float</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        
         <span class="c1"># expect coords to be shape [N, 3] use .cpu().numpy().copy() before passing here and make sure it is scaled correctly</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">frame</span> <span class="o">=</span> <span class="n">frame</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
@@ -105,21 +132,37 @@
                 <span class="k">if</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="o">&lt;</span><span class="n">frame</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
                     <span class="n">j</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">j</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">j</span><span class="o">.</span><span class="n">z</span> <span class="o">=</span> <span class="n">frame</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">fast_atom_order</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="p">:]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">fast_mdl</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="n">build_method</span><span class="o">=</span><span class="s1">&#39;INTERNAL_COORDINATES&#39;</span><span class="p">,</span> <span class="n">initialize_xyz</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-            <span class="k">with</span> <span class="n">ShutUp</span><span class="p">():</span>
-                <span class="n">dope_unrefined</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fast_fs</span><span class="o">.</span><span class="n">assess_dope</span><span class="p">()</span>
-                <span class="k">if</span> <span class="n">refine</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">refine</span> <span class="o">==</span> <span class="s1">&#39;both&#39;</span><span class="p">:</span>
+                <span class="k">with</span> <span class="n">ShutUp</span><span class="p">():</span>
+                    <span class="n">dope_unrefined</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fast_fs</span><span class="o">.</span><span class="n">assess_dope</span><span class="p">()</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">cg</span><span class="o">.</span><span class="n">optimize</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fast_fs</span><span class="p">,</span> <span class="n">max_iterations</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
                     <span class="n">dope_refined</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fast_fs</span><span class="o">.</span><span class="n">assess_dope</span><span class="p">()</span>
-            <span class="k">if</span> <span class="n">refine</span><span class="p">:</span>
-                <span class="k">return</span> <span class="n">dope_unrefined</span><span class="p">,</span> <span class="n">dope_refined</span>
-            <span class="k">return</span> <span class="n">dope_unrefined</span>
-        <span class="k">except</span><span class="p">:</span>
-            <span class="k">return</span> <span class="mf">1e10</span><span class="p">,</span> <span class="mf">1e10</span> <span class="k">if</span> <span class="n">refine</span> <span class="k">else</span> <span class="mf">1e10</span>
+                    <span class="k">return</span> <span class="n">dope_unrefined</span><span class="p">,</span> <span class="n">dope_refined</span>
+            <span class="k">with</span> <span class="n">ShutUp</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">refine</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">cg</span><span class="o">.</span><span class="n">optimize</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fast_fs</span><span class="p">,</span> <span class="n">max_iterations</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+                    
+                <span class="n">dope_score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fast_fs</span><span class="o">.</span><span class="n">assess_dope</span><span class="p">()</span>
+
+            <span class="k">return</span> <span class="n">dope_score</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mf">1e10</span></div>
+
         
+<div class="viewcode-block" id="DOPE_Score.get_all_dope">
+<a class="viewcode-back" href="../../../scoring.html#molearn.scoring.DOPE_Score.get_all_dope">[docs]</a>
     <span class="k">def</span> <span class="nf">get_all_dope</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">refine</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Expect a array of frames. return array of DOPE score value.</span>
+<span class="sd">        </span>
+<span class="sd">        :param numpy.ndarray coords: shape [B, N, 3]</span>
+<span class="sd">        :param bool refine: (default: False) If True, relax the structures using a maximum of 50 steps of Conjugate Gradient descent</span>
+<span class="sd">        :returns: float array shape [B]</span>
+<span class="sd">        :rtype: np.ndarray</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        
         <span class="c1"># expect coords to be shape [B, N, 3] use .cpu().numpy().copy() before passing here and make sure it is scaled correctly</span>
-        <span class="n">dope_scores_unrefined</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="n">dope_scores_refined</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">dope_scores</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">frame</span> <span class="ow">in</span> <span class="n">coords</span><span class="p">:</span>
             <span class="n">frame</span> <span class="o">=</span> <span class="n">frame</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">fast_fs</span><span class="o">.</span><span class="n">unbuild</span><span class="p">()</span>
@@ -127,54 +170,85 @@
                 <span class="k">if</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="o">&lt;</span><span class="n">frame</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
                     <span class="n">j</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">j</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">j</span><span class="o">.</span><span class="n">z</span> <span class="o">=</span> <span class="n">frame</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">fast_atom_order</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="p">:]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">fast_mdl</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="n">build_method</span><span class="o">=</span><span class="s1">&#39;INTERNAL_COORDINATES&#39;</span><span class="p">,</span> <span class="n">initialize_xyz</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-            <span class="n">dope_scores_unrefined</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fast_fs</span><span class="o">.</span><span class="n">assess_dope</span><span class="p">())</span>
+
             <span class="k">if</span> <span class="n">refine</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">cg</span><span class="o">.</span><span class="n">optimize</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fast_fs</span><span class="p">,</span> <span class="n">max_iterations</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
-                <span class="n">dope_scores_refined</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fast_fs</span><span class="o">.</span><span class="n">assess_dope</span><span class="p">())</span>
-        <span class="k">if</span> <span class="n">refine</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">dope_scores_unrefined</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">dope_scores_refined</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">dope_scores_unrefined</span><span class="p">)</span>
+                
+            <span class="n">dope_scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fast_fs</span><span class="o">.</span><span class="n">assess_dope</span><span class="p">())</span>
+            
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">dope_scores</span><span class="p">)</span></div>
+</div>
 
-<div class="viewcode-block" id="set_global_score"><a class="viewcode-back" href="../../../scoring.html#molearn.scoring.dope_score.set_global_score">[docs]</a><span class="k">def</span> <span class="nf">set_global_score</span><span class="p">(</span><span class="n">score</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">):</span>
-    <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">    make score a global variable</span>
+
+
+<span class="k">def</span> <span class="nf">set_global_score</span><span class="p">(</span><span class="n">score</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Make score a global variable.</span>
+<span class="sd">    This is used when initializing a multiprocessing process.</span>
 <span class="sd">    &#39;&#39;&#39;</span>
+    
     <span class="k">global</span> <span class="n">worker_dope_score</span>
-    <span class="n">worker_dope_score</span> <span class="o">=</span> <span class="n">score</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span><span class="c1">#mol = mol, data_dir=data_dir, **kwargs)</span></div>
+    <span class="n">worker_dope_score</span> <span class="o">=</span> <span class="n">score</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>  <span class="c1"># mol = mol, data_dir=data_dir, **kwargs)</span>
 
-<div class="viewcode-block" id="process_dope"><a class="viewcode-back" href="../../../scoring.html#molearn.scoring.dope_score.process_dope">[docs]</a><span class="k">def</span> <span class="nf">process_dope</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">):</span>
-    <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">    dope worker</span>
+
+<span class="k">def</span> <span class="nf">process_dope</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Worker function for multiprocessing class</span>
 <span class="sd">    &#39;&#39;&#39;</span>
-    <span class="k">return</span> <span class="n">worker_dope_score</span><span class="o">.</span><span class="n">get_dope</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+    
+    <span class="k">return</span> <span class="n">worker_dope_score</span><span class="o">.</span><span class="n">get_dope</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
-<span class="k">class</span> <span class="nc">Parallel_DOPE_Score</span><span class="p">():</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mol</span><span class="p">,</span> <span class="n">processes</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Parallel_DOPE_Score">
+<a class="viewcode-back" href="../../../scoring.html#molearn.scoring.Parallel_DOPE_Score">[docs]</a>
+<span class="k">class</span> <span class="nc">Parallel_DOPE_Score</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    a multiprocessing class to get modeller DOPE scores.</span>
+<span class="sd">    A typical use case would looke like::</span>
+
+<span class="sd">      score_class = Parallel_DOPE_Score(mol, **kwargs)</span>
+<span class="sd">      results = []</span>
+<span class="sd">      for frame in coordinates_array:</span>
+<span class="sd">          results.append(score_class.get_score(frame))</span>
+<span class="sd">      .... # DOPE will be calculated asynchronously in background</span>
+<span class="sd">      #to retrieve the results</span>
+<span class="sd">      results = np.array([r.get() for r in results])</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mol</span><span class="p">,</span> <span class="n">processes</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="s1">&#39;spawn&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        :param biobox.Molecule mol: biobox molecule containing one example frame of the protein to be analysed. This will be passed to DOPE_Score class instances in each thread.</span>
+<span class="sd">        :param int processes: (default: -1) Number of processes argument to pass to multiprocessing.pool. This controls the number of threads created.</span>
+<span class="sd">        :param \*\*kwargs: additional kwargs will be passed multiprocesing.pool during initialisation.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
         
         <span class="c1"># set a number of processes as user desires, capped on number of CPUs</span>
         <span class="k">if</span> <span class="n">processes</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">processes</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">processes</span><span class="p">,</span> <span class="n">cpu_count</span><span class="p">())</span>
+            <span class="n">processes</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">processes</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">cpu_count</span><span class="p">())</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">processes</span> <span class="o">=</span> <span class="n">cpu_count</span><span class="p">()</span>
-            
+            <span class="n">processes</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">cpu_count</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">processes</span> <span class="o">=</span> <span class="n">processes</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mol</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">mol</span><span class="p">)</span>
         <span class="n">score</span> <span class="o">=</span> <span class="n">DOPE_Score</span>
-        <span class="n">ctx</span> <span class="o">=</span> <span class="n">get_context</span><span class="p">(</span><span class="s1">&#39;spawn&#39;</span><span class="p">)</span>
+        <span class="n">ctx</span> <span class="o">=</span> <span class="n">get_context</span><span class="p">(</span><span class="n">context</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pool</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">Pool</span><span class="p">(</span><span class="n">processes</span><span class="o">=</span><span class="n">processes</span><span class="p">,</span> <span class="n">initializer</span><span class="o">=</span><span class="n">set_global_score</span><span class="p">,</span>
                          <span class="n">initargs</span><span class="o">=</span><span class="p">(</span><span class="n">score</span><span class="p">,</span> <span class="nb">dict</span><span class="p">(</span><span class="n">mol</span><span class="o">=</span><span class="n">mol</span><span class="p">)),</span>
-                         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-                         <span class="p">)</span>
+                         <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">process_function</span> <span class="o">=</span> <span class="n">process_dope</span>
 
     <span class="k">def</span> <span class="nf">__reduce__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">,</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mol</span><span class="p">,))</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">,</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mol</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">processes</span><span class="p">))</span>
 
+<div class="viewcode-block" id="Parallel_DOPE_Score.get_score">
+<a class="viewcode-back" href="../../../scoring.html#molearn.scoring.Parallel_DOPE_Score.get_score">[docs]</a>
     <span class="k">def</span> <span class="nf">get_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        :param coords: # shape (1, N, 3) numpy array</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        :param np.array coords: # shape (N, 3) numpy array</span>
 <span class="sd">        &#39;&#39;&#39;</span>
-        <span class="c1">#is copy necessary?</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pool</span><span class="o">.</span><span class="n">apply_async</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">process_function</span><span class="p">,</span> <span class="p">(</span><span class="n">coords</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">kwargs</span><span class="p">))</span>
+        
+        <span class="c1"># is copy necessary?</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pool</span><span class="o">.</span><span class="n">apply_async</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">process_function</span><span class="p">,</span> <span class="p">(</span><span class="n">coords</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">kwargs</span><span class="p">))</span></div>
+</div>
 
 </pre></div>
 
@@ -207,14 +281,14 @@
         <li class="right" >
           <a href="../../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../../index.html">molearn 1.3.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">molearn 2.0.1 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">molearn.scoring.dope_score</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2021, V. K. Ramaswamy, S. C. Musson, M. T. Degiacomi.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.0.2.
+    &#169; Copyright 2021, S. C. Musson, M. T. Degiacomi.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.5.
     </div>
   </body>
 </html>

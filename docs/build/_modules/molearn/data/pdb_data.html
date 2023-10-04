@@ -1,20 +1,15 @@
-
 <!DOCTYPE html>
 
-<html lang="en">
+<html lang="en" data-content_root="../../../">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>molearn.data.pdb_data &#8212; molearn 1.3.0 documentation</title>
-    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/classic.css" />
-    
-    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
-    <script src="../../../_static/jquery.js"></script>
-    <script src="../../../_static/underscore.js"></script>
-    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
-    <script src="../../../_static/doctools.js"></script>
-    
+    <title>molearn.data.pdb_data &#8212; molearn 2.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinxdoc.css?v=d59dc883" />
+    <script src="../../../_static/documentation_options.js?v=f5cff4aa"></script>
+    <script src="../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
   </head><body>
@@ -27,7 +22,7 @@
         <li class="right" >
           <a href="../../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../../index.html">molearn 1.3.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">molearn 2.0.1 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">molearn.data.pdb_data</a></li> 
       </ul>
@@ -43,16 +38,19 @@
 <span class="kn">import</span> <span class="nn">torch</span>
 <span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
 <span class="kn">import</span> <span class="nn">biobox</span> <span class="k">as</span> <span class="nn">bb</span>
-<span class="c1">#import os</span>
 
-<div class="viewcode-block" id="PDBData"><a class="viewcode-back" href="../../../data.html#molearn.data.PDBData">[docs]</a><span class="k">class</span> <span class="nc">PDBData</span><span class="p">:</span>
+
+<div class="viewcode-block" id="PDBData">
+<a class="viewcode-back" href="../../../data.html#molearn.data.PDBData">[docs]</a>
+<span class="k">class</span> <span class="nc">PDBData</span><span class="p">:</span>
     
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">fix_terminal</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">atoms</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        Create PDBData object. </span>
-<span class="sd">        :param filename: str or list of strings, self.import_pdb(file) is called on each</span>
-<span class="sd">        :param fix_terminal: default False, if true calles self.fix_terminal after import, before atomselect</span>
-<span class="sd">        :param atoms: calls self.atomselect(atoms=atoms)</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fix_terminal</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">atoms</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Create object enabling the manipulation of multi-PDB files into a dataset suitable for training.</span>
+<span class="sd">        </span>
+<span class="sd">        :param filename: None, str or list of strings. If not None, :func:`import_pdb &lt;molearn.data.PDBData.import_pdb&gt;` is called on each filename provided.</span>
+<span class="sd">        :param fix_terminal: if True, calls :func:`fix_terminal &lt;molearn.data.PDBData.fix_terminal&gt;` after import, and before atomselect</span>
+<span class="sd">        :param atoms: if not None, calls :func:`atomselect &lt;molearn.data.PDBData.atomselect&gt;`</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">import_pdb</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
@@ -63,10 +61,12 @@
         <span class="k">if</span> <span class="n">fix_terminal</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">fix_terminal</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">atoms</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">atomselect</span><span class="p">(</span><span class="n">atoms</span> <span class="o">=</span> <span class="n">atoms</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">atomselect</span><span class="p">(</span><span class="n">atoms</span><span class="o">=</span><span class="n">atoms</span><span class="p">)</span>
 
-<div class="viewcode-block" id="PDBData.import_pdb"><a class="viewcode-back" href="../../../data.html#molearn.data.PDBData.import_pdb">[docs]</a>    <span class="k">def</span> <span class="nf">import_pdb</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<div class="viewcode-block" id="PDBData.import_pdb">
+<a class="viewcode-back" href="../../../data.html#molearn.data.PDBData.import_pdb">[docs]</a>
+    <span class="k">def</span> <span class="nf">import_pdb</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Load multiPDB file.</span>
 <span class="sd">        This command can be called multiple times to load many datasets, if these feature the same number of atoms</span>
 <span class="sd">        </span>
@@ -79,8 +79,11 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="PDBData.fix_terminal"><a class="viewcode-back" href="../../../data.html#molearn.data.PDBData.fix_terminal">[docs]</a>    <span class="k">def</span> <span class="nf">fix_terminal</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="PDBData.fix_terminal">
+<a class="viewcode-back" href="../../../data.html#molearn.data.PDBData.fix_terminal">[docs]</a>
+    <span class="k">def</span> <span class="nf">fix_terminal</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Rename OT1 N-terminal Oxygen to O if terminal oxygens are named OT1 and OT2 otherwise no oxygen will be selected during an atomselect using atoms = [&#39;CA&#39;, &#39;C&#39;,&#39;N&#39;,&#39;O&#39;,&#39;CB&#39;]. No template will be found for terminal residue in openmm_loss. Alternative solution is to use atoms = [&#39;CA&#39;, &#39;C&#39;, &#39;N&#39;, &#39;O&#39;, &#39;CB&#39;, &#39;OT1&#39;]. instead.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">ot1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_mol</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="o">==</span><span class="s1">&#39;OT1&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
@@ -88,10 +91,13 @@
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ot1</span><span class="p">)</span><span class="o">!=</span><span class="mi">0</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">ot2</span><span class="p">)</span><span class="o">!=</span><span class="mi">0</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_mol</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">ot1</span><span class="p">,</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="o">=</span><span class="s1">&#39;O&#39;</span></div>
 
-<div class="viewcode-block" id="PDBData.atomselect"><a class="viewcode-back" href="../../../data.html#molearn.data.PDBData.atomselect">[docs]</a>    <span class="k">def</span> <span class="nf">atomselect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">atoms</span><span class="p">,</span> <span class="n">ignore_atoms</span><span class="o">=</span><span class="p">[]):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        From imported PDBs, cut out only atoms of interest.</span>
-<span class="sd">        :func:`import_pdb &lt;molearn.data.PDBData.import_pdb&gt;` must have been called at least once.</span>
+
+<div class="viewcode-block" id="PDBData.atomselect">
+<a class="viewcode-back" href="../../../data.html#molearn.data.PDBData.atomselect">[docs]</a>
+    <span class="k">def</span> <span class="nf">atomselect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">atoms</span><span class="p">,</span> <span class="n">ignore_atoms</span><span class="o">=</span><span class="p">[]):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        From all imported PDBs, extract only atoms of interest.</span>
+<span class="sd">        :func:`import_pdb &lt;molearn.data.PDBData.import_pdb&gt;` must have been called at least once, either at class instantiation or as a separate call.</span>
 <span class="sd">        </span>
 <span class="sd">        :param atoms: list of atom names, or &quot;no_hydrogen&quot;.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -101,15 +107,19 @@
                 <span class="k">if</span> <span class="n">to_remove</span> <span class="ow">in</span> <span class="n">_atoms</span><span class="p">:</span>
                     <span class="n">_atoms</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">to_remove</span><span class="p">)</span>
         <span class="k">elif</span> <span class="n">atoms</span> <span class="o">==</span> <span class="s2">&quot;no_hydrogen&quot;</span><span class="p">:</span>
-            <span class="n">_atoms</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">atoms</span> <span class="c1">#list(np.unique(self._mol.data[&quot;name&quot;].values))    #all the atoms</span>
+            <span class="n">_atoms</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">atoms</span>  <span class="c1"># list(np.unique(self._mol.data[&quot;name&quot;].values))    #all the atoms</span>
             <span class="n">_plain_atoms</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">_atoms</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">a</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mol</span><span class="o">.</span><span class="n">knowledge</span><span class="p">[</span><span class="s1">&#39;atomtype&#39;</span><span class="p">]:</span>
                     <span class="n">_plain_atoms</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_mol</span><span class="o">.</span><span class="n">knowledge</span><span class="p">[</span><span class="s1">&#39;atomtype&#39;</span><span class="p">][</span><span class="n">a</span><span class="p">])</span>
                 <span class="k">elif</span> <span class="n">a</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mol</span><span class="o">.</span><span class="n">knowledge</span><span class="p">[</span><span class="s1">&#39;atomtype&#39;</span><span class="p">]:</span>
                     <span class="n">_plain_atoms</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_mol</span><span class="o">.</span><span class="n">knowledge</span><span class="p">[</span><span class="s1">&#39;atomtype&#39;</span><span class="p">][</span><span class="n">a</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]])</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Could not find </span><span class="si">{</span><span class="n">a</span><span class="si">}</span><span class="s1">. I am assuing you meant </span><span class="si">{</span><span class="n">a</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s1"> instead.&#39;</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">a</span><span class="p">[:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mol</span><span class="o">.</span><span class="n">knowledge</span><span class="p">[</span><span class="s1">&#39;atomtype&#39;</span><span class="p">]:</span>
+                    <span class="n">_plain_atoms</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_mol</span><span class="o">.</span><span class="n">knowledge</span><span class="p">[</span><span class="s1">&#39;atomtype&#39;</span><span class="p">][</span><span class="n">a</span><span class="p">[:</span><span class="o">-</span><span class="mi">2</span><span class="p">]])</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Could not find </span><span class="si">{</span><span class="n">a</span><span class="si">}</span><span class="s1">. I am assuming you meant </span><span class="si">{</span><span class="n">a</span><span class="p">[:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span><span class="si">}</span><span class="s1"> instead.&#39;</span><span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="n">_plain_atoms</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_mol</span><span class="o">.</span><span class="n">knowledge</span><span class="p">[</span><span class="s1">&#39;atomtype&#39;</span><span class="p">][</span><span class="n">a</span><span class="p">])</span> <span class="c1"># if above failed just raise the keyerror</span>
+                    <span class="n">_plain_atoms</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_mol</span><span class="o">.</span><span class="n">knowledge</span><span class="p">[</span><span class="s1">&#39;atomtype&#39;</span><span class="p">][</span><span class="n">a</span><span class="p">])</span>  <span class="c1"># if above failed just raise the keyerror</span>
             <span class="n">_atoms</span> <span class="o">=</span> <span class="p">[</span><span class="n">atom</span> <span class="k">for</span> <span class="n">atom</span><span class="p">,</span> <span class="n">element</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">_atoms</span><span class="p">,</span> <span class="n">_plain_atoms</span><span class="p">)</span> <span class="k">if</span> <span class="n">element</span> <span class="o">!=</span> <span class="s1">&#39;H&#39;</span><span class="p">]</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">_atoms</span> <span class="o">=</span> <span class="p">[</span><span class="n">_a</span> <span class="k">for</span> <span class="n">_a</span> <span class="ow">in</span> <span class="n">atoms</span> <span class="k">if</span> <span class="n">_a</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ignore_atoms</span><span class="p">]</span>
@@ -117,8 +127,11 @@
         <span class="n">_</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_idxs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mol</span><span class="o">.</span><span class="n">atomselect</span><span class="p">(</span><span class="s2">&quot;*&quot;</span><span class="p">,</span> <span class="s2">&quot;*&quot;</span><span class="p">,</span> <span class="n">_atoms</span><span class="p">,</span> <span class="n">get_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_mol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mol</span><span class="o">.</span><span class="n">get_subset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_idxs</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="PDBData.prepare_dataset"><a class="viewcode-back" href="../../../data.html#molearn.data.PDBData.prepare_dataset">[docs]</a>    <span class="k">def</span> <span class="nf">prepare_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="PDBData.prepare_dataset">
+<a class="viewcode-back" href="../../../data.html#molearn.data.PDBData.prepare_dataset">[docs]</a>
+    <span class="k">def</span> <span class="nf">prepare_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Once all datasets have been loaded, normalise data and convert into `torch.Tensor` (ready for training)</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;dataset&#39;</span><span class="p">):</span>
@@ -136,8 +149,11 @@
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Dataset.shape: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;mean: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mean</span><span class="p">)</span><span class="si">}</span><span class="s1">, std: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">std</span><span class="p">)</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="PDBData.get_atominfo"><a class="viewcode-back" href="../../../data.html#molearn.data.PDBData.get_atominfo">[docs]</a>    <span class="k">def</span> <span class="nf">get_atominfo</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="PDBData.get_atominfo">
+<a class="viewcode-back" href="../../../data.html#molearn.data.PDBData.get_atominfo">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_atominfo</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        generate list of all atoms in dataset, where every line contains [atom name, residue name, resid]</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;atominfo&#39;</span><span class="p">):</span>
@@ -145,8 +161,11 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">atominfo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mol</span><span class="o">.</span><span class="n">get_data</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="s1">&#39;resname&#39;</span><span class="p">,</span> <span class="s1">&#39;resid&#39;</span><span class="p">])</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">atominfo</span></div>
 
-<div class="viewcode-block" id="PDBData.frame"><a class="viewcode-back" href="../../../data.html#molearn.data.PDBData.frame">[docs]</a>    <span class="k">def</span> <span class="nf">frame</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="PDBData.frame">
+<a class="viewcode-back" href="../../../data.html#molearn.data.PDBData.frame">[docs]</a>
+    <span class="k">def</span> <span class="nf">frame</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        return `biobox.Molecule` object with loaded data</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">M</span> <span class="o">=</span> <span class="n">bb</span><span class="o">.</span><span class="n">Molecule</span><span class="p">()</span>
@@ -158,8 +177,11 @@
         <span class="n">M</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s1">&#39;center&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">M</span><span class="o">.</span><span class="n">get_center</span><span class="p">()</span>
         <span class="k">return</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">M</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="PDBData.get_dataloader"><a class="viewcode-back" href="../../../data.html#molearn.data.PDBData.get_dataloader">[docs]</a>    <span class="k">def</span> <span class="nf">get_dataloader</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">,</span> <span class="n">validation_split</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">pin_memory</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dataset_sample_size</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">manual_seed</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">sampler</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="PDBData.get_dataloader">
+<a class="viewcode-back" href="../../../data.html#molearn.data.PDBData.get_dataloader">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_dataloader</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">,</span> <span class="n">validation_split</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">pin_memory</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dataset_sample_size</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">manual_seed</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">sampler</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        :param batch_size:</span>
 <span class="sd">        :param validation_split:</span>
 <span class="sd">        :param pin_memory:</span>
@@ -184,19 +206,22 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">train_dataloader</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">DataLoader</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">train_dataset</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">pin_memory</span><span class="o">=</span><span class="n">pin_memory</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">valid_dataloader</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">DataLoader</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">valid_dataset</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">pin_memory</span><span class="o">=</span><span class="n">pin_memory</span><span class="p">,</span><span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_dataloader</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">valid_dataloader</span></div>
+
     
-<div class="viewcode-block" id="PDBData.split"><a class="viewcode-back" href="../../../data.html#molearn.data.PDBData.split">[docs]</a>    <span class="k">def</span> <span class="nf">split</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<div class="viewcode-block" id="PDBData.split">
+<a class="viewcode-back" href="../../../data.html#molearn.data.PDBData.split">[docs]</a>
+    <span class="k">def</span> <span class="nf">split</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Split :func:`PDBData &lt;molearn.data.PDBData&gt;` into two other :func:`PDBData &lt;molearn.data.PDBData&gt;` objects corresponding to train and valid sets.</span>
 <span class="sd">        </span>
 <span class="sd">        :param manual_seed: manual seed used to split dataset</span>
-<span class="sd">        :param validation_split: default 0.1 ratio of valid to train structures data points</span>
-<span class="sd">        :param train_size: default None, specify number of train structures to be returned</span>
-<span class="sd">        :param valid_size: default None, speficy number of valid structures to be returned</span>
+<span class="sd">        :param validation_split: ratio of data to randomly assigned as validation</span>
+<span class="sd">        :param train_size: if not None, specify number of train structures to be returned</span>
+<span class="sd">        :param valid_size: if not None, speficy number of valid structures to be returned</span>
 <span class="sd">        :return: :func:`PDBData &lt;molearn.data.PDBData&gt;` object corresponding to train set</span>
 <span class="sd">        :return: :func:`PDBData &lt;molearn.data.PDBData&gt;` object corresponding to validation set</span>
 <span class="sd">        &#39;&#39;&#39;</span>
-        <span class="c1">#validation_split=0.1, valid_size=None, train_size=None, manual_seed = None):</span>
+        <span class="c1"># validation_split=0.1, valid_size=None, train_size=None, manual_seed = None):</span>
         <span class="n">train_dataset</span><span class="p">,</span> <span class="n">valid_dataset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_datasets</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="n">train</span> <span class="o">=</span> <span class="n">PDBData</span><span class="p">()</span>
         <span class="n">valid</span> <span class="o">=</span> <span class="n">PDBData</span><span class="p">()</span>
@@ -207,13 +232,18 @@
         <span class="n">valid</span><span class="o">.</span><span class="n">dataset</span> <span class="o">=</span> <span class="n">valid_dataset</span>
         <span class="k">return</span> <span class="n">train</span><span class="p">,</span> <span class="n">valid</span></div>
 
-<div class="viewcode-block" id="PDBData.get_datasets"><a class="viewcode-back" href="../../../data.html#molearn.data.PDBData.get_datasets">[docs]</a>    <span class="k">def</span> <span class="nf">get_datasets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">validation_split</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">valid_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">train_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">manual_seed</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        :param validation_split:</span>
-<span class="sd">        :param valid_size:</span>
-<span class="sd">        :param train_size:</span>
-<span class="sd">        :param manual_seed:</span>
-<span class="sd">        :Return: two `torch.Tensor`, for training and validation structures.</span>
+
+<div class="viewcode-block" id="PDBData.get_datasets">
+<a class="viewcode-back" href="../../../data.html#molearn.data.PDBData.get_datasets">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_datasets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">validation_split</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">valid_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">train_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">manual_seed</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Create a training and validation set from the imported data</span>
+<span class="sd">        </span>
+<span class="sd">        :param validation_split: ratio of data to randomly assigned as validation</span>
+<span class="sd">        :param valid_size: if not None, specify number of train structures to be returned</span>
+<span class="sd">        :param train_size: if not None, speficy number of valid structures to be returned</span>
+<span class="sd">        :param manual_seed: seed to initialise the random number generator used for splitting the dataset. Useful to replicate a specific split.</span>
+<span class="sd">        :return: two `torch.Tensor`, for training and validation structures.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;dataset&#39;</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">prepare_dataset</span><span class="p">()</span>
@@ -229,7 +259,7 @@
                 <span class="n">_valid_size</span> <span class="o">=</span> <span class="n">valid_size</span>
         <span class="kn">from</span> <span class="nn">torch</span> <span class="kn">import</span> <span class="n">randperm</span>
         <span class="k">if</span> <span class="n">manual_seed</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">indices</span> <span class="o">=</span> <span class="n">randperm</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="p">),</span> <span class="n">generator</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Generator</span><span class="p">()</span><span class="o">.</span><span class="n">manual_seed</span><span class="p">(</span><span class="n">manual_seed</span><span class="p">))</span>
+            <span class="n">indices</span> <span class="o">=</span> <span class="n">randperm</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="p">),</span> <span class="n">generator</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">Generator</span><span class="p">()</span><span class="o">.</span><span class="n">manual_seed</span><span class="p">(</span><span class="n">manual_seed</span><span class="p">))</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">indices</span> <span class="o">=</span> <span class="n">randperm</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="p">))</span>
 
@@ -238,16 +268,14 @@
         <span class="n">valid_dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="n">indices</span><span class="p">[</span><span class="n">_train_size</span><span class="p">:</span><span class="n">_train_size</span><span class="o">+</span><span class="n">_valid_size</span><span class="p">]]</span>
         <span class="k">return</span> <span class="n">train_dataset</span><span class="p">,</span> <span class="n">valid_dataset</span></div>
 
+
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">atoms</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_mol</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">))</span>    <span class="c1">#all the atoms</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_mol</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">))</span>  <span class="c1"># all the atoms</span>
     
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">mol</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">frame</span><span class="p">()</span></div>
-        
-
-
 
 </pre></div>
 
@@ -280,14 +308,14 @@
         <li class="right" >
           <a href="../../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../../index.html">molearn 1.3.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">molearn 2.0.1 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">molearn.data.pdb_data</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2021, V. K. Ramaswamy, S. C. Musson, M. T. Degiacomi.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.0.2.
+    &#169; Copyright 2021, S. C. Musson, M. T. Degiacomi.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.5.
     </div>
   </body>
 </html>

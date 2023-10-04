@@ -2,16 +2,17 @@ import numpy as np
 import torch
 from copy import deepcopy
 import biobox as bb
-#import os
+
 
 class PDBData:
     
-    def __init__(self, filename = None, fix_terminal = False, atoms = None, ):
+    def __init__(self, filename=None, fix_terminal=False, atoms=None):
         '''
-        Create PDBData object. 
-        :param filename: str or list of strings, self.import_pdb(file) is called on each
-        :param fix_terminal: default False, if true calles self.fix_terminal after import, before atomselect
-        :param atoms: calls self.atomselect(atoms=atoms)
+        Create object enabling the manipulation of multi-PDB files into a dataset suitable for training.
+        
+        :param filename: None, str or list of strings. If not None, :func:`import_pdb <molearn.data.PDBData.import_pdb>` is called on each filename provided.
+        :param fix_terminal: if True, calls :func:`fix_terminal <molearn.data.PDBData.fix_terminal>` after import, and before atomselect
+        :param atoms: if not None, calls :func:`atomselect <molearn.data.PDBData.atomselect>`
         '''
         if isinstance(filename, str):
             self.import_pdb(filename)
@@ -22,7 +23,7 @@ class PDBData:
         if fix_terminal:
             self.fix_terminal()
         if atoms is not None:
-            self.atomselect(atoms = atoms)
+            self.atomselect(atoms=atoms)
 
     def import_pdb(self, filename):
         '''
@@ -49,8 +50,8 @@ class PDBData:
 
     def atomselect(self, atoms, ignore_atoms=[]):
         '''
-        From imported PDBs, cut out only atoms of interest.
-        :func:`import_pdb <molearn.data.PDBData.import_pdb>` must have been called at least once.
+        From all imported PDBs, extract only atoms of interest.
+        :func:`import_pdb <molearn.data.PDBData.import_pdb>` must have been called at least once, either at class instantiation or as a separate call.
         
         :param atoms: list of atom names, or "no_hydrogen".
         '''
@@ -60,15 +61,19 @@ class PDBData:
                 if to_remove in _atoms:
                     _atoms.remove(to_remove)
         elif atoms == "no_hydrogen":
-            _atoms = self.atoms #list(np.unique(self._mol.data["name"].values))    #all the atoms
+            _atoms = self.atoms  # list(np.unique(self._mol.data["name"].values))    #all the atoms
             _plain_atoms = []
             for a in _atoms:
                 if a in self._mol.knowledge['atomtype']:
                     _plain_atoms.append(self._mol.knowledge['atomtype'][a])
                 elif a[:-1] in self._mol.knowledge['atomtype']:
                     _plain_atoms.append(self._mol.knowledge['atomtype'][a[:-1]])
+                    print(f'Could not find {a}. I am assuing you meant {a[:-1]} instead.')
+                elif a[:-2] in self._mol.knowledge['atomtype']:
+                    _plain_atoms.append(self._mol.knowledge['atomtype'][a[:-2]])
+                    print(f'Could not find {a}. I am assuming you meant {a[:-2]} instead.')
                 else:
-                    _plain_atoms.append(self._mol.knowledge['atomtype'][a]) # if above failed just raise the keyerror
+                    _plain_atoms.append(self._mol.knowledge['atomtype'][a])  # if above failed just raise the keyerror
             _atoms = [atom for atom, element in zip(_atoms, _plain_atoms) if element != 'H']
         else:
             _atoms = [_a for _a in atoms if _a not in ignore_atoms]
@@ -149,13 +154,13 @@ class PDBData:
         Split :func:`PDBData <molearn.data.PDBData>` into two other :func:`PDBData <molearn.data.PDBData>` objects corresponding to train and valid sets.
         
         :param manual_seed: manual seed used to split dataset
-        :param validation_split: default 0.1 ratio of valid to train structures data points
-        :param train_size: default None, specify number of train structures to be returned
-        :param valid_size: default None, speficy number of valid structures to be returned
+        :param validation_split: ratio of data to randomly assigned as validation
+        :param train_size: if not None, specify number of train structures to be returned
+        :param valid_size: if not None, speficy number of valid structures to be returned
         :return: :func:`PDBData <molearn.data.PDBData>` object corresponding to train set
         :return: :func:`PDBData <molearn.data.PDBData>` object corresponding to validation set
         '''
-        #validation_split=0.1, valid_size=None, train_size=None, manual_seed = None):
+        # validation_split=0.1, valid_size=None, train_size=None, manual_seed = None):
         train_dataset, valid_dataset = self.get_datasets(*args, **kwargs)
         train = PDBData()
         valid = PDBData()
@@ -166,13 +171,15 @@ class PDBData:
         valid.dataset = valid_dataset
         return train, valid
 
-    def get_datasets(self, validation_split=0.1, valid_size=None, train_size=None, manual_seed = None):
+    def get_datasets(self, validation_split=0.1, valid_size=None, train_size=None, manual_seed=None):
         '''
-        :param validation_split:
-        :param valid_size:
-        :param train_size:
-        :param manual_seed:
-        :Return: two `torch.Tensor`, for training and validation structures.
+        Create a training and validation set from the imported data
+        
+        :param validation_split: ratio of data to randomly assigned as validation
+        :param valid_size: if not None, specify number of train structures to be returned
+        :param train_size: if not None, speficy number of valid structures to be returned
+        :param manual_seed: seed to initialise the random number generator used for splitting the dataset. Useful to replicate a specific split.
+        :return: two `torch.Tensor`, for training and validation structures.
         '''
         if not hasattr(self, 'dataset'):
             self.prepare_dataset()
@@ -188,7 +195,7 @@ class PDBData:
                 _valid_size = valid_size
         from torch import randperm
         if manual_seed is not None:
-            indices = randperm(len(self.dataset), generator = torch.Generator().manual_seed(manual_seed))
+            indices = randperm(len(self.dataset), generator=torch.Generator().manual_seed(manual_seed))
         else:
             indices = randperm(len(self.dataset))
 
@@ -199,12 +206,8 @@ class PDBData:
 
     @property
     def atoms(self):
-        return list(np.unique(self._mol.data["name"].values))    #all the atoms
+        return list(np.unique(self._mol.data["name"].values))  # all the atoms
     
     @property
     def mol(self):
         return self.frame()
-        
-
-
-

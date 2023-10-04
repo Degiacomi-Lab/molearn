@@ -1,20 +1,15 @@
-
 <!DOCTYPE html>
 
-<html lang="en">
+<html lang="en" data-content_root="../../../">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>molearn.trainers.torch_physics_trainer &#8212; molearn 1.3.0 documentation</title>
-    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/classic.css" />
-    
-    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
-    <script src="../../../_static/jquery.js"></script>
-    <script src="../../../_static/underscore.js"></script>
-    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
-    <script src="../../../_static/doctools.js"></script>
-    
+    <title>molearn.trainers.torch_physics_trainer &#8212; molearn 2.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinxdoc.css?v=d59dc883" />
+    <script src="../../../_static/documentation_options.js?v=f5cff4aa"></script>
+    <script src="../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
   </head><body>
@@ -27,7 +22,7 @@
         <li class="right" >
           <a href="../../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../../index.html">molearn 1.3.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">molearn 2.0.1 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">molearn.trainers.torch_physics_trainer</a></li> 
       </ul>
@@ -43,8 +38,11 @@
 <span class="kn">from</span> <span class="nn">molearn.loss_functions</span> <span class="kn">import</span> <span class="n">TorchProteinEnergy</span>
 <span class="kn">from</span> <span class="nn">.trainer</span> <span class="kn">import</span> <span class="n">Trainer</span>
 
-<div class="viewcode-block" id="Torch_Physics_Trainer"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.torch_physics_trainer.Torch_Physics_Trainer">[docs]</a><span class="k">class</span> <span class="nc">Torch_Physics_Trainer</span><span class="p">(</span><span class="n">Trainer</span><span class="p">):</span>
-    <span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="Torch_Physics_Trainer">
+<a class="viewcode-back" href="../../../trainers.html#molearn.trainers.Torch_Physics_Trainer">[docs]</a>
+<span class="k">class</span> <span class="nc">Torch_Physics_Trainer</span><span class="p">(</span><span class="n">Trainer</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    Torch_Physics_Trainer subclasses Trainer and replaces the valid_step and train_step.</span>
 <span class="sd">    An extra &#39;physics_loss&#39; (bonds, angles, and torsions) is calculated using pytorch.</span>
 <span class="sd">    To use this trainer requires the additional step of calling :func: `prepare_physics &lt;molearn.trainers.Torch_Physics_Trainer&gt;`.</span>
@@ -52,17 +50,22 @@
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
-<div class="viewcode-block" id="Torch_Physics_Trainer.prepare_physics"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.torch_physics_trainer.Torch_Physics_Trainer.prepare_physics">[docs]</a>    <span class="k">def</span> <span class="nf">prepare_physics</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">physics_scaling_factor</span><span class="o">=</span><span class="mf">0.1</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<div class="viewcode-block" id="Torch_Physics_Trainer.prepare_physics">
+<a class="viewcode-back" href="../../../trainers.html#molearn.trainers.Torch_Physics_Trainer.prepare_physics">[docs]</a>
+    <span class="k">def</span> <span class="nf">prepare_physics</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">physics_scaling_factor</span><span class="o">=</span><span class="mf">0.1</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Create ``self.physics_loss`` object from :func:`loss_functions.TorchProteinEnergy &lt;molearn.loss_functions.TorchProteinEnergy&gt;`</span>
 <span class="sd">        Needs ``self.std``, ``self._data`` to have been set with :func:`Trainer.set_data &lt;molearn.trainer.Trainer.set_data&gt;`</span>
 <span class="sd">        :param float physics_scaling_factor: (default: 0.1) scaling factor saved to ``self.psf`` that is used in :func: `train_step &lt;molearn.trainers.Torch_Physics_Trainer.train_step&gt;` It will control the relative importance of mse_loss and physics_loss in training.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">psf</span> <span class="o">=</span> <span class="n">physics_scaling_factor</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">physics_loss</span> <span class="o">=</span> <span class="n">TorchProteinEnergy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">dataset</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">std</span><span class="p">,</span> <span class="n">pdb_atom_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">get_atominfo</span><span class="p">(),</span> <span class="n">device</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;roll&#39;</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">physics_loss</span> <span class="o">=</span> <span class="n">TorchProteinEnergy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">dataset</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">std</span><span class="p">,</span> <span class="n">pdb_atom_names</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">get_atominfo</span><span class="p">(),</span> <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;roll&#39;</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Torch_Physics_Trainer.common_physics_step"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.torch_physics_trainer.Torch_Physics_Trainer.common_physics_step">[docs]</a>    <span class="k">def</span> <span class="nf">common_physics_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">latent</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="Torch_Physics_Trainer.common_physics_step">
+<a class="viewcode-back" href="../../../trainers.html#molearn.trainers.Torch_Physics_Trainer.common_physics_step">[docs]</a>
+    <span class="k">def</span> <span class="nf">common_physics_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">latent</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Called from both :func:`train_step &lt;molearn.trainers.Torch_Physics_Trainer.train_step&gt;` and :func:`valid_step &lt;molearn.trainers.Torch_Physics_Trainer.valid_step&gt;`.</span>
 <span class="sd">        Takes random interpolations between adjacent samples latent vectors. These are decoded (decoded structures saved as ``self._internal[&#39;generated&#39;] = generated if needed elsewhere) and the energy terms calculated with ``self.physics_loss``.</span>
 
@@ -71,8 +74,8 @@
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">alpha</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span><span class="o">//</span><span class="mi">2</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">type_as</span><span class="p">(</span><span class="n">latent</span><span class="p">)</span>
         <span class="n">latent_interpolated</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">alpha</span><span class="p">)</span><span class="o">*</span><span class="n">latent</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="n">alpha</span><span class="o">*</span><span class="n">latent</span><span class="p">[</span><span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">]</span>
-        <span class="n">generated</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">autoencoder</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">latent_interpolated</span><span class="p">)[:,:,:</span><span class="n">batch</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">2</span><span class="p">)]</span>
-        <span class="n">bond</span><span class="p">,</span> <span class="n">angle</span><span class="p">,</span> <span class="n">torsion</span> <span class="o">=</span>  <span class="bp">self</span><span class="o">.</span><span class="n">physics_loss</span><span class="o">.</span><span class="n">_roll_bond_angle_torsion_loss</span><span class="p">(</span><span class="n">generated</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">std</span><span class="p">)</span>
+        <span class="n">generated</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">autoencoder</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">latent_interpolated</span><span class="p">)[:,</span> <span class="p">:,</span> <span class="p">:</span><span class="n">batch</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">2</span><span class="p">)]</span>
+        <span class="n">bond</span><span class="p">,</span> <span class="n">angle</span><span class="p">,</span> <span class="n">torsion</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">physics_loss</span><span class="o">.</span><span class="n">_roll_bond_angle_torsion_loss</span><span class="p">(</span><span class="n">generated</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">std</span><span class="p">)</span>
         <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">generated</span><span class="p">)</span>
         <span class="n">bond</span><span class="o">/=</span><span class="n">n</span>
         <span class="n">angle</span><span class="o">/=</span><span class="n">n</span>
@@ -80,13 +83,15 @@
         <span class="n">_all</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="n">bond</span><span class="p">,</span> <span class="n">angle</span><span class="p">,</span> <span class="n">torsion</span><span class="p">])</span>
         <span class="n">_all</span><span class="p">[</span><span class="n">_all</span><span class="o">.</span><span class="n">isinf</span><span class="p">()]</span><span class="o">=</span><span class="mf">1e35</span>
         <span class="n">total_physics</span> <span class="o">=</span> <span class="n">_all</span><span class="o">.</span><span class="n">nansum</span><span class="p">()</span>
-        <span class="c1">#total_physics = torch.nansum(torch.tensor([bond ,angle ,torsion]))</span>
+        <span class="c1"># total_physics = torch.nansum(torch.tensor([bond ,angle ,torsion]))</span>
 
         <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;physics_loss&#39;</span><span class="p">:</span><span class="n">total_physics</span><span class="p">,</span> <span class="s1">&#39;bond_energy&#39;</span><span class="p">:</span><span class="n">bond</span><span class="p">,</span> <span class="s1">&#39;angle_energy&#39;</span><span class="p">:</span><span class="n">angle</span><span class="p">,</span> <span class="s1">&#39;torsion_energy&#39;</span><span class="p">:</span><span class="n">torsion</span><span class="p">}</span></div>
 
 
-<div class="viewcode-block" id="Torch_Physics_Trainer.train_step"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.torch_physics_trainer.Torch_Physics_Trainer.train_step">[docs]</a>    <span class="k">def</span> <span class="nf">train_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+<div class="viewcode-block" id="Torch_Physics_Trainer.train_step">
+<a class="viewcode-back" href="../../../trainers.html#molearn.trainers.Torch_Physics_Trainer.train_step">[docs]</a>
+    <span class="k">def</span> <span class="nf">train_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        This method overrides :func:`Trainer.train_step &lt;molearn.trainers.Trainer.train_step&gt;` and adds an additional &#39;Physics_loss&#39; term.</span>
 
 <span class="sd">        Mse_loss and physics loss are summed (``Mse_loss + scale*physics_loss``)with a scaling factor ``self.psf*mse_loss/Physics_loss``. Mathematically this cancels out the physics_loss and the final loss is (1+self.psf)*mse_loss. However because the scaling factor is calculated within a ``torch.no_grad`` context manager the gradients are not computed.</span>
@@ -106,8 +111,11 @@
         <span class="n">results</span><span class="p">[</span><span class="s1">&#39;loss&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">final_loss</span>
         <span class="k">return</span> <span class="n">results</span></div>
 
-<div class="viewcode-block" id="Torch_Physics_Trainer.valid_step"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.torch_physics_trainer.Torch_Physics_Trainer.valid_step">[docs]</a>    <span class="k">def</span> <span class="nf">valid_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+
+<div class="viewcode-block" id="Torch_Physics_Trainer.valid_step">
+<a class="viewcode-back" href="../../../trainers.html#molearn.trainers.Torch_Physics_Trainer.valid_step">[docs]</a>
+    <span class="k">def</span> <span class="nf">valid_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        This method overrides :func:`Trainer.valid_step &lt;molearn.trainers.Trainer.valid_step&gt;` and adds an additional &#39;Physics_loss&#39; term.</span>
 
 <span class="sd">        Differently to :func:`train_step &lt;molearn.trainers.Torch_Physics_Trainer.train_step&gt;` this method sums the logs of mse_loss and physics_loss ``final_loss = torch.log(results[&#39;mse_loss&#39;])+scale*torch.log(results[&#39;physics_loss&#39;])``</span>
@@ -121,10 +129,12 @@
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">common_step</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span>
         <span class="n">results</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">common_physics_step</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_internal</span><span class="p">[</span><span class="s1">&#39;encoded&#39;</span><span class="p">]))</span>
-        <span class="c1">#scale = self.psf*results[&#39;mse_loss&#39;]/(results[&#39;physics_loss&#39;]+1e-5)</span>
+        <span class="c1"># scale = self.psf*results[&#39;mse_loss&#39;]/(results[&#39;physics_loss&#39;]+1e-5)</span>
         <span class="n">final_loss</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;mse_loss&#39;</span><span class="p">])</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">psf</span><span class="o">*</span><span class="n">torch</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;physics_loss&#39;</span><span class="p">])</span>
         <span class="n">results</span><span class="p">[</span><span class="s1">&#39;loss&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">final_loss</span>
-        <span class="k">return</span> <span class="n">results</span></div></div>
+        <span class="k">return</span> <span class="n">results</span></div>
+</div>
+
 
 
 <span class="k">if</span> <span class="vm">__name__</span><span class="o">==</span><span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
@@ -160,14 +170,14 @@
         <li class="right" >
           <a href="../../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../../index.html">molearn 1.3.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">molearn 2.0.1 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">molearn.trainers.torch_physics_trainer</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2021, V. K. Ramaswamy, S. C. Musson, M. T. Degiacomi.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.0.2.
+    &#169; Copyright 2021, S. C. Musson, M. T. Degiacomi.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.5.
     </div>
   </body>
 </html>

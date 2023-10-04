@@ -33,7 +33,7 @@ from .path import oversample, get_path_aggregate
 from ..utils import as_numpy
 
 
-class MolearnGUI(object):
+class MolearnGUI:
     '''
     This class produces an interactive visualisation for data stored in a
     :func:`MolearnAnalysis <molearn.analysis.MolearnAnalysis>` object,
@@ -50,11 +50,10 @@ class MolearnGUI(object):
         else:
             self.MA = MA
 
-        self.waypoints = [] # collection of all saved waypoints
-        self.samples = [] # collection of all calculated sampling points
+        self.waypoints = []  # collection of all saved waypoints
+        self.samples = []    # collection of all calculated sampling points
         
         self.run()
-
      
     def update_trails(self):
         '''
@@ -64,20 +63,20 @@ class MolearnGUI(object):
         try:
             crd = self.get_samples(self.mybox.value, int(self.samplebox.value), self.drop_path.value)
             self.samples = crd.copy()
-        except:
+        except Exception:
             self.button_pdb.disabled = False
             return
 
         # update latent space plot
-        if self.samples == []:
-            self.latent.data[2].x = self.waypoints[:, 0]
-            self.latent.data[2].y = self.waypoints[:, 1]
+        if len(self.samples) == 0:
+            if len(self.waypoints)>0:
+                self.latent.data[2].x = self.waypoints[:, 0]
+                self.latent.data[2].y = self.waypoints[:, 1]
         else:
             self.latent.data[2].x = self.samples[:, 0]
             self.latent.data[2].y = self.samples[:, 1]
         
         self.latent.update()
-
     
     def on_click(self, trace, points, selector):
         '''
@@ -89,22 +88,22 @@ class MolearnGUI(object):
 
         # add new waypoint to list
         pt = np.array([[points.xs[0], points.ys[0]]])
+       
         if len(self.waypoints) == 0:
             self.waypoints = pt    
         else:
             self.waypoints = np.concatenate((self.waypoints, pt))
-
+            
         # update textbox (triggering update of 3D representation)
         try:
             pt = self.waypoints.flatten().round(decimals=4).astype(str)
-            #pt = np.array([self.latent.data[3].x, self.latent.data[3].y]).T.flatten().round(decimals=4).astype(str)
+            # pt = np.array([self.latent.data[3].x, self.latent.data[3].y]).T.flatten().round(decimals=4).astype(str)
             self.mybox.value = " ".join(pt)
-        except:
+        except Exception:
             return
 
         self.update_trails()    
         
-
     def get_samples(self, mybox, samplebox, path):
         '''
         provide a trail of point between list of waypoints, either connected
@@ -120,8 +119,8 @@ class MolearnGUI(object):
             crd = np.array(mybox.split()).astype(float)
             crd = crd.reshape((int(len(crd)/2), 2))
         except Exception:
-           raise Exception("Cannot define sampling points")
-           return
+            raise Exception("Cannot define sampling points")
+            return
     
         if use_path:
             # connect points via A*
@@ -129,8 +128,8 @@ class MolearnGUI(object):
                 landscape = self.latent.data[0].z
                 crd = get_path_aggregate(crd, landscape.T, self.MA.xvals, self.MA.yvals)
             except Exception as e:
-               raise Exception(f"Cannot define sampling points: path finding failed. {e})")
-               return
+                raise Exception(f"Cannot define sampling points: path finding failed. {e})")
+                return
                                          
         else:
             # connect points via straight line
@@ -141,7 +140,6 @@ class MolearnGUI(object):
                 return
 
         return crd
-
         
     def interact_3D(self, mybox, samplebox, path):
         '''
@@ -152,7 +150,7 @@ class MolearnGUI(object):
             crd = self.get_samples(mybox, samplebox, path)
             self.samples = crd.copy()
             crd = crd.reshape((1, len(crd), 2))
-        except:
+        except Exception:
             self.button_pdb.disabled = True
             return
 
@@ -169,11 +167,10 @@ class MolearnGUI(object):
         self.mymol.load_new(gen)
         view = nv.show_mdanalysis(self.mymol)
         view.add_representation("spacefill")
-        #view.add_representation("cartoon")
+        # view.add_representation("cartoon")
         display.display(view)
 
         self.button_pdb.disabled = False
-
 
     def drop_background_event(self, change):
         '''
@@ -186,7 +183,7 @@ class MolearnGUI(object):
             mykey = change.new
    
         try:
-           data = self.MA.surfaces[mykey]
+            data = self.MA.surfaces[mykey]
         except Exception as e:
             print(f"{e}")
             return      
@@ -204,7 +201,7 @@ class MolearnGUI(object):
             self.latent.data[0].zmax = np.max(data)
             self.block0.children[1].min = np.min(data)
             self.block0.children[1].max = np.max(data)
-        except:
+        except Exception:
             self.latent.data[0].zmax = np.max(data)
             self.latent.data[0].zmin = np.min(data)
             self.block0.children[1].max = np.max(data)
@@ -213,7 +210,6 @@ class MolearnGUI(object):
         self.block0.children[1].value = (np.min(data), np.max(data))
         
         self.update_trails()
-
 
     def drop_dataset_event(self, change):
         '''
@@ -241,7 +237,6 @@ class MolearnGUI(object):
         
         self.latent.update()
 
-
     def drop_path_event(self, change):
         '''
         control way paths are looked for
@@ -254,7 +249,6 @@ class MolearnGUI(object):
             
         self.update_trails()
 
-
     def range_slider_event(self, change):
         '''
         update surface colouring upon manipulation of range slider
@@ -264,7 +258,6 @@ class MolearnGUI(object):
         self.latent.data[0].zmax = change.new[1]
         self.latent.update()
 
-
     def trail_update_event(self, change):
         '''
         update trails (waypoints and way they are connected)
@@ -273,14 +266,13 @@ class MolearnGUI(object):
         try:
             crd = np.array(self.mybox.value.split()).astype(float)
             crd = crd.reshape((int(len(crd)/2), 2))
-        except:
+        except Exception:
             self.button_pdb.disabled = False
             return
 
         self.waypoints = crd.copy()
 
         self.update_trails()
-
 
     def button_pdb_event(self, check):
         '''
@@ -310,7 +302,6 @@ class MolearnGUI(object):
             for ts in self.mymol.trajectory:
                 W.write(protein)
 
-
     def button_save_state_event(self, check):
         '''
         save class state
@@ -324,8 +315,7 @@ class MolearnGUI(object):
         if fname == "":
             return
 
-        pickle.dump([self.MA, self.waypoints], open( fname, "wb" ) )
-
+        pickle.dump([self.MA, self.waypoints], open(fname, "wb"))
 
     def button_load_state_event(self, check):
         '''
@@ -341,7 +331,7 @@ class MolearnGUI(object):
             return
 
         try:
-            self.MA, self.waypoints = pickle.load( open( fname, "rb" ) )
+            self.MA, self.waypoints = pickle.load(open(fname, "rb"))
             self.run()
         except Exception as e:
             raise Exception(f"Cannot load state file. {e}")
@@ -352,7 +342,7 @@ class MolearnGUI(object):
 
         # create an MDAnalysis instance of input protein (for viewing purposes)
         if hasattr(self.MA, "mol"):
-            self.MA.mol.write_pdb("tmp.pdb", conformations=[0], split_struc = False)
+            self.MA.mol.write_pdb("tmp.pdb", conformations=[0], split_struc=False)
             self.mymol = mda.Universe('tmp.pdb')
         
         ### MENU ITEMS ###
@@ -378,7 +368,6 @@ class MolearnGUI(object):
             self.drop_background.disabled = True
         
         self.drop_background.observe(self.drop_background_event, names='value')
-
 
         # dataset selector dropdown menu
         options2 = ["none"]
@@ -419,7 +408,6 @@ class MolearnGUI(object):
 
         self.drop_path.observe(self.drop_path_event, names='value')
 
-
         # text box holding current coordinates
         self.mybox = widgets.Textarea(placeholder='coordinates',
                                  description='crds:',
@@ -434,7 +422,6 @@ class MolearnGUI(object):
 
         self.samplebox.observe(self.trail_update_event, names='value')
 
-
         # button to save PDB file
         self.button_pdb = widgets.Button(
             description='Save PDB',
@@ -442,22 +429,19 @@ class MolearnGUI(object):
 
         self.button_pdb.on_click(self.button_pdb_event)
 
-
         # button to save state file
         self.button_save_state = widgets.Button(
-            description= 'Save state',
+            description='Save state',
             disabled=False, layout=Layout(flex='1 1 0%', width='auto'))
 
         self.button_save_state.on_click(self.button_save_state_event)
 
-
         # button to load state file
         self.button_load_state = widgets.Button(
-            description= 'Load state',
+            description='Load state',
             disabled=False, layout=Layout(flex='1 1 0%', width='auto'))
 
         self.button_load_state.on_click(self.button_load_state_event)
-
 
         # latent space range slider
         self.range_slider = widgets.FloatRangeSlider(
@@ -476,8 +460,7 @@ class MolearnGUI(object):
             
         if self.waypoints == []:
             self.button_pdb.disabled = True
-
-        
+  
         ### LATENT SPACE REPRESENTATION ###
 
         # surface 
@@ -515,7 +498,7 @@ class MolearnGUI(object):
 
         # path
         plot3 = go.Scatter(x=np.array([]), y=np.array([]),
-                   showlegend=False, opacity=0.9, mode = 'lines+markers',
+                   showlegend=False, opacity=0.9, mode='lines+markers',
                    marker=dict(color='red', size=4))
 
         self.latent = go.FigureWidget([plot1, plot2, plot3])
@@ -534,7 +517,7 @@ class MolearnGUI(object):
             try:
                 self.range_slider.min = scmin
                 self.range_slider.max = scmax
-            except:
+            except Exception:
                 self.range_slider.max = scmax
                 self.range_slider.min = scmin
 
@@ -543,8 +526,7 @@ class MolearnGUI(object):
 
         # 3D protein representation (triggered by update of textbox, sampling box, or pathfinding method)
         self.protein = widgets.interactive_output(self.interact_3D, {'mybox': self.mybox, 'samplebox': self.samplebox, 'path': self.drop_path})
-
-        
+     
         ### WIDGETS ARRANGEMENT ###
         
         self.block0 = widgets.VBox([
@@ -570,4 +552,3 @@ class MolearnGUI(object):
 
         display.clear_output(wait=True)
         display.display(self.scene)
-            

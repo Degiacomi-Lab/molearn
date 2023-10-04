@@ -1,19 +1,16 @@
-
 <!DOCTYPE html>
 
-<html lang="en">
+<html lang="en" data-content_root="./">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <title>Data Loading &#8212; molearn 2.0.1 documentation</title>
-    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="_static/sphinxdoc.css" />
-    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-    <script src="_static/jquery.js"></script>
-    <script src="_static/underscore.js"></script>
-    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
-    <script src="_static/doctools.js"></script>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinxdoc.css?v=d59dc883" />
+    <script src="_static/documentation_options.js?v=f5cff4aa"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Loss Functions" href="loss_functions.html" />
@@ -45,19 +42,25 @@
           <div class="body" role="main">
             
   <section id="data-loading">
-<h1>Data Loading<a class="headerlink" href="#data-loading" title="Permalink to this heading">¶</a></h1>
+<h1>Data Loading<a class="headerlink" href="#data-loading" title="Link to this heading">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="molearn.data.PDBData">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">PDBData</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fix_terminal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">atoms</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/data/pdb_data.html#PDBData"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.data.PDBData" title="Permalink to this definition">¶</a></dt>
-<dd><p>Create PDBData object. 
-:param filename: str or list of strings, self.import_pdb(file) is called on each
-:param fix_terminal: default False, if true calles self.fix_terminal after import, before atomselect
-:param atoms: calls self.atomselect(atoms=atoms)</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">PDBData</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fix_terminal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">atoms</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/data/pdb_data.html#PDBData"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.data.PDBData" title="Link to this definition">¶</a></dt>
+<dd><p>Create object enabling the manipulation of multi-PDB files into a dataset suitable for training.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filename</strong> – None, str or list of strings. If not None, <a class="reference internal" href="#molearn.data.PDBData.import_pdb" title="molearn.data.PDBData.import_pdb"><code class="xref py py-func docutils literal notranslate"><span class="pre">import_pdb</span></code></a> is called on each filename provided.</p></li>
+<li><p><strong>fix_terminal</strong> – if True, calls <a class="reference internal" href="#molearn.data.PDBData.fix_terminal" title="molearn.data.PDBData.fix_terminal"><code class="xref py py-func docutils literal notranslate"><span class="pre">fix_terminal</span></code></a> after import, and before atomselect</p></li>
+<li><p><strong>atoms</strong> – if not None, calls <a class="reference internal" href="#molearn.data.PDBData.atomselect" title="molearn.data.PDBData.atomselect"><code class="xref py py-func docutils literal notranslate"><span class="pre">atomselect</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="molearn.data.PDBData.atomselect">
-<span class="sig-name descname"><span class="pre">atomselect</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">atoms</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_atoms</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/data/pdb_data.html#PDBData.atomselect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.data.PDBData.atomselect" title="Permalink to this definition">¶</a></dt>
-<dd><p>From imported PDBs, cut out only atoms of interest.
-<a class="reference internal" href="#molearn.data.PDBData.import_pdb" title="molearn.data.PDBData.import_pdb"><code class="xref py py-func docutils literal notranslate"><span class="pre">import_pdb</span></code></a> must have been called at least once.</p>
+<span class="sig-name descname"><span class="pre">atomselect</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">atoms</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_atoms</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/data/pdb_data.html#PDBData.atomselect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.data.PDBData.atomselect" title="Link to this definition">¶</a></dt>
+<dd><p>From all imported PDBs, extract only atoms of interest.
+<a class="reference internal" href="#molearn.data.PDBData.import_pdb" title="molearn.data.PDBData.import_pdb"><code class="xref py py-func docutils literal notranslate"><span class="pre">import_pdb</span></code></a> must have been called at least once, either at class instantiation or as a separate call.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>atoms</strong> – list of atom names, or “no_hydrogen”.</p>
@@ -67,25 +70,25 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="molearn.data.PDBData.fix_terminal">
-<span class="sig-name descname"><span class="pre">fix_terminal</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/data/pdb_data.html#PDBData.fix_terminal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.data.PDBData.fix_terminal" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">fix_terminal</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/data/pdb_data.html#PDBData.fix_terminal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.data.PDBData.fix_terminal" title="Link to this definition">¶</a></dt>
 <dd><p>Rename OT1 N-terminal Oxygen to O if terminal oxygens are named OT1 and OT2 otherwise no oxygen will be selected during an atomselect using atoms = [‘CA’, ‘C’,’N’,’O’,’CB’]. No template will be found for terminal residue in openmm_loss. Alternative solution is to use atoms = [‘CA’, ‘C’, ‘N’, ‘O’, ‘CB’, ‘OT1’]. instead.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="molearn.data.PDBData.frame">
-<span class="sig-name descname"><span class="pre">frame</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/data/pdb_data.html#PDBData.frame"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.data.PDBData.frame" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">frame</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/data/pdb_data.html#PDBData.frame"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.data.PDBData.frame" title="Link to this definition">¶</a></dt>
 <dd><p>return <cite>biobox.Molecule</cite> object with loaded data</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="molearn.data.PDBData.get_atominfo">
-<span class="sig-name descname"><span class="pre">get_atominfo</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/data/pdb_data.html#PDBData.get_atominfo"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.data.PDBData.get_atominfo" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">get_atominfo</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/data/pdb_data.html#PDBData.get_atominfo"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.data.PDBData.get_atominfo" title="Link to this definition">¶</a></dt>
 <dd><p>generate list of all atoms in dataset, where every line contains [atom name, residue name, resid]</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="molearn.data.PDBData.get_dataloader">
-<span class="sig-name descname"><span class="pre">get_dataloader</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validation_split</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pin_memory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataset_sample_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">manual_seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shuffle</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sampler</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/data/pdb_data.html#PDBData.get_dataloader"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.data.PDBData.get_dataloader" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">get_dataloader</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validation_split</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pin_memory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataset_sample_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">manual_seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shuffle</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sampler</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/data/pdb_data.html#PDBData.get_dataloader"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.data.PDBData.get_dataloader" title="Link to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -109,17 +112,18 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="molearn.data.PDBData.get_datasets">
-<span class="sig-name descname"><span class="pre">get_datasets</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">validation_split</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">valid_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">manual_seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/data/pdb_data.html#PDBData.get_datasets"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.data.PDBData.get_datasets" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
+<span class="sig-name descname"><span class="pre">get_datasets</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">validation_split</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">valid_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">manual_seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/data/pdb_data.html#PDBData.get_datasets"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.data.PDBData.get_datasets" title="Link to this definition">¶</a></dt>
+<dd><p>Create a training and validation set from the imported data</p>
+<dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>validation_split</strong> – </p></li>
-<li><p><strong>valid_size</strong> – </p></li>
-<li><p><strong>train_size</strong> – </p></li>
-<li><p><strong>manual_seed</strong> – </p></li>
+<li><p><strong>validation_split</strong> – ratio of data to randomly assigned as validation</p></li>
+<li><p><strong>valid_size</strong> – if not None, specify number of train structures to be returned</p></li>
+<li><p><strong>train_size</strong> – if not None, speficy number of valid structures to be returned</p></li>
+<li><p><strong>manual_seed</strong> – seed to initialise the random number generator used for splitting the dataset. Useful to replicate a specific split.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Return<span class="colon">:</span></dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>two <cite>torch.Tensor</cite>, for training and validation structures.</p>
 </dd>
 </dl>
@@ -127,7 +131,7 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="molearn.data.PDBData.import_pdb">
-<span class="sig-name descname"><span class="pre">import_pdb</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/data/pdb_data.html#PDBData.import_pdb"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.data.PDBData.import_pdb" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">import_pdb</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/data/pdb_data.html#PDBData.import_pdb"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.data.PDBData.import_pdb" title="Link to this definition">¶</a></dt>
 <dd><p>Load multiPDB file.
 This command can be called multiple times to load many datasets, if these feature the same number of atoms</p>
 <dl class="field-list simple">
@@ -139,21 +143,21 @@ This command can be called multiple times to load many datasets, if these featur
 
 <dl class="py method">
 <dt class="sig sig-object py" id="molearn.data.PDBData.prepare_dataset">
-<span class="sig-name descname"><span class="pre">prepare_dataset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/data/pdb_data.html#PDBData.prepare_dataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.data.PDBData.prepare_dataset" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">prepare_dataset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/data/pdb_data.html#PDBData.prepare_dataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.data.PDBData.prepare_dataset" title="Link to this definition">¶</a></dt>
 <dd><p>Once all datasets have been loaded, normalise data and convert into <cite>torch.Tensor</cite> (ready for training)</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="molearn.data.PDBData.split">
-<span class="sig-name descname"><span class="pre">split</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/data/pdb_data.html#PDBData.split"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.data.PDBData.split" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">split</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/data/pdb_data.html#PDBData.split"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.data.PDBData.split" title="Link to this definition">¶</a></dt>
 <dd><p>Split <a class="reference internal" href="#molearn.data.PDBData" title="molearn.data.PDBData"><code class="xref py py-func docutils literal notranslate"><span class="pre">PDBData</span></code></a> into two other <a class="reference internal" href="#molearn.data.PDBData" title="molearn.data.PDBData"><code class="xref py py-func docutils literal notranslate"><span class="pre">PDBData</span></code></a> objects corresponding to train and valid sets.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>manual_seed</strong> – manual seed used to split dataset</p></li>
-<li><p><strong>validation_split</strong> – default 0.1 ratio of valid to train structures data points</p></li>
-<li><p><strong>train_size</strong> – default None, specify number of train structures to be returned</p></li>
-<li><p><strong>valid_size</strong> – default None, speficy number of valid structures to be returned</p></li>
+<li><p><strong>validation_split</strong> – ratio of data to randomly assigned as validation</p></li>
+<li><p><strong>train_size</strong> – if not None, specify number of train structures to be returned</p></li>
+<li><p><strong>valid_size</strong> – if not None, speficy number of valid structures to be returned</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -176,6 +180,27 @@ This command can be called multiple times to load many datasets, if these featur
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">Data Loading</a><ul>
+<li><a class="reference internal" href="#molearn.data.PDBData"><code class="docutils literal notranslate"><span class="pre">PDBData</span></code></a><ul>
+<li><a class="reference internal" href="#molearn.data.PDBData.atomselect"><code class="docutils literal notranslate"><span class="pre">PDBData.atomselect()</span></code></a></li>
+<li><a class="reference internal" href="#molearn.data.PDBData.fix_terminal"><code class="docutils literal notranslate"><span class="pre">PDBData.fix_terminal()</span></code></a></li>
+<li><a class="reference internal" href="#molearn.data.PDBData.frame"><code class="docutils literal notranslate"><span class="pre">PDBData.frame()</span></code></a></li>
+<li><a class="reference internal" href="#molearn.data.PDBData.get_atominfo"><code class="docutils literal notranslate"><span class="pre">PDBData.get_atominfo()</span></code></a></li>
+<li><a class="reference internal" href="#molearn.data.PDBData.get_dataloader"><code class="docutils literal notranslate"><span class="pre">PDBData.get_dataloader()</span></code></a></li>
+<li><a class="reference internal" href="#molearn.data.PDBData.get_datasets"><code class="docutils literal notranslate"><span class="pre">PDBData.get_datasets()</span></code></a></li>
+<li><a class="reference internal" href="#molearn.data.PDBData.import_pdb"><code class="docutils literal notranslate"><span class="pre">PDBData.import_pdb()</span></code></a></li>
+<li><a class="reference internal" href="#molearn.data.PDBData.prepare_dataset"><code class="docutils literal notranslate"><span class="pre">PDBData.prepare_dataset()</span></code></a></li>
+<li><a class="reference internal" href="#molearn.data.PDBData.split"><code class="docutils literal notranslate"><span class="pre">PDBData.split()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  </div>
   <div>
     <h4>Previous topic</h4>
     <p class="topless"><a href="index.html"
@@ -227,8 +252,8 @@ This command can be called multiple times to load many datasets, if these featur
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2021, S. C. Musson, M. T. Degiacomi.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.0.2.
+    &#169; Copyright 2021, S. C. Musson, M. T. Degiacomi.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.5.
     </div>
   </body>
 </html>

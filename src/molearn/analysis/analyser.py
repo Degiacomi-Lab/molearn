@@ -21,16 +21,25 @@ except Exception as e:
     print('Error importing modeller: ')
     print(e)
     
-from ..scoring import Parallel_DOPE_Score, Parallel_Ramachandran_Score
+try:
+    from ..scoring import Parallel_DOPE_Score
+except ImportError as e:
+    print('Import Error captured while trying to import Parallel_DOPE_Score, it is likely that you dont have Modeller installed')
+    print(e)
+try:
+    from ..scoring import Parallel_Ramachandran_Score
+except ImportError as e:
+    print('Import Error captured while trying to import Parallel_Ramachandran_Score, it is likely that you dont have cctbx/iotbx installed')
+    print(e)
 from ..data import PDBData
 
 from ..utils import as_numpy
-
+from tqdm import tqdm
 import warnings
 warnings.filterwarnings("ignore")
 
 
-class MolearnAnalysis(object):
+class MolearnAnalysis:
     '''
     This class provides methods dedicated to the quality analysis of a
     trained model.
@@ -100,7 +109,7 @@ class MolearnAnalysis(object):
                 dataset = self.get_dataset(key)
                 batch_size = self.batch_size
                 encoded = None
-                for i in range(0, dataset.shape[0], batch_size):
+                for i in tqdm(range(0, dataset.shape[0], batch_size), desc=f'encoding {key}'):
                     z = self.network.encode(dataset[i:i+batch_size].to(self.device)).cpu()
                     if encoded is None:
                         encoded = torch.empty(dataset.shape[0], z.shape[1], z.shape[2])
@@ -124,8 +133,8 @@ class MolearnAnalysis(object):
                 batch_size = self.batch_size
                 encoded = self.get_encoded(key)
                 decoded = torch.empty(encoded.shape[0], *self.shape).float()
-                for i in range(0, encoded.shape[0], batch_size):
-                    decoded[i:i+batch_size] = self.network.decode(encoded[i:i+batch_size].to(self.device))[:,:,:self.shape[1]].cpu()
+                for i in tqdm(range(0, encoded.shape[0], batch_size), desc=f'Decoding {key}'):
+                    decoded[i:i+batch_size] = self.network.decode(encoded[i:i+batch_size].to(self.device))[:, :, :self.shape[1]].cpu()
                 self._decoded[key] = decoded
         return self._decoded[key]
 
@@ -141,7 +150,7 @@ class MolearnAnalysis(object):
         '''
         return sum(p.numel() for p in self.network.parameters() if p.requires_grad)
 
-    def get_error(self, key, align=False):
+    def get_error(self, key, align=True):
         '''
         Calculate the reconstruction error of a dataset encoded and decoded by a trained neural network.
         
@@ -154,24 +163,24 @@ class MolearnAnalysis(object):
         decoded = self.get_decoded(key)
 
         err = []
+        m = deepcopy(self.mol)
         for i in range(dataset.shape[0]):
             crd_ref = as_numpy(dataset[i].permute(1,0).unsqueeze(0))*self.stdval + self.meanval
-            crd_mdl = as_numpy(decoded[i].permute(1,0).unsqueeze(0))[:, :dataset.shape[2]]*self.stdval + self.meanval #clip the padding of models  
-
-            if align: # use Molecule Biobox class to calculate RMSD
-                self.mol.coordinates = deepcopy(crd_ref)
-                self.mol.set_current(0)
-                self.mol.add_xyz(crd_mdl[0])
-                rmsd = self.mol.rmsd(0, 1)
+            crd_mdl = as_numpy(decoded[i].permute(1,0).unsqueeze(0))[:, :dataset.shape[2]]*self.stdval + self.meanval  # clip the padding of models  
+            # use Molecule Biobox class to calculate RMSD
+            if align:
+                m.coordinates = deepcopy(crd_ref)
+                m.set_current(0)
+                m.add_xyz(crd_mdl[0])
+                rmsd = m.rmsd(0, 1)
             else:
-                rmsd = np.sqrt(np.sum((crd_ref.flatten()-crd_mdl.flatten())**2)/crd_mdl.shape[1]) # Cartesian L2 norm
+                rmsd = np.sqrt(np.sum((crd_ref.flatten()-crd_mdl.flatten())**2)/crd_mdl.shape[1])  # Cartesian L2 norm
 
             err.append(rmsd)
 
         return np.array(err)
 
-
-    def get_dope(self, key, refine=True):
+    def get_dope(self, key, refine=True, **kwargs):
         '''
         :param str key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
         :param bool refine: if True, refine structures before calculating DOPE score
@@ -180,11 +189,11 @@ class MolearnAnalysis(object):
         dataset = self.get_dataset(key)
         decoded = self.get_decoded(key)
         
-        dope_dataset = self.get_all_dope_score(dataset, refine=refine)
-        dope_decoded = self.get_all_dope_score(decoded, refine=refine)
+        dope_dataset = self.get_all_dope_score(dataset, refine=refine, **kwargs)
+        dope_decoded = self.get_all_dope_score(decoded, refine=refine, **kwargs)
 
-        return dict(dataset_dope = dope_dataset, 
-                    decoded_dope = dope_decoded)
+        return dict(dataset_dope=dope_dataset, 
+                    decoded_dope=dope_decoded)
 
     def get_ramachandran(self, key):
         '''
@@ -213,7 +222,7 @@ class MolearnAnalysis(object):
             if bounds_from is None:
                 bounds_from = "all"
             
-            bounds = self._get_bounds(bounds_from, exclude = key)
+            bounds = self._get_bounds(bounds_from, exclude=key)
         
         bx = (bounds[1]-bounds[0])*padding
         by = (bounds[3]-bounds[2])*padding
@@ -221,12 +230,12 @@ class MolearnAnalysis(object):
         self.yvals = np.linspace(bounds[2]-by, bounds[3]+by, samples)
         self.n_samples = samples
         meshgrid = np.meshgrid(self.xvals, self.yvals)
-        stack = np.stack(meshgrid, axis=2).reshape(-1,1,2)
+        stack = np.stack(meshgrid, axis=2).reshape(-1, 1, 2)
         self.set_encoded(key, stack)
         
         return key
 
-    def _get_bounds(self, bounds_from, exclude = ['grid', 'grid_decoded']):
+    def _get_bounds(self, bounds_from, exclude=['grid', 'grid_decoded']):
         '''        
         :param bounds_from: keys of datasets to be considered for identification of boundaries in latent space
         :param exclude: keys of dataset not to consider
@@ -243,20 +252,22 @@ class MolearnAnalysis(object):
         xmin, ymin, xmax, ymax = [], [], [], []
         for key in bounds_from:
             z = self.get_encoded(key)
-            xmin.append(z[:,0].min())
-            ymin.append(z[:,1].min())
-            xmax.append(z[:,0].max())
-            ymax.append(z[:,1].max())
+            xmin.append(z[:, 0].min())
+            ymin.append(z[:, 1].min())
+            xmax.append(z[:, 0].max())
+            ymax.append(z[:, 1].max())
             
         xmin, ymin = min(xmin), min(ymin)
         xmax, ymax = max(xmax), max(ymax)
         return xmin, xmax, ymin, ymax
 
-    def scan_error_from_target(self, key, index=None):
+    def scan_error_from_target(self, key, index=None, align=True):
         '''
         Calculate landscape of RMSD vs single target structure. Target should be previously loaded datset containing a single conformation.  
   
         :param str key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
+        :param int index: index of conformation to be selected from dataset containing multiple conformations.
+        :param bool align: if True, structures generated from the grid are aligned to target prior RMSD calculation.
         :return: RMSD latent space NxN surface
         :return: x-axis values
         :return: y-axis values
@@ -264,11 +275,25 @@ class MolearnAnalysis(object):
         s_key = f'RMSD_from_{key}' if index is None else f'RMSD_from_{key}_index_{index}'
         if s_key not in self.surfaces:
             assert 'grid' in self._encoded, 'make sure to call MolearnAnalysis.setup_grid first'
-            target = self.get_dataset(key) if index is None else self.get_dataset(key)[index]
-            assert target.shape[0] == 1
+            target = self.get_dataset(key) if index is None else self.get_dataset(key)[index].unsqueeze(0)
+            if target.shape[0] != 1:
+                msg = f'dataset {key} shape is {target.shape}. \
+A dataset with a single conformation is expected.\
+Either pass a key that points to a single structure or pass the index of the \
+structure you want, e.g., analyser.scan_error_from_target(key, index=0)'
+                raise Exception(msg)
+            
             decoded = self.get_decoded('grid')
-            rmsd = (((decoded-target)*self.stdval)**2).sum(axis=1).mean(axis=-1).sqrt()
-            self.surfaces[s_key] = rmsd.reshape(self.n_samples, self.n_samples).numpy()
+            if align:
+                crd_ref = as_numpy(target.permute(0, 2, 1))*self.stdval
+                crd_mdl = as_numpy(decoded.permute(0, 2, 1))*self.stdval
+                m = deepcopy(self.mol)
+                m.coordinates = np.concatenate([crd_ref, crd_mdl])
+                m.set_current(0)
+                rmsd = np.array([m.rmsd(0, i) for i in range(1, len(m.coordinates))])
+            else:
+                rmsd = (((decoded-target)*self.stdval)**2).sum(axis=1).mean(axis=-1).sqrt()
+            self.surfaces[s_key] = as_numpy(rmsd.reshape(self.n_samples, self.n_samples))
             
         return self.surfaces[s_key], self.xvals, self.yvals
 
@@ -288,18 +313,19 @@ class MolearnAnalysis(object):
         z_key = 'Network_z_drift'
         if s_key not in self.surfaces:
             assert 'grid' in self._encoded, 'make sure to call MolearnAnalysis.setup_grid first'
-            decoded = self.get_decoded('grid')           # decode grid 
-            #self.set_dataset('grid_decoded', decoded)    # add back as dataset w. different name
+            decoded = self.get_decoded('grid')            # decode grid 
+            # self.set_dataset('grid_decoded', decoded)   # add back as dataset w. different name
             self._datasets['grid_decoded'] = decoded
-            decoded_2 = self.get_decoded('grid_decoded') # encode, and decode a second time
-            grid = self.get_encoded('grid')              # retrieve original grid
-            grid_2 = self.get_encoded('grid_decoded')    # retrieve decoded encoded grid
+            decoded_2 = self.get_decoded('grid_decoded')  # encode, and decode a second time
+            grid = self.get_encoded('grid')               # retrieve original grid
+            grid_2 = self.get_encoded('grid_decoded')     # retrieve decoded encoded grid
 
             rmsd = (((decoded-decoded_2)*self.stdval)**2).sum(axis=1).mean(axis=-1).sqrt()
             z_drift = ((grid-grid_2)**2).mean(axis=2).mean(axis=1).sqrt()
 
             self.surfaces[s_key] = rmsd.reshape(self.n_samples, self.n_samples).numpy()
             self.surfaces[z_key] = z_drift.reshape(self.n_samples, self.n_samples).numpy()
+            
         return self.surfaces[s_key], self.surfaces[z_key], self.xvals, self.yvals
 
     def _ramachandran_score(self, frame):
@@ -308,10 +334,10 @@ class MolearnAnalysis(object):
         AsyncResult.get() will return the result
         '''
         if not hasattr(self, 'ramachandran_score_class'):
-            self.ramachandran_score_class = Parallel_Ramachandran_Score(self.mol, self.processes) #Parallel_Ramachandran_Score(self.mol)
+            self.ramachandran_score_class = Parallel_Ramachandran_Score(self.mol, self.processes)
         assert len(frame.shape) == 2, f'We wanted 2D data but got {len(frame.shape)} dimensions'
         if frame.shape[0] == 3:
-            f = frame.permute(1,0)
+            f = frame.permute(1, 0)
         else:
             assert frame.shape[1] == 3
             f = frame
@@ -319,11 +345,10 @@ class MolearnAnalysis(object):
             f = f.data.cpu().numpy()
         
         return self.ramachandran_score_class.get_score(f*self.stdval)
-        #nf, na, no, nt = self.ramachandran_score_class.get_score(f*self.stdval)
-        #return {'favored':nf, 'allowed':na, 'outliers':no, 'total':nt}
+        # nf, na, no, nt = self.ramachandran_score_class.get_score(f*self.stdval)
+        # return {'favored':nf, 'allowed':na, 'outliers':no, 'total':nt}
 
-
-    def _dope_score(self, frame, refine=True):
+    def _dope_score(self, frame, refine=True, **kwargs):
         '''
         returns multiprocessing AsyncResult
         AsyncResult.get() will return the result
@@ -333,14 +358,14 @@ class MolearnAnalysis(object):
 
         assert len(frame.shape) == 2, f'We wanted 2D data but got {len(frame.shape)} dimensions'
         if frame.shape[0] == 3:
-            f = frame.permute(1,0)
+            f = frame.permute(1, 0)
         else:
-            assert frame.shape[1] ==3
+            assert frame.shape[1] == 3
             f = frame
         if isinstance(f,torch.Tensor):
             f = f.data.cpu().numpy()
 
-        return self.dope_score_class.get_score(f*self.stdval, refine=refine)
+        return self.dope_score_class.get_score(f*self.stdval, refine=refine, **kwargs)
 
     def get_all_ramachandran_score(self, tensor):
         '''
@@ -352,7 +377,7 @@ class MolearnAnalysis(object):
         results = []
         for f in tensor:
             results.append(self._ramachandran_score(f))
-        for r in results:
+        for r in tqdm(results,desc='Calc rama'):
             favored, allowed, outliers, total = r.get()
             rama['favored'].append(favored)
             rama['allowed'].append(allowed)
@@ -370,7 +395,7 @@ class MolearnAnalysis(object):
         results = []
         for f in tensor:
             results.append(self._dope_score(f, refine=refine))
-        results = np.array([r.get() for r in results])
+        results = np.array([r.get() for r in tqdm(results, desc='Calc Dope')])
         return results
 
     def reference_dope_score(self, frame):
@@ -379,7 +404,7 @@ class MolearnAnalysis(object):
         :return: DOPE score
         '''
         self.mol.coordinates = deepcopy(frame)
-        self.mol.write_pdb('tmp.pdb', split_struc = False)
+        self.mol.write_pdb('tmp.pdb', split_struc=False)
         env = Environ()
         env.libs.topology.read(file='$(LIB)/top_heav.lib')
         env.libs.parameters.read(file='$(LIB)/par.lib')
@@ -401,7 +426,9 @@ class MolearnAnalysis(object):
         '''
         
         if key is None:
-            if refine:
+            if refine=='both':
+                key = "DOPE_both"
+            elif refine:
                 key = "DOPE_refined"
             else:
                 key = "DOPE_unrefined"
@@ -409,9 +436,11 @@ class MolearnAnalysis(object):
         if key not in self.surfaces:
             assert 'grid' in self._encoded, 'make sure to call MolearnAnalysis.setup_grid first'
             decoded = self.get_decoded('grid')
-            result = self.get_all_dope_score(decoded, **kwargs)
-            
-            self.surfaces[key] = as_numpy(result.reshape(self.n_samples, self.n_samples))
+            result = self.get_all_dope_score(decoded, refine=refine, **kwargs)
+            if refine=='both':
+                self.surfaces[key] = as_numpy(result.reshape(self.n_samples, self.n_samples, 2))
+            else:
+                self.surfaces[key] = as_numpy(result.reshape(self.n_samples, self.n_samples))
             
         return self.surfaces[key], self.xvals, self.yvals
 
@@ -448,8 +477,8 @@ class MolearnAnalysis(object):
         '''
         decoded = self.get_decoded('grid')
         results = []
-        for i,j in enumerate(decoded):
-            s = (j.view(1,3,-1).permute(0,2,1)*self.stdval).numpy()
+        for i, j in enumerate(decoded):
+            s = (j.view(1, 3, -1).permute(0, 2, 1)*self.stdval).numpy()
             results.append(fct(s, *params))
         self.surfaces[key] = np.array(results).reshape(self.n_samples, self.n_samples)
         
@@ -469,7 +498,5 @@ class MolearnAnalysis(object):
 
         return s*self.stdval + self.meanval
 
-
     def __getstate__(self):
         return {key:value for key, value in dict(self.__dict__).items() if key not in ['dope_score_class', 'ramachandran_score_class']}
-
