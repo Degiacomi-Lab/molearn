@@ -70,6 +70,23 @@ class MolearnAnalysis:
         self._network = value
         self._network.eval()
         self.device = next(self._network.parameters()).device
+
+    def save_pickle(self, filename, ):
+        assert isinstance(filename, str)
+        f = open(filename,'wb')
+        pickle.dump(self, f)
+        f.close()
+
+    @classmethod
+    def from_pickle(cls, filename):
+        assert isinstance(filename, str)
+        f = open(filename,'rb')
+        y = pickle.load(f)
+        assert isinstance(y, cls)
+        return y
+    
+
+
     def set_network(self, network):
         '''
         :param network: a trained neural network defined in :func:`molearn.models <molearn.models>`
