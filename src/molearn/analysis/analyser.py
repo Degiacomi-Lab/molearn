@@ -533,4 +533,22 @@ structure you want, e.g., analyser.scan_error_from_target(key, index=0)'
         return s*self.stdval + self.meanval
 
     def __getstate__(self):
-        return {key:value for key, value in dict(self.__dict__).items() if key not in ['dope_score_class', 'ramachandran_score_class']}
+        return_dict = {}
+        ignore =  ['dope_score_class', 'ramachandran_score_class', '_network']
+        for key, value in dict(self.__dict__).items():
+            if key in ignore:
+                continue
+            if key in ['_datasets', '_decoded']:
+                import hashlib
+                return_dict[f'{key}_hashed'] = {k:hashlib.sha1(np.ascontiguousarray(v.numpy(force=True))).hexdigest() for k,v in value.items()}
+            else:
+                return_dict[key] = value
+        return return_dict
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        self._datasets = {}
+        self._decoded = {}
+        self._network = None
+
+
