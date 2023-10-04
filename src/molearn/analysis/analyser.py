@@ -52,14 +52,31 @@ class MolearnAnalysis:
         self.surfaces = {}
         self.batch_size = 1
         self.processes = 1
+        self._network = None
+    @property
+    def network(self):
+        return self._network
 
+    @network.setter
+    def network(self, value):
+        assert self._network is None, 'you will be overriding network?'
+        from hashlib import sha1
+        h = sha1()
+        h.update(str(value).encode())
+        if hasattr(self, 'network_architecture_hash'):
+            assert self.network_architecture_hash == h.hexdigest()
+        else:
+            self.network_architecture_hash = h.hexdigest()
+        self._network = value
+        self._network.eval()
+        self.device = next(self._network.parameters()).device
     def set_network(self, network):
         '''
         :param network: a trained neural network defined in :func:`molearn.models <molearn.models>`
         '''
         self.network = network
-        self.network.eval()
-        self.device = next(network.parameters()).device
+        #self.network.eval()
+        #self.device = next(network.parameters()).device
 
     def get_dataset(self, key):
         '''
