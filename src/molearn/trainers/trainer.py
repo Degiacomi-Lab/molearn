@@ -138,7 +138,15 @@ class Trainer:
         '''
         pass
 
-    def run(self, max_epochs=100, log_filename=None, log_folder=None, checkpoint_frequency=1, checkpoint_folder='checkpoint_folder', allow_n_failures=10, verbose=None):
+    def prepare_logs(self, log_filename, log_folder=None):
+        self.log_filename = log_filename
+        if log_folder is not None:
+            if not os.path.exists(log_folder):
+                os.mkdir(log_folder)
+            self.log_filename = log_folder+'/'+self.log_filename
+
+
+    def run(self, max_epochs=100, log_filename=None, log_folder=None, checkpoint_frequency=1, checkpoint_folder='checkpoint_folder', allow_n_failures=10, verbose=None, allow_grad_in_valid=False):
         '''
         Calls the following in a loop:
 
@@ -158,12 +166,13 @@ class Trainer:
         :param bool verbose: (default: None) set trainer.verbose. If True, the epoch logs will be printed as well as written to log_filename 
 
         '''
-        if log_filename is not None:
-            self.log_filename = log_filename
-            if log_folder is not None:
-                if not os.path.exists(log_folder):
-                    os.mkdir(log_folder)
-                self.log_filename = log_folder+'/'+self.log_filename
+        self.prepare_logs(log_filename if log_filename is not None else self.log_filename, log_folder)
+        #if log_filename is not None:
+        #    self.log_filename = log_filename
+        #    if log_folder is not None:
+        #        if not os.path.exists(log_folder):
+        #            os.mkdir(log_folder)
+        #        self.log_filename = log_folder+'/'+self.log_filename
         if verbose is not None:
             self.verbose = verbose
 
@@ -173,8 +182,11 @@ class Trainer:
                     time1 = time.time()
                     logs = self.train_epoch(epoch)
                     time2 = time.time()
-                    with torch.no_grad():
+                    if allow_grad_in_valid:
                         logs.update(self.valid_epoch(epoch))
+                    else:
+                        with torch.no_grad():
+                            logs.update(self.valid_epoch(epoch))
                     time3 = time.time()
                     self.scheduler_step(logs)
                     if self.best is None or self.best > logs['valid_loss']:
