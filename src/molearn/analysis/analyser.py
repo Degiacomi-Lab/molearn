@@ -37,7 +37,7 @@ from ..utils import as_numpy
 from tqdm import tqdm
 import warnings
 warnings.filterwarnings("ignore")
-
+import pickle
 
 class MolearnAnalysis:
     '''
@@ -50,6 +50,7 @@ class MolearnAnalysis:
         self._encoded = {}
         self._decoded = {}
         self.surfaces = {}
+        self.analysis_results = {}
         self.batch_size = 1
         self.processes = 1
         self._network = None
@@ -192,6 +193,11 @@ class MolearnAnalysis:
         :param bool align: if True, the RMSD will be calculated by finding the optimal alignment between structures
         :return: 1D array containing the RMSD between input structures and their encoded-decoded counterparts
         '''
+
+        _key = f'error_{key}_align{align}'
+        if _key in self.analysis_results:
+            return self.analysis_results[_key]
+
         dataset = self.get_dataset(key)
         z = self.get_encoded(key)
         decoded = self.get_decoded(key)
@@ -211,8 +217,9 @@ class MolearnAnalysis:
                 rmsd = np.sqrt(np.sum((crd_ref.flatten()-crd_mdl.flatten())**2)/crd_mdl.shape[1])  # Cartesian L2 norm
 
             err.append(rmsd)
-
-        return np.array(err)
+        
+        self.analysis_results[_key] = np.array(err)
+        return self.analysis_results[_key]
 
     def get_dope(self, key, refine=True, **kwargs):
         '''
@@ -220,26 +227,35 @@ class MolearnAnalysis:
         :param bool refine: if True, refine structures before calculating DOPE score
         :return: dictionary containing DOPE score of dataset, and its decoded counterpart
         '''
+
+        _key = f'dope_{key}_refine{refine}'
+        if _key in self.analysis_results:
+            return self.analysis_results[_key]
+
         dataset = self.get_dataset(key)
         decoded = self.get_decoded(key)
         
         dope_dataset = self.get_all_dope_score(dataset, refine=refine, **kwargs)
         dope_decoded = self.get_all_dope_score(decoded, refine=refine, **kwargs)
 
-        return dict(dataset_dope=dope_dataset, 
+        self.analysis_results[_key] = dict(dataset_dope=dope_dataset, 
                     decoded_dope=dope_decoded)
+        return self.analysis_results[_key]
 
     def get_ramachandran(self, key):
         '''
         :param str key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
         '''
-        
+        _key = f'ramachandran_{key}'
+        if _key in self.analysis_results:
+            return self.analysis_results[_key]
         dataset = self.get_dataset(key)
         decoded = self.get_decoded(key)
 
         ramachandran = {f'dataset_{key}':value for key, value in self.get_all_ramachandran_score(dataset).items()}
         ramachandran.update({f'decoded_{key}':value for key, value in self.get_all_ramachandran_score(decoded).items()})
-        return ramachandran
+        self.analysis_results[_key] = ramachandran
+        return self.analysis_results[_key]
 
     def setup_grid(self, samples=64, bounds_from=None, bounds=None, padding=0.1):
         '''
