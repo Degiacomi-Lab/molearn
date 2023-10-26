@@ -1,6 +1,29 @@
 import torch
 from molearn.loss_functions import openmm_energy
 from .trainer import Trainer
+import os
+
+
+soft_xml_script='''\
+<ForceField>
+ <Script>
+import openmm as mm
+nb = mm.CustomNonbondedForce('C/((r/0.2)^4+1)')
+nb.addGlobalParameter('C', 1.0)
+sys.addForce(nb)
+for i in range(sys.getNumParticles()):
+    nb.addParticle([])
+exclusions = set()
+for bond in data.bonds:
+    exclusions.add((min(bond.atom1, bond.atom2), max(bond.atom1, bond.atom2)))
+for angle in data.angles:
+    exclusions.add((min(angle[0], angle[2]), max(angle[0], angle[2])))
+for a1, a2 in exclusions:
+    nb.addExclusion(a1, a2)
+ </Script>
+</ForceField>
+'''
+
 
 
 class OpenMM_Physics_Trainer(Trainer):
@@ -12,8 +35,8 @@ class OpenMM_Physics_Trainer(Trainer):
     '''
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-    def prepare_physics(self, physics_scaling_factor=0.1, clamp_threshold=1e8, clamp=False, start_physics_at=0, **kwargs):
+        
+    def prepare_physics(self, physics_scaling_factor=0.1, clamp_threshold=1e8, clamp=False, start_physics_at=0, xml_file = None, soft_NB = True, **kwargs):
         '''
         Create ``self.physics_loss`` object from :func:`loss_functions.openmm_energy <molearn.loss_functions.openmm_energy>`
         Needs ``self.mol``, ``self.std``, and ``self._data.atoms`` to have been set with :func:`Trainer.set_data<molearn.trainer.Trainer.set_data>`
@@ -25,13 +48,24 @@ class OpenMM_Physics_Trainer(Trainer):
         :param \*\*kwargs: All aditional kwargs will be passed to :func:`openmm_energy <molearn.loss_functions.openmm_energy>`
 
         '''
+        if xml_file is None and soft_NB==True:
+            print('using soft nonbonded forces by default')
+            from molearn.utils import random_string
+            tmp_filename = f'soft_nonbonded_{random_string()}.xml'
+            with open(tmp_filename, 'w') as f:
+                f.write(soft_xml_script)
+            xml_file = ['amber14-all.xml', tmp_filename]
+            kwargs['remove_NB'] = True
+        elif xml_file is None:
+            xml_file = ['amber14-all.xml']
         self.start_physics_at = start_physics_at
         self.psf = physics_scaling_factor
         if clamp:
             clamp_kwargs = dict(max=clamp_threshold, min=-clamp_threshold)
         else:
             clamp_kwargs = None
-        self.physics_loss = openmm_energy(self.mol, self.std, clamp=clamp_kwargs, platform='CUDA' if self.device == torch.device('cuda') else 'Reference', atoms=self._data.atoms, **kwargs)
+        self.physics_loss = openmm_energy(self.mol, self.std, clamp=clamp_kwargs, platform='CUDA' if self.device == torch.device('cuda') else 'Reference', atoms=self._data.atoms, xml_file = xml_file, **kwargs)
+        os.remove(tmp_filename)
 
     def common_physics_step(self, batch, latent):
         '''
