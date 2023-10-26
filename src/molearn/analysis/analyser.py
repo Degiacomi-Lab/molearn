@@ -37,7 +37,7 @@ from ..utils import as_numpy
 from tqdm import tqdm
 import warnings
 warnings.filterwarnings("ignore")
-
+import pickle
 
 class MolearnAnalysis:
     '''
@@ -50,16 +50,55 @@ class MolearnAnalysis:
         self._encoded = {}
         self._decoded = {}
         self.surfaces = {}
+        self.analysis_results = {}
+        self.xyvals = {}
         self.batch_size = 1
         self.processes = 1
+        self._network = None
+        self.grad = False
+
+    @property
+    def network(self):
+        return self._network
+
+    @network.setter
+    def network(self, value):
+        assert self._network is None, 'you will be overriding network?'
+        from hashlib import sha1
+        h = sha1()
+        h.update(str(value).encode())
+        if hasattr(self, 'network_architecture_hash'):
+            assert self.network_architecture_hash == h.hexdigest()
+        else:
+            self.network_architecture_hash = h.hexdigest()
+        self._network = value
+        self._network.eval()
+        self.device = next(self._network.parameters()).device
+
+    def save_pickle(self, filename, ):
+        assert isinstance(filename, str)
+        f = open(filename,'wb')
+        pickle.dump(self, f)
+        f.close()
+
+    @classmethod
+    def from_pickle(cls, filename):
+        assert isinstance(filename, str)
+        f = open(filename,'rb')
+        y = pickle.load(f)
+        assert isinstance(y, cls)
+        return y
+    
+
 
     def set_network(self, network):
         '''
         :param network: a trained neural network defined in :func:`molearn.models <molearn.models>`
         '''
         self.network = network
-        self.network.eval()
-        self.device = next(network.parameters()).device
+        #self.network.eval()
+        #self.device = next(network.parameters()).device
+        #self.network_architecture_hash = hash(str())
 
     def get_dataset(self, key):
         '''
@@ -85,6 +124,12 @@ class MolearnAnalysis:
             raise NotImplementedError('data should be an PDBData instance')
         for _key, dataset in self._datasets.items():
             assert dataset.shape[2]== _data.dataset.shape[2] and dataset.shape[1]==_data.dataset.shape[1], f'number of d.o.f differes: {key} has shape {_data.shape} while {_key} has shape {dataset.shape}'
+        
+        if hasattr(self, '_datasets_hashed'):
+            if key in self._datasets_hashed:
+                import hashlib
+                assert self._datasets_hashed[key]==hashlib.sha1(np.ascontiguousarray(_data.dataset.float().numpy(force=True))).hexdigest()
+
         self._datasets[key] = _data.dataset.float()
         if not hasattr(self, 'meanval'):
             self.meanval = _data.mean
@@ -97,11 +142,35 @@ class MolearnAnalysis:
         if not hasattr(self, 'shape'):
             self.shape = (_data.dataset.shape[1], _data.dataset.shape[2])
 
-    def get_encoded(self, key):
+    def get_encoded_grad(self, key):
         '''
         :param str key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
         :return: array containing the encoding in latent space of dataset associated with key
         '''
+        if key not in self._encoded:
+            assert key in self._datasets, f'key {key} does not exist in internal _datasets or in _latent_coords, add it with MolearnAnalysis.set_latent_coords(key, torch.Tensor) '\
+            'or add the corresponding dataset with MolearnAnalysis.set_dataset(name, PDBDataset)'
+            dataset = self.get_dataset(key)
+            batch_size = self.batch_size
+            encoded = None
+            for i in tqdm(range(0, dataset.shape[0], batch_size), desc=f'encoding {key}'):
+                z = self.network.encode(dataset[i:i+batch_size].to(self.device)).cpu().detach()
+                if encoded is None:
+                    encoded = torch.empty(dataset.shape[0], z.shape[1], z.shape[2])
+                encoded[i:i+batch_size] = z
+            self._encoded[key] = encoded
+                
+        return self._encoded[key]
+
+
+
+    def get_encoded(self, key, grad=False):
+        '''
+        :param str key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
+        :return: array containing the encoding in latent space of dataset associated with key
+        '''
+        if grad or self.grad:
+            return self.get_encoded_grad(key)
         if key not in self._encoded:
             assert key in self._datasets, f'key {key} does not exist in internal _datasets or in _latent_coords, add it with MolearnAnalysis.set_latent_coords(key, torch.Tensor) '\
             'or add the corresponding dataset with MolearnAnalysis.set_dataset(name, PDBDataset)'
@@ -129,9 +198,9 @@ class MolearnAnalysis:
         :param str key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
         '''
         if key not in self._decoded:
+            encoded = self.get_encoded(key)
             with torch.no_grad():
                 batch_size = self.batch_size
-                encoded = self.get_encoded(key)
                 decoded = torch.empty(encoded.shape[0], *self.shape).float()
                 for i in tqdm(range(0, encoded.shape[0], batch_size), desc=f'Decoding {key}'):
                     decoded[i:i+batch_size] = self.network.decode(encoded[i:i+batch_size].to(self.device))[:, :, :self.shape[1]].cpu()
@@ -158,6 +227,11 @@ class MolearnAnalysis:
         :param bool align: if True, the RMSD will be calculated by finding the optimal alignment between structures
         :return: 1D array containing the RMSD between input structures and their encoded-decoded counterparts
         '''
+
+        _key = f'error_{key}_align{align}'
+        if _key in self.analysis_results:
+            return self.analysis_results[_key]
+
         dataset = self.get_dataset(key)
         z = self.get_encoded(key)
         decoded = self.get_decoded(key)
@@ -177,8 +251,9 @@ class MolearnAnalysis:
                 rmsd = np.sqrt(np.sum((crd_ref.flatten()-crd_mdl.flatten())**2)/crd_mdl.shape[1])  # Cartesian L2 norm
 
             err.append(rmsd)
-
-        return np.array(err)
+        
+        self.analysis_results[_key] = np.array(err)
+        return self.analysis_results[_key]
 
     def get_dope(self, key, refine=True, **kwargs):
         '''
@@ -186,28 +261,37 @@ class MolearnAnalysis:
         :param bool refine: if True, refine structures before calculating DOPE score
         :return: dictionary containing DOPE score of dataset, and its decoded counterpart
         '''
+
+        _key = f'dope_{key}_refine{refine}'
+        if _key in self.analysis_results:
+            return self.analysis_results[_key]
+
         dataset = self.get_dataset(key)
         decoded = self.get_decoded(key)
         
         dope_dataset = self.get_all_dope_score(dataset, refine=refine, **kwargs)
         dope_decoded = self.get_all_dope_score(decoded, refine=refine, **kwargs)
 
-        return dict(dataset_dope=dope_dataset, 
+        self.analysis_results[_key] = dict(dataset_dope=dope_dataset, 
                     decoded_dope=dope_decoded)
+        return self.analysis_results[_key]
 
     def get_ramachandran(self, key):
         '''
         :param str key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
         '''
-        
+        _key = f'ramachandran_{key}'
+        if _key in self.analysis_results:
+            return self.analysis_results[_key]
         dataset = self.get_dataset(key)
         decoded = self.get_decoded(key)
 
         ramachandran = {f'dataset_{key}':value for key, value in self.get_all_ramachandran_score(dataset).items()}
         ramachandran.update({f'decoded_{key}':value for key, value in self.get_all_ramachandran_score(decoded).items()})
-        return ramachandran
+        self.analysis_results[_key] = ramachandran
+        return self.analysis_results[_key]
 
-    def setup_grid(self, samples=64, bounds_from=None, bounds=None, padding=0.1):
+    def setup_grid(self, samples=64, bounds_from=None, bounds=None, padding=0.1, grid_key='grid'):
         '''
         Define a NxN point grid regularly sampling the latent space.
         
@@ -215,25 +299,29 @@ class MolearnAnalysis:
         :param str/list bounds_from: Name(s) of datasets to use as reference, either as single string, a list of strings, or 'all'
         :param tuple/list bounds: tuple (xmin, xmax, ymin, ymax) or None
         :param float padding: define size of extra spacing around boundary conditions (as ratio of axis dimensions)
+        :param str grid_key: The key that will be associated with this grid
         '''
-        
-        key = 'grid'
+        assert grid_key not in self._encoded, f'{grid_key} already exists in encoded, try using a different value for grid_key'
+        assert grid_key not in self._datasets, f'{grid_key} already exists in datasets, try using a different value for grid_key'
+        assert grid_key not in self._decoded, f'{grid_key} already exists in decoded, try using a different value for grid_key'
         if bounds is None:
             if bounds_from is None:
                 bounds_from = "all"
             
-            bounds = self._get_bounds(bounds_from, exclude=key)
+            bounds = self._get_bounds(bounds_from, exclude=[grid_key, f'{grid_key}_decoded'])
         
         bx = (bounds[1]-bounds[0])*padding
         by = (bounds[3]-bounds[2])*padding
-        self.xvals = np.linspace(bounds[0]-bx, bounds[1]+bx, samples)
-        self.yvals = np.linspace(bounds[2]-by, bounds[3]+by, samples)
+        self.xyvals[grid_key] = (np.linspace(bounds[0]-bx, bounds[1]+bx, samples), np.linspace(bounds[2]-by, bounds[3]+by, samples))
         self.n_samples = samples
-        meshgrid = np.meshgrid(self.xvals, self.yvals)
-        stack = np.stack(meshgrid, axis=2).reshape(-1, 1, 2)
-        self.set_encoded(key, stack)
+        meshgrid = np.meshgrid(*self.xyvals[grid_key])
+        stack = np.stack(meshgrid, axis=2).reshape(-1, 2, 1)
+        self.set_encoded(grid_key, stack)
         
-        return key
+        return grid_key
+
+    def as_numpy(self,x):
+        return as_numpy(x)
 
     def _get_bounds(self, bounds_from, exclude=['grid', 'grid_decoded']):
         '''        
@@ -261,29 +349,30 @@ class MolearnAnalysis:
         xmax, ymax = max(xmax), max(ymax)
         return xmin, xmax, ymin, ymax
 
-    def scan_error_from_target(self, key, index=None, align=True):
+    def scan_error_from_target(self, target_key, grid_key ='grid', index=None, align=True):
         '''
         Calculate landscape of RMSD vs single target structure. Target should be previously loaded datset containing a single conformation.  
   
-        :param str key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
+        :param str target_key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
+        :param str grid_key: key pointing to the grid to scan error from
         :param int index: index of conformation to be selected from dataset containing multiple conformations.
         :param bool align: if True, structures generated from the grid are aligned to target prior RMSD calculation.
         :return: RMSD latent space NxN surface
         :return: x-axis values
         :return: y-axis values
         '''
-        s_key = f'RMSD_from_{key}' if index is None else f'RMSD_from_{key}_index_{index}'
+        s_key = f'RMSD_from_{target_key}_in_{grid_key}' if index is None else f'RMSD_from_{target_key}_index_{index}_in_{grid_key}'
         if s_key not in self.surfaces:
-            assert 'grid' in self._encoded, 'make sure to call MolearnAnalysis.setup_grid first'
-            target = self.get_dataset(key) if index is None else self.get_dataset(key)[index].unsqueeze(0)
+            assert grid_key in self._encoded, 'make sure to call MolearnAnalysis.setup_grid first'
+            target = self.get_dataset(target_key) if index is None else self.get_dataset(target_key)[index].unsqueeze(0)
             if target.shape[0] != 1:
-                msg = f'dataset {key} shape is {target.shape}. \
+                msg = f'dataset {target_key} shape is {target.shape}. \
 A dataset with a single conformation is expected.\
 Either pass a key that points to a single structure or pass the index of the \
 structure you want, e.g., analyser.scan_error_from_target(key, index=0)'
                 raise Exception(msg)
             
-            decoded = self.get_decoded('grid')
+            decoded = self.get_decoded(grid_key)
             if align:
                 crd_ref = as_numpy(target.permute(0, 2, 1))*self.stdval
                 crd_mdl = as_numpy(decoded.permute(0, 2, 1))*self.stdval
@@ -295,38 +384,108 @@ structure you want, e.g., analyser.scan_error_from_target(key, index=0)'
                 rmsd = (((decoded-target)*self.stdval)**2).sum(axis=1).mean(axis=-1).sqrt()
             self.surfaces[s_key] = as_numpy(rmsd.reshape(self.n_samples, self.n_samples))
             
-        return self.surfaces[s_key], self.xvals, self.yvals
+        xvals, yvals = self.xyvals[grid_key]
+        return self.surfaces[s_key], xvals, yvals
 
-    def scan_error(self, s_key='Network_RMSD', z_key='Network_z_drift'):
+    
+    def encode_best(self, target_key, grid_key = 'grid'):
+        assert grid_key in self._encoded, 'make sure to call MolearnAnalysis.setup_grid first'
+        encoded_key = f'{target_key}_best_in_{grid_key}'
+        if encoded_key in self._encoded:
+            return self.get_encoded(encoded_key), encoded_key
+        m = deepcopy(self.mol)
+        decoded = self.get_decoded(grid_key).permute(0,2,1)*self.stdval
+        shape = (int(np.sqrt(decoded.shape[0])), int(np.sqrt(decoded.shape[0])), decoded.shape[1], decoded.shape[2])
+        assert shape[0]==64, 'only implemented for 64x64 grid'
+        grid_structures = decoded.reshape(*shape)
+        dataset = as_numpy(self.get_dataset(target_key).permute(0,2,1)*self.stdval)
+        index = []
+        for i in tqdm(range(dataset.shape[0]), desc=f'encode best'):
+            index.append(self.encode_one_best(dataset[[i]], grid_structures,m))
+        best_z = self._encoded[grid_key][index]
+        #best_z = self._encoded[grid_key][[self.encode_one_best(dataset[[i]], grid_structures,m) for i in range(dataset.shape[0])]]
+        self.set_encoded(encoded_key, best_z)
+        return self.get_encoded(encoded_key), encoded_key
+
+
+    def encode_one_best(self,x, grid_structures,m):
+        def calc_rmsd(x,y):
+            crd_ref = x
+            crd_mdl = y
+            m.coordinates = np.concatenate([crd_ref, crd_mdl])
+            m.set_current(0)
+            return m.rmsd(0,1)
+        
+        rmsd = np.full([64,64], np.nan)
+        for i in range(0,64,8):
+            for j in range(0,64,8):
+                if np.isnan(rmsd[i,j]):
+                    #from IPython import embed
+                    #embed(header='huh?')
+                    rmsd[i,j] = calc_rmsd(x,grid_structures[[i],[j]])
+        best = np.argpartition(rmsd.reshape(-1),8)[:8]
+        de = 8
+        s = 4
+        for b in best:
+            index = np.unravel_index(b,(64,64))
+            for i in range(max(0,index[0]-de),min(index[0]+de+1,64),s):
+                for j in range(max(0,index[1]-de),min(index[1]+de+1,64),s):
+                    if np.isnan(rmsd[i,j]):
+                        rmsd[i,j] = calc_rmsd(x,grid_structures[[i],[j]])
+        best = np.argpartition(rmsd.reshape(-1),8)[:8]
+        de = 4
+        s = 2
+        for b in best:
+            index = np.unravel_index(b,(64,64))
+            for i in range(max(0,index[0]-de),min(index[0]+de+1,64),s):
+                for j in range(max(0,index[1]-de),min(index[1]+de+1,64),s):
+                    if np.isnan(rmsd[i,j]):
+                        rmsd[i,j] = calc_rmsd(x,grid_structures[[i],[j]])
+        best = np.argpartition(rmsd.reshape(-1),8)[:8]
+        de = 2
+        s = 1
+        for b in best:
+            index = np.unravel_index(b,(64,64))
+            for i in range(max(0,index[0]-de),min(index[0]+de+1,64),s):
+                for j in range(max(0,index[1]-de),min(index[1]+de+1,64),s):
+                    if np.isnan(rmsd[i,j]):
+                        rmsd[i,j] = calc_rmsd(x,grid_structures[[i],[j]])
+        return np.nanargmin(rmsd) #MA._encoded
+        
+
+    def scan_error(self, grid_key = 'grid', RMSD_key='Network_RMSD', z_drift_key='Network_z_drift'):
         '''
         Calculate RMSD and z-drift on a grid sampling the latent space.
         Requires a grid system to be defined via a prior call to :func:`set_dataset <molearn.analysis.MolearnAnalysis.setup_grid>`.
         
-        :param str s_key: label for RMSD dataset
-        :param str z_key: label for z-drift dataset
+        :param str grid_key: Key to the grid to scan error over
+        :param str RMSD_key: label for RMSD dataset
+        :param str z_drift_key: label for z-drift dataset
         :return: input-to-decoded RMSD latent space NxN surface
         :return: z-drift latent space NxN surface
         :return: x-axis values
         :return: y-axis values
         '''
-        s_key = 'Network_RMSD'
-        z_key = 'Network_z_drift'
+        s_key = f'{grid_key}_{RMSD_key}'
+        z_key = f'{grid_key}_{z_drift_key}'
         if s_key not in self.surfaces:
-            assert 'grid' in self._encoded, 'make sure to call MolearnAnalysis.setup_grid first'
-            decoded = self.get_decoded('grid')            # decode grid 
+            assert grid_key in self._encoded, 'make sure to call MolearnAnalysis.setup_grid first'
+            decoded = self.get_decoded(grid_key)            # decode grid 
             # self.set_dataset('grid_decoded', decoded)   # add back as dataset w. different name
-            self._datasets['grid_decoded'] = decoded
-            decoded_2 = self.get_decoded('grid_decoded')  # encode, and decode a second time
-            grid = self.get_encoded('grid')               # retrieve original grid
-            grid_2 = self.get_encoded('grid_decoded')     # retrieve decoded encoded grid
+            self._datasets[f'{grid_key}_decoded'] = decoded
+            decoded_2 = self.get_decoded(f'{grid_key}_decoded')  # encode, and decode a second time
+            grid = self.get_encoded(f'{grid_key}')               # retrieve original grid
+            grid_2 = self.get_encoded(f'{grid_key}_decoded')     # retrieve decoded encoded grid
 
             rmsd = (((decoded-decoded_2)*self.stdval)**2).sum(axis=1).mean(axis=-1).sqrt()
             z_drift = ((grid-grid_2)**2).mean(axis=2).mean(axis=1).sqrt()
 
             self.surfaces[s_key] = rmsd.reshape(self.n_samples, self.n_samples).numpy()
             self.surfaces[z_key] = z_drift.reshape(self.n_samples, self.n_samples).numpy()
+        
+        xvals, yvals = self.xyvals[grid_key]
             
-        return self.surfaces[s_key], self.surfaces[z_key], self.xvals, self.yvals
+        return self.surfaces[s_key], self.surfaces[z_key], xvals, yvals
 
     def _ramachandran_score(self, frame):
         '''
@@ -413,38 +572,39 @@ structure you want, e.g., analyser.scan_error_from_target(key, index=0)'
         score = atmsel.assess_dope()
         return score
 
-    def scan_dope(self, key=None, refine=True, **kwargs):
+    def scan_dope(self, grid_key='grid', refine=True, **kwargs):
         '''
         Calculate DOPE score on a grid sampling the latent space.
         Requires a grid system to be defined via a prior call to :func:`set_dataset <molearn.analysis.MolearnAnalysis.setup_grid>`.
         
-        :param str key: label for unrefined DOPE score surface (default is DOPE_unrefined or DOPE_refined)
+        :param str grid_key: What grid to calculate dope over
         :param bool refine: if True, structures generated will be energy minimised before DOPE scoring
         :return: DOPE score latent space NxN surface
         :return: x-axis values
         :return: y-axis values
         '''
         
-        if key is None:
-            if refine=='both':
-                key = "DOPE_both"
-            elif refine:
-                key = "DOPE_refined"
-            else:
-                key = "DOPE_unrefined"
+        if refine=='both':
+            key = f"DOPE_both"
+        elif refine:
+            key = "DOPE_refined"
+        else:
+            key = "DOPE_unrefined"
+        key = f'{grid_key}_{key}'
         
         if key not in self.surfaces:
-            assert 'grid' in self._encoded, 'make sure to call MolearnAnalysis.setup_grid first'
-            decoded = self.get_decoded('grid')
+            assert grid_key in self._encoded, 'make sure to call MolearnAnalysis.setup_grid first'
+            decoded = self.get_decoded(grid_key)
             result = self.get_all_dope_score(decoded, refine=refine, **kwargs)
             if refine=='both':
                 self.surfaces[key] = as_numpy(result.reshape(self.n_samples, self.n_samples, 2))
             else:
                 self.surfaces[key] = as_numpy(result.reshape(self.n_samples, self.n_samples))
             
-        return self.surfaces[key], self.xvals, self.yvals
+        xvals, yvals = self.xyvals[grid_key]
+        return self.surfaces[key], xvals, yvals
 
-    def scan_ramachandran(self):
+    def scan_ramachandran(self, grid_key='grid'):
         '''
         Calculate Ramachandran scores on a grid sampling the latent space.
         Requires a grid system to be defined via a prior call to :func:`set_dataset <molearn.analysis.MolearnAnalysis.setup_grid>`.
@@ -454,35 +614,43 @@ structure you want, e.g., analyser.scan_error_from_target(key, index=0)'
         :return: x-axis values
         :return: y-axis values
         '''
-        keys = {i:f'Ramachandran_{i}' for i in ('favored', 'allowed', 'outliers', 'total')}
+        keys = {i:f'{grid_key}_Ramachandran_{i}' for i in ('favored', 'allowed', 'outliers', 'total')}
         if list(keys.values())[0] not in self.surfaces:
-            assert 'grid' in self._encoded, 'make sure to call MolearnAnalysis.setup_grid first'
-            decoded = self.get_decoded('grid')
+            assert grid_key in self._encoded, 'make sure to call MolearnAnalysis.setup_grid first'
+            decoded = self.get_decoded(grid_key)
             rama = self.get_all_ramachandran_score(decoded)
             for key, value in rama.items():
                 self.surfaces[keys[key]] = value
+        xvals, yvals = self.xyvals[grid_key]
 
-        return self.surfaces['Ramachandran_favored'], self.xvals, self.yvals
+        return self.surfaces[keys['favored']], xvals, yvals
   
-    def scan_custom(self, fct, params, key):
+    def scan_custom(self, fct, params, grid_key='grid', surface_key = 'custom'):
         '''
         Generate a surface coloured as a function of a user-defined function.
         
         :param fct: function taking atomic coordinates as input, an optional list of parameters, and returning a single value.
         :param list params: parameters to be passed to function f. If no parameter is needed, pass an empty list.
-        :param str key: name of the dataset generated by this function scan
+        :param str grid_key: name of grid to scan over
+        :param str surface_key: name of the dataset generated by this function scan
         :return: latent space NxN surface, evaluated according to input function
         :return: x-axis values
         :return: y-axis values
         '''
-        decoded = self.get_decoded('grid')
+
+        skey = f'{grid_key}_{surface_key}'
+        if skey in self.surfaces:
+            xvals, yvals = self.xyvals[grid_key]
+            return self.surfaces[skey], xvals, yvals
+        decoded = self.get_decoded(f'{grid_key}_{surface_key}')
         results = []
         for i, j in enumerate(decoded):
             s = (j.view(1, 3, -1).permute(0, 2, 1)*self.stdval).numpy()
             results.append(fct(s, *params))
-        self.surfaces[key] = np.array(results).reshape(self.n_samples, self.n_samples)
+        self.surfaces[skey] = np.array(results).reshape(self.n_samples, self.n_samples)
+        xvals, yvals = self.xyvals[grid_key]
         
-        return self.surfaces[key], self.xvals, self.yvals
+        return self.surfaces[skey], xvals, yvals
 
     def generate(self, crd):
         '''
@@ -499,4 +667,22 @@ structure you want, e.g., analyser.scan_error_from_target(key, index=0)'
         return s*self.stdval + self.meanval
 
     def __getstate__(self):
-        return {key:value for key, value in dict(self.__dict__).items() if key not in ['dope_score_class', 'ramachandran_score_class']}
+        return_dict = {}
+        ignore =  ['dope_score_class', 'ramachandran_score_class', '_network']
+        for key, value in dict(self.__dict__).items():
+            if key in ignore:
+                continue
+            if key in ['_datasets', '_decoded']:
+                import hashlib
+                return_dict[f'{key}_hashed'] = {k:hashlib.sha1(np.ascontiguousarray(v.numpy(force=True))).hexdigest() for k,v in value.items()}
+            else:
+                return_dict[key] = value
+        return return_dict
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        self._datasets = {}
+        self._decoded = {}
+        self._network = None
+
+
