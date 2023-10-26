@@ -382,6 +382,7 @@ class Trainer:
         :param str checkpoint_folder:  The folder in which to save the checkpoint. 
         :param str loss_key: (default: 'valid_loss') The key with which to get loss from valid_logs.
         '''
+        self.get_repeat(checkpoint_folder)
         valid_loss = valid_logs[loss_key]
         if not os.path.exists(checkpoint_folder):
             os.mkdir(checkpoint_folder)
@@ -393,11 +394,11 @@ class Trainer:
                     'atoms': self._data.atoms,
                     'std': self.std,
                     'mean': self.mean},
-                   f'{checkpoint_folder}/last.ckpt')
+                   f'{checkpoint_folder}/last{self._repeat}.ckpt')
 
         if self.best is None or self.best > valid_loss:
-            filename = f'{checkpoint_folder}/checkpoint_epoch{epoch}_loss{valid_loss}.ckpt'
-            shutil.copyfile(f'{checkpoint_folder}/last.ckpt', filename)
+            filename = f'{checkpoint_folder}/checkpoint{self._repeat}_epoch{epoch}_loss{valid_loss}.ckpt'
+            shutil.copyfile(f'{checkpoint_folder}/last{self._repeat}.ckpt', filename)
             if self.best is not None:
                 os.remove(self.best_name)
             self.best_name = filename
@@ -435,6 +436,22 @@ class Trainer:
             self.optimiser.load_state_dict(checkpoint['optimizer_state_dict'])
         epoch = checkpoint['epoch']
         self.epoch = epoch+1
+
+    def get_repeat(self, checkpoint_folder):
+        if not os.path.exists(checkpoint_folder):
+            os.mkdir(checkpoint_folder)
+        if not hasattr(self, '_repeat'):
+            _repeat = 0
+            self._repeat = f'_{_repeat}' if _repeat>0 else ''
+            for i in range(1000):
+                if not os.path.exists(checkpoint_folder+f'/last{self._repeat}.ckpt'):
+                    break#os.mkdir(checkpoint_folder)
+                else:
+                    _repeat += 1
+                    self._repeat = f'_{_repeat}' if _repeat>0 else ''
+            else:
+                raise Exception('Something went wrong, you surely havnt done 1000 repeats?')
+
 
 
 if __name__=='__main__':
