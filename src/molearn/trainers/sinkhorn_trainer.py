@@ -7,7 +7,8 @@ class Sinkhorn_Trainer(OpenMM_Physics_Trainer):
         super().__init__(*args, **kwargs)
         self.latent_dim = 2 if latent_dim is None else latent_dim
         default = dict(loss = 'sinkhorn', p=2, blur=0.05)
-        self.sinkhorn = SamplesLoss(default, **sinkhorn_kwargs)
+        new_kwargs = dict(default, **sinkhorn_kwargs) if sinkhorn_kwargs is not None else default
+        self.sinkhorn = SamplesLoss(**new_kwargs)
 
     def common_step(self, batch):
         self._internal = {}
