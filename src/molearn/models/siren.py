@@ -15,7 +15,7 @@ class SirenLayer(nn.Module):
         self.is_first = is_first
         self.is_last = is_last
         self.init_weights()
-
+    
     def init_weights(self):
         b = 1 / self.in_f if self.is_first else np.sqrt(6 / self.in_f) / self.w0
         with torch.no_grad():
@@ -37,7 +37,7 @@ class Decoder(nn.Module):
             other_layers.append(SirenLayer(dim0, dim1))
         final_layer = SirenLayer(dimensions[-2], dimensions[-1], is_last=True)
         self.model =  nn.Sequential(first_layer, *other_layers, final_layer)
-
+    
     def forward(self, x):
         return self.model(x)
 
@@ -90,7 +90,7 @@ class AutoEncoder(nn.Module):
             encoding[atomtypes==u,i] = 1.0
         assert (encoding.sum(dim=1)==1).all()
         return encoding
-
+        
 
 
     def decode(self, z):
@@ -101,7 +101,7 @@ class AutoEncoder(nn.Module):
         encoding = self.encoding.repeat(z.shape[0],1,1)
         z_rep = z.repeat(1, encoding.size(1), 1)
         return self.decoder(torch.cat((encoding, z_rep), dim=-1)).permute(0,2,1)
-
+    
 
     def refine_encoding(self, latent, structure):
         '''
@@ -119,10 +119,9 @@ class AutoEncoder(nn.Module):
     def encode(self, structure):
         '''
         :param structure: torch.tensor shape [Batch_size, n_atoms, 3]
-        :returns: torch.tensor shape [batch_size ,1, z]
         '''
         z = torch.zeros(structure.shape[0], 1, self.latent_dimensions).to(structure.device)
-        return self.refine_encoding(z, structure).permute(0,2,1)
+        return self.refine_encoding(z, structure)
 
     def forward(self, x):
         return self.decode(x)
