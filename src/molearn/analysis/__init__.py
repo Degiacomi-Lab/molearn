@@ -10,10 +10,6 @@
 # if not, write to the Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
 
 
-__author__ = "V. K. Ramaswamy, S. C. Musson, C. G. Willcocks, M. T. Degiacomi"
-__version__ = '2.0.1'
-__date__ = '$Date: 2023-05-16 $'
-
 from .analyser import MolearnAnalysis, as_numpy
 from .GUI import MolearnGUI
 from .path import oversample, get_path, get_path_aggregate
