@@ -138,7 +138,18 @@ class Trainer:
         '''
         pass
 
-    def run(self, max_epochs=100, log_filename=None, log_folder=None, checkpoint_frequency=1, checkpoint_folder='checkpoint_folder', allow_n_failures=10, verbose=None):
+    def prepare_logs(self, log_filename, log_folder=None):
+        self.log_filename = log_filename
+        if log_folder is not None:
+            if not os.path.exists(log_folder):
+                os.mkdir(log_folder)
+            if hasattr(self, "_repeat") and self._repeat >0:
+                self.log_filename = f'{log_folder}/{self._repeat}_{self.log_filename}'
+            else:
+                self.log_filename = f'{log_folder}/{self.log_filename}'
+
+
+    def run(self, max_epochs=100, log_filename=None, log_folder=None, checkpoint_frequency=1, checkpoint_folder='checkpoint_folder', allow_n_failures=10, verbose=None, allow_grad_in_valid=False):
         '''
         Calls the following in a loop:
 
@@ -158,12 +169,14 @@ class Trainer:
         :param bool verbose: (default: None) set trainer.verbose. If True, the epoch logs will be printed as well as written to log_filename 
 
         '''
-        if log_filename is not None:
-            self.log_filename = log_filename
-            if log_folder is not None:
-                if not os.path.exists(log_folder):
-                    os.mkdir(log_folder)
-                self.log_filename = log_folder+'/'+self.log_filename
+        self.get_repeat(checkpoint_folder)
+        self.prepare_logs(log_filename if log_filename is not None else self.log_filename, log_folder)
+        #if log_filename is not None:
+        #    self.log_filename = log_filename
+        #    if log_folder is not None:
+        #        if not os.path.exists(log_folder):
+        #            os.mkdir(log_folder)
+        #        self.log_filename = log_folder+'/'+self.log_filename
         if verbose is not None:
             self.verbose = verbose
 
@@ -173,8 +186,11 @@ class Trainer:
                     time1 = time.time()
                     logs = self.train_epoch(epoch)
                     time2 = time.time()
-                    with torch.no_grad():
+                    if allow_grad_in_valid:
                         logs.update(self.valid_epoch(epoch))
+                    else:
+                        with torch.no_grad():
+                            logs.update(self.valid_epoch(epoch))
                     time3 = time.time()
                     self.scheduler_step(logs)
                     if self.best is None or self.best > logs['valid_loss']:
@@ -381,11 +397,11 @@ class Trainer:
                     'atoms': self._data.atoms,
                     'std': self.std,
                     'mean': self.mean},
-                   f'{checkpoint_folder}/last.ckpt')
+                   f'{checkpoint_folder}/last{f"_{self._repeat}" if self._repeat > 0 else ""}.ckpt')
 
         if self.best is None or self.best > valid_loss:
-            filename = f'{checkpoint_folder}/checkpoint_epoch{epoch}_loss{valid_loss}.ckpt'
-            shutil.copyfile(f'{checkpoint_folder}/last.ckpt', filename)
+            filename = f'{checkpoint_folder}/checkpoint{f"_{self._repeat}" if self._repeat>0 else ""}_epoch{epoch}_loss{valid_loss}.ckpt'
+            shutil.copyfile(f'{checkpoint_folder}/last{f"_{self._repeat}" if self._repeat>0 else ""}.ckpt', filename)
             if self.best is not None:
                 os.remove(self.best_name)
             self.best_name = filename
@@ -423,6 +439,20 @@ class Trainer:
             self.optimiser.load_state_dict(checkpoint['optimizer_state_dict'])
         epoch = checkpoint['epoch']
         self.epoch = epoch+1
+
+    def get_repeat(self, checkpoint_folder):
+        if not os.path.exists(checkpoint_folder):
+            os.mkdir(checkpoint_folder)
+        if not hasattr(self, '_repeat'):
+            self._repeat = 0
+            for i in range(1000):
+                if not os.path.exists(checkpoint_folder+f'/last{f"_{self._repeat}" if self._repeat>0 else ""}.ckpt'):
+                    break#os.mkdir(checkpoint_folder)
+                else:
+                    self._repeat += 1
+            else:
+                raise Exception('Something went wrong, you surely havnt done 1000 repeats?')
+
 
 
 if __name__=='__main__':
