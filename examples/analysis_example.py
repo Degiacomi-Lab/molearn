@@ -31,8 +31,10 @@ MA.processes = 2
 # by defining the manual see and loading the dataset in the same order as when
 #the neural network was trained, the same train-test split will be obtained
 data = PDBData()
-data.import_pdb(f'data{os.sep}MurD_closed_selection.pdb')
-data.import_pdb(f'data{os.sep}MurD_open_selection.pdb')
+#data.import_pdb(f'data{os.sep}MurD_closed_selection.pdb')
+#data.import_pdb(f'data{os.sep}MurD_open_selection.pdb')
+data.import_pdb('/home3/pghw87/trajectories/MurD/MurD_closed.pdb')
+data.import_pdb('/home3/pghw87/trajectories/MurD/MurD_open.pdb')
 data.fix_terminal()
 data.atomselect(atoms = ['CA', 'C', 'N', 'CB', 'O'])
 data.prepare_dataset()

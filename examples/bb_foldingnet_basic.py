@@ -10,13 +10,16 @@ if __name__ == '__main__':
 
     ##### Load Data #####
     data = PDBData()
-    data.import_pdb('data/MurD_closed_selection.pdb')
-    data.import_pdb('data/MurD_open_selection.pdb')
+    #data.import_pdb('data/MurD_closed_selection.pdb')
+    #data.import_pdb('data/MurD_open_selection.pdb')
+    data.import_pdb('/home3/pghw87/trajectories/MurD/MurD_closed.pdb')
+    data.import_pdb('/home3/pghw87/trajectories/MurD/MurD_open.pdb')
+
     data.fix_terminal()
     data.atomselect(atoms = ['CA', 'C', 'N', 'CB', 'O'])
 
     ##### Prepare Trainer #####
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = torch.device('cuda')# if torch.cuda.is_available() else 'cpu')
     trainer = OpenMM_Physics_Trainer(device=device)
 
     trainer.set_data(data, batch_size=8, validation_split=0.1, manual_seed = 25)
