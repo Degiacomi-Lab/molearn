@@ -22,7 +22,7 @@ copyright = '2021, S. C. Musson, M. T. Degiacomi'
 author = ' S. C. Musson, M. T. Degiacomi'
 
 # The full version, including alpha/beta/rc tags
-release = '2.0.1'
+release = '2.0.4'
 
 
 # -- General configuration ---------------------------------------------------
