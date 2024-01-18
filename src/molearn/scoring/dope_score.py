@@ -168,7 +168,7 @@ class Parallel_DOPE_Score:
       results = np.array([r.get() for r in results])
     '''
     
-    def __init__(self, mol, processes=-1, context='spawn', **kwargs):
+    def __init__(self, mol, processes=-1, context='fork', **kwargs):
         '''
         :param biobox.Molecule mol: biobox molecule containing one example frame of the protein to be analysed. This will be passed to DOPE_Score class instances in each thread.
         :param int processes: (default: -1) Number of processes argument to pass to multiprocessing.pool. This controls the number of threads created.
