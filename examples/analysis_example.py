@@ -6,6 +6,7 @@ from molearn.models.foldingnet import AutoEncoder
 from molearn.analysis import MolearnAnalysis
 from molearn.data import PDBData
 import matplotlib.pyplot as plt
+from molearn.utils import as_numpy
 
 #%%
 # Specify FUll_DATASETS
@@ -92,7 +93,7 @@ if __name__ == '__main__':
 
 
 #%%
-#Calculate RMSD of training and test set
+# Calculate RMSD of training and test set
 if __name__ == '__main__':
     print("> calculating RMSD of training and test set")
 
@@ -101,6 +102,8 @@ if __name__ == '__main__':
     err_test = MA.get_error('test')
 
     print(f'Mean RMSD is {err_train.mean()} for training set and {err_valid.mean()} for valid set and {err_test.mean()} for test set')
+
+    # Plot RMSD 
     fig, ax = plt.subplots()
     violin = ax.violinplot([err_train, err_valid, err_test], showmeans = True, )
     ax.set_xticks([1,2,3])
@@ -108,18 +111,61 @@ if __name__ == '__main__':
     ax.set_xticklabels(['Training', 'Validation','Testing'])
     plt.savefig('RMSD_plot.png')
 
- #%%
-#Calculate error
+#%%
+# Generate error landscape
 if __name__ == '__main__':
     print("> generating error landscape")
     # build a 50x50 grid. By default, it will be 10% larger than the region occupied
     # by all loaded datasets
-    MA.setup_grid(50)
+    if FULL_DATASETS:
+        MA.setup_grid(64)
+    else:
+        MA.setup_grid(10)
     landscape_err_latent, landscape_err_3d, xaxis, yaxis = MA.scan_error()
 
+    # Plot error grid
     fig, ax = plt.subplots()
-    c = ax.pcolormesh(xaxis, yaxis, landscape_err_latent)
+    c = ax.pcolormesh(xaxis, yaxis, landscape_err_latent, vmax =8)
+    fig.colorbar(c)
+    coords = as_numpy(MA.get_encoded('valid'))
+    tcoords = as_numpy(MA.get_encoded('test'))
+    plt.scatter(coords[:,0,0], coords[:,1,0], label = 'Valid')
+    plt.scatter(tcoords[:,0,0], tcoords[:,1,0], label ='Test')
+    ax.legend()
     plt.savefig('Error_grid.png')
+
+#%%
+# Generate dope scores
+if __name__ == '__main__':
+    dope, xvals, yvals = MA.scan_dope()
+
+#%%
+# Plot dope grid
+if __name__ == '__main__':
+    fig, ax  = plt.subplots()
+    c = ax.pcolormesh(xvals, yvals, dope)
+    fig.colorbar(c)
+    #ax.legend()
+    #ax.
+
+    plt.savefig('Dope_grid.png')
+
+    ## to visualise the GUI, execute the code above in a Jupyter notebook, then call:
+    # from molearn.analysis import MolearnGUI
+    # MolearnGUI(MA)
+#%%
+# Generate ramachandran score
+if __name__ == '__main__':
+    #dope, xvals, yvals = MA.scan_dope()
+    ramachandran, xvals, yvals = MA.scan_ramachandran()
+
+#%%
+# Plot ramachandran grid
+if __name__ == '__main__':
+    fig, ax  = plt.subplots()
+    c = ax.pcolormesh(xvals, yvals, ramachandran)
+    #plt.scatter(xvals, yvals)
+    plt.savefig('Ramachandran.png')
 
 
 ## to visualise the GUI, execute the code above in a Jupyter notebook, then call:
