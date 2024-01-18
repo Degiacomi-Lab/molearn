@@ -460,7 +460,7 @@ structure you want, e.g., analyser.scan_error_from_target(key, index=0)'
             decoded = self.get_decoded('grid')
             rama = self.get_all_ramachandran_score(decoded)
             for key, value in rama.items():
-                self.surfaces[keys[key]] = value
+                self.surfaces[keys[key]] = value.reshape(len(self.xvals), len(self.yvals))
 
         return self.surfaces['Ramachandran_favored'], self.xvals, self.yvals
   
