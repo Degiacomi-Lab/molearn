@@ -104,7 +104,7 @@ class PDBData:
         '''
         generate list of all atoms in dataset, where every line contains [atom name, residue name, resid]
         '''
-        if not hasattr(self, 'atominfo'):data
+        if not hasattr(self, 'atominfo'):
             assert hasattr(self, '_mol'), 'You need to call import_pdb before getting atom info'
             self.atominfo = self._mol.get_data(columns=['name', 'resname', 'resid'])
         return self.atominfo
