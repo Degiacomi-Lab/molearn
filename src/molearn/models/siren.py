@@ -119,9 +119,10 @@ class AutoEncoder(nn.Module):
     def encode(self, structure):
         '''
         :param structure: torch.tensor shape [Batch_size, n_atoms, 3]
+        :returns: torch.tensor shape [batch_size ,1, z]
         '''
         z = torch.zeros(structure.shape[0], 1, self.latent_dimensions).to(structure.device)
-        return self.refine_encoding(z, structure)
+        return self.refine_encoding(z, structure).permute(0,2,1)
 
     def forward(self, x):
         return self.decode(x)
