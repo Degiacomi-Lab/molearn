@@ -223,7 +223,7 @@ class Decoder(nn.Module):
         '''
         x: (B, C)
         '''
-        x = x.view(-1, 2, 1)
+        x = x.view(-1, self.latent_dimension, 1)
         x = self.layer1(x)
         x = self.layer2(x)
         x = self.layer3(x)
