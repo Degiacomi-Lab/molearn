@@ -15,7 +15,7 @@ dependencies:
   - pytorch-cpu
   - biobox
   - openmm
-  - torchexposedintegratorplugin
+  - openmmtorchplugin
   - ipywidgets
   - plotly
   - nglview
