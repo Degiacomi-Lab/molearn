@@ -1,15 +1,18 @@
+
 <!DOCTYPE html>
 
-<html lang="en" data-content_root="../../../">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>molearn.loss_functions.openmm_thread &#8212; molearn 2.0.1 documentation</title>
-    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=fa44fd50" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/sphinxdoc.css?v=d59dc883" />
-    <script src="../../../_static/documentation_options.js?v=f5cff4aa"></script>
-    <script src="../../../_static/doctools.js?v=888ff710"></script>
-    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <title>molearn.loss_functions.openmm_thread &#8212; molearn 2.0.4 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinxdoc.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
   </head><body>
@@ -22,7 +25,7 @@
         <li class="right" >
           <a href="../../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../../index.html">molearn 2.0.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">molearn 2.0.4 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">molearn.loss_functions.openmm_thread</a></li> 
       </ul>
@@ -36,26 +39,20 @@
   <h1>Source code for molearn.loss_functions.openmm_thread</h1><div class="highlight"><pre>
 <span></span><span class="kn">import</span> <span class="nn">os</span>
 
-<span class="k">try</span><span class="p">:</span>
-    <span class="kn">from</span> <span class="nn">openmm</span> <span class="kn">import</span> <span class="n">Platform</span>
-    <span class="kn">from</span> <span class="nn">openmm.app</span> <span class="kn">import</span> <span class="n">ForceField</span><span class="p">,</span> <span class="n">PDBFile</span><span class="p">,</span> <span class="n">Simulation</span>
-    <span class="kn">from</span> <span class="nn">openmm.app</span> <span class="kn">import</span> <span class="n">element</span> <span class="k">as</span> <span class="n">elem</span>
-    <span class="kn">import</span> <span class="nn">openmm</span>
-    <span class="kn">from</span> <span class="nn">openmm.app.forcefield</span> <span class="kn">import</span> <span class="n">_createResidueSignature</span>
-    <span class="kn">from</span> <span class="nn">openmm.app.internal</span> <span class="kn">import</span> <span class="n">compiled</span>
-    <span class="kn">from</span> <span class="nn">torchexposedintegratorplugin</span> <span class="kn">import</span> <span class="n">TorchExposedIntegrator</span>
-<span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-    <span class="kn">import</span> <span class="nn">warnings</span>
-    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s1">. Will not be able to use openmm.&#39;</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">openmm</span> <span class="kn">import</span> <span class="n">Platform</span>
+<span class="kn">from</span> <span class="nn">openmm.app</span> <span class="kn">import</span> <span class="n">ForceField</span><span class="p">,</span> <span class="n">PDBFile</span><span class="p">,</span> <span class="n">Simulation</span>
+<span class="kn">from</span> <span class="nn">openmm.app</span> <span class="kn">import</span> <span class="n">element</span> <span class="k">as</span> <span class="n">elem</span>
+<span class="kn">import</span> <span class="nn">openmm</span>
+<span class="kn">from</span> <span class="nn">openmm.app.forcefield</span> <span class="kn">import</span> <span class="n">_createResidueSignature</span>
+<span class="kn">from</span> <span class="nn">openmm.app.internal</span> <span class="kn">import</span> <span class="n">compiled</span>
+<span class="kn">from</span> <span class="nn">torchexposedintegratorplugin</span> <span class="kn">import</span> <span class="n">TorchExposedIntegrator</span>
     
 <span class="kn">import</span> <span class="nn">torch</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
 
 
-<div class="viewcode-block" id="ModifiedForceField">
-<a class="viewcode-back" href="../../../loss_functions.html#molearn.loss_functions.openmm_thread.ModifiedForceField">[docs]</a>
-<span class="k">class</span> <span class="nc">ModifiedForceField</span><span class="p">(</span><span class="n">ForceField</span><span class="p">):</span>
+<div class="viewcode-block" id="ModifiedForceField"><a class="viewcode-back" href="../../../loss_functions.html#molearn.loss_functions.openmm_thread.ModifiedForceField">[docs]</a><span class="k">class</span> <span class="nc">ModifiedForceField</span><span class="p">(</span><span class="n">ForceField</span><span class="p">):</span>
     
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">alternative_residue_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
@@ -130,10 +127,7 @@
         <span class="k">return</span> <span class="p">[</span><span class="n">template</span><span class="p">,</span> <span class="n">matches</span><span class="p">]</span></div>
 
 
-
-<div class="viewcode-block" id="OpenmmPluginScore">
-<a class="viewcode-back" href="../../../loss_functions.html#molearn.loss_functions.openmm_thread.OpenmmPluginScore">[docs]</a>
-<span class="k">class</span> <span class="nc">OpenmmPluginScore</span><span class="p">():</span>
+<div class="viewcode-block" id="OpenmmPluginScore"><a class="viewcode-back" href="../../../loss_functions.html#molearn.loss_functions.openmm_thread.OpenmmPluginScore">[docs]</a><span class="k">class</span> <span class="nc">OpenmmPluginScore</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    This will use the new OpenMM Plugin to calculate forces and energy. The intention is that this will be fast enough to be able to calculate forces and energy during training.</span>
 <span class="sd">    N.B.: The current torchintegratorplugin only supports float on GPU and double on CPU.</span>
@@ -263,9 +257,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">forcefield</span><span class="o">.</span><span class="n">registerTemplatePatch</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">name</span><span class="o">+</span><span class="s1">&#39;_leave_only_&#39;</span><span class="o">+</span><span class="s1">&#39;_&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">atoms</span><span class="p">),</span> <span class="mi">0</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">forcefield</span><span class="o">.</span><span class="n">registerPatch</span><span class="p">(</span><span class="n">patchData</span><span class="p">)</span>
 
-<div class="viewcode-block" id="OpenmmPluginScore.get_energy">
-<a class="viewcode-back" href="../../../loss_functions.html#molearn.loss_functions.openmm_thread.OpenmmPluginScore.get_energy">[docs]</a>
-    <span class="k">def</span> <span class="nf">get_energy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pos_ptr</span><span class="p">,</span> <span class="n">force_ptr</span><span class="p">,</span> <span class="n">energy_ptr</span><span class="p">,</span> <span class="n">n_particles</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">):</span>
+<div class="viewcode-block" id="OpenmmPluginScore.get_energy"><a class="viewcode-back" href="../../../loss_functions.html#molearn.loss_functions.openmm_thread.OpenmmPluginScore.get_energy">[docs]</a>    <span class="k">def</span> <span class="nf">get_energy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pos_ptr</span><span class="p">,</span> <span class="n">force_ptr</span><span class="p">,</span> <span class="n">energy_ptr</span><span class="p">,</span> <span class="n">n_particles</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        :param pos_ptr: tensor.data_ptr()</span>
 <span class="sd">        :param force_ptr: tensor.data_ptr()</span>
@@ -278,24 +270,17 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">integrator</span><span class="o">.</span><span class="n">torchMultiStructureE</span><span class="p">(</span><span class="n">pos_ptr</span><span class="p">,</span> <span class="n">force_ptr</span><span class="p">,</span> <span class="n">energy_ptr</span><span class="p">,</span> <span class="n">n_particles</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">)</span>
         <span class="k">return</span> <span class="kc">True</span></div>
 
-
-<div class="viewcode-block" id="OpenmmPluginScore.execute">
-<a class="viewcode-back" href="../../../loss_functions.html#molearn.loss_functions.openmm_thread.OpenmmPluginScore.execute">[docs]</a>
-    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+<div class="viewcode-block" id="OpenmmPluginScore.execute"><a class="viewcode-back" href="../../../loss_functions.html#molearn.loss_functions.openmm_thread.OpenmmPluginScore.execute">[docs]</a>    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        :param `torch.Tensor` x: shape [b, N, 3]. dtype=float. device = gpu</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">force</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
         <span class="n">energy</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">device</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s1">&#39;cpu&#39;</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">double</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">get_energy</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">data_ptr</span><span class="p">(),</span> <span class="n">force</span><span class="o">.</span><span class="n">data_ptr</span><span class="p">(),</span> <span class="n">energy</span><span class="o">.</span><span class="n">data_ptr</span><span class="p">(),</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-        <span class="k">return</span> <span class="n">force</span><span class="p">,</span> <span class="n">energy</span></div>
-</div>
+        <span class="k">return</span> <span class="n">force</span><span class="p">,</span> <span class="n">energy</span></div></div>
 
 
-
-<div class="viewcode-block" id="OpenmmTorchEnergyMinimizer">
-<a class="viewcode-back" href="../../../loss_functions.html#molearn.loss_functions.openmm_thread.OpenmmTorchEnergyMinimizer">[docs]</a>
-<span class="k">class</span> <span class="nc">OpenmmTorchEnergyMinimizer</span><span class="p">(</span><span class="n">OpenmmPluginScore</span><span class="p">):</span>
+<div class="viewcode-block" id="OpenmmTorchEnergyMinimizer"><a class="viewcode-back" href="../../../loss_functions.html#molearn.loss_functions.openmm_thread.OpenmmTorchEnergyMinimizer">[docs]</a><span class="k">class</span> <span class="nc">OpenmmTorchEnergyMinimizer</span><span class="p">(</span><span class="n">OpenmmPluginScore</span><span class="p">):</span>
     
     <span class="k">def</span> <span class="nf">minimize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">maxIterations</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mi">10000</span><span class="p">):</span>
         <span class="n">minimized_x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
@@ -318,10 +303,7 @@
         <span class="k">return</span> <span class="n">minimized_x</span></div>
 
 
-
-<div class="viewcode-block" id="OpenMMPluginScoreSoftForceField">
-<a class="viewcode-back" href="../../../loss_functions.html#molearn.loss_functions.openmm_thread.OpenMMPluginScoreSoftForceField">[docs]</a>
-<span class="k">class</span> <span class="nc">OpenMMPluginScoreSoftForceField</span><span class="p">(</span><span class="n">OpenmmPluginScore</span><span class="p">):</span>
+<div class="viewcode-block" id="OpenMMPluginScoreSoftForceField"><a class="viewcode-back" href="../../../loss_functions.html#molearn.loss_functions.openmm_thread.OpenMMPluginScoreSoftForceField">[docs]</a><span class="k">class</span> <span class="nc">OpenMMPluginScoreSoftForceField</span><span class="p">(</span><span class="n">OpenmmPluginScore</span><span class="p">):</span>
     
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mol</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">platform</span><span class="o">=</span><span class="s1">&#39;CUDA&#39;</span><span class="p">,</span> <span class="n">atoms</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;CA&#39;</span><span class="p">,</span><span class="s1">&#39;C&#39;</span><span class="p">,</span><span class="s1">&#39;N&#39;</span><span class="p">,</span><span class="s1">&#39;CB&#39;</span><span class="p">,</span><span class="s1">&#39;O&#39;</span><span class="p">]):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mol</span> <span class="o">=</span> <span class="n">mol</span>
@@ -344,14 +326,9 @@
         <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">getState</span><span class="p">(</span><span class="n">getEnergy</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">getPotentialEnergy</span><span class="p">()</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span></div>
 
 
+<div class="viewcode-block" id="openmm_energy_function"><a class="viewcode-back" href="../../../loss_functions.html#molearn.loss_functions.openmm_thread.openmm_energy_function">[docs]</a><span class="k">class</span> <span class="nc">openmm_energy_function</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">autograd</span><span class="o">.</span><span class="n">Function</span><span class="p">):</span>
 
-<div class="viewcode-block" id="openmm_energy_function">
-<a class="viewcode-back" href="../../../loss_functions.html#molearn.loss_functions.openmm_thread.openmm_energy_function">[docs]</a>
-<span class="k">class</span> <span class="nc">openmm_energy_function</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">autograd</span><span class="o">.</span><span class="n">Function</span><span class="p">):</span>
-
-<div class="viewcode-block" id="openmm_energy_function.forward">
-<a class="viewcode-back" href="../../../loss_functions.html#molearn.loss_functions.openmm_thread.openmm_energy_function.forward">[docs]</a>
-    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="openmm_energy_function.forward"><a class="viewcode-back" href="../../../loss_functions.html#molearn.loss_functions.openmm_thread.openmm_energy_function.forward">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="n">plugin</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        :param plugin: OpenmmPluginScore instance</span>
@@ -376,25 +353,16 @@
         <span class="n">energy</span> <span class="o">=</span> <span class="n">energy</span><span class="o">.</span><span class="n">float</span><span class="p">()</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">energy</span></div>
 
-
-<div class="viewcode-block" id="openmm_energy_function.backward">
-<a class="viewcode-back" href="../../../loss_functions.html#molearn.loss_functions.openmm_thread.openmm_energy_function.backward">[docs]</a>
-    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="openmm_energy_function.backward"><a class="viewcode-back" href="../../../loss_functions.html#molearn.loss_functions.openmm_thread.openmm_energy_function.backward">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">backward</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="n">grad_output</span><span class="p">):</span>
         <span class="n">force</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">saved_tensors</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>  <span class="c1"># force shape [B, N, 3]</span>
         <span class="c1"># embed(header=&#39;23 openmm_loss_function&#39;)</span>
-        <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="o">-</span><span class="n">force</span><span class="o">*</span><span class="n">grad_output</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span></div>
-</div>
+        <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="o">-</span><span class="n">force</span><span class="o">*</span><span class="n">grad_output</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span></div></div>
 
 
+<div class="viewcode-block" id="openmm_clamped_energy_function"><a class="viewcode-back" href="../../../loss_functions.html#molearn.loss_functions.openmm_thread.openmm_clamped_energy_function">[docs]</a><span class="k">class</span> <span class="nc">openmm_clamped_energy_function</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">autograd</span><span class="o">.</span><span class="n">Function</span><span class="p">):</span>
 
-<div class="viewcode-block" id="openmm_clamped_energy_function">
-<a class="viewcode-back" href="../../../loss_functions.html#molearn.loss_functions.openmm_thread.openmm_clamped_energy_function">[docs]</a>
-<span class="k">class</span> <span class="nc">openmm_clamped_energy_function</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">autograd</span><span class="o">.</span><span class="n">Function</span><span class="p">):</span>
-
-<div class="viewcode-block" id="openmm_clamped_energy_function.forward">
-<a class="viewcode-back" href="../../../loss_functions.html#molearn.loss_functions.openmm_thread.openmm_clamped_energy_function.forward">[docs]</a>
-    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="openmm_clamped_energy_function.forward"><a class="viewcode-back" href="../../../loss_functions.html#molearn.loss_functions.openmm_thread.openmm_clamped_energy_function.forward">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="n">plugin</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">clamp</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        :param plugin: OpenmmPluginScore instance</span>
@@ -419,20 +387,13 @@
         <span class="n">energy</span> <span class="o">=</span> <span class="n">energy</span><span class="o">.</span><span class="n">float</span><span class="p">()</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">energy</span></div>
 
-
-<div class="viewcode-block" id="openmm_clamped_energy_function.backward">
-<a class="viewcode-back" href="../../../loss_functions.html#molearn.loss_functions.openmm_thread.openmm_clamped_energy_function.backward">[docs]</a>
-    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="openmm_clamped_energy_function.backward"><a class="viewcode-back" href="../../../loss_functions.html#molearn.loss_functions.openmm_thread.openmm_clamped_energy_function.backward">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">backward</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="n">grad_output</span><span class="p">):</span>
         <span class="n">force</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">saved_tensors</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="o">-</span><span class="n">force</span><span class="o">*</span><span class="n">grad_output</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="kc">None</span></div>
-</div>
+        <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="o">-</span><span class="n">force</span><span class="o">*</span><span class="n">grad_output</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="kc">None</span></div></div>
 
 
-
-<div class="viewcode-block" id="openmm_energy">
-<a class="viewcode-back" href="../../../loss_functions.html#molearn.loss_functions.openmm_thread.openmm_energy">[docs]</a>
-<span class="k">class</span> <span class="nc">openmm_energy</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<div class="viewcode-block" id="openmm_energy"><a class="viewcode-back" href="../../../loss_functions.html#molearn.loss_functions.openmm_thread.openmm_energy">[docs]</a><span class="k">class</span> <span class="nc">openmm_energy</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
     
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mol</span><span class="p">,</span> <span class="n">std</span><span class="p">,</span> <span class="n">clamp</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
@@ -461,7 +422,6 @@
         <span class="n">_x</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">std</span><span class="p">)</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span>
         <span class="n">energy</span> <span class="o">=</span> <span class="n">openmm_clamped_energy_function</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">openmmplugin</span><span class="p">,</span> <span class="n">_x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">clamp</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">energy</span></div>
-
 </pre></div>
 
             <div class="clearer"></div>
@@ -493,14 +453,14 @@
         <li class="right" >
           <a href="../../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../../index.html">molearn 2.0.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">molearn 2.0.4 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">molearn.loss_functions.openmm_thread</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-    &#169; Copyright 2021, S. C. Musson, M. T. Degiacomi.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.5.
+        &#169; Copyright 2021, S. C. Musson, M. T. Degiacomi.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.0.2.
     </div>
   </body>
 </html>
