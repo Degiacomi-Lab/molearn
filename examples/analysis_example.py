@@ -7,13 +7,12 @@ import matplotlib.pyplot as plt
 
 
 def main():
-
     # Note: running the code below within a function is necessary to ensure that
     # multiprocessing (used to calculate DOPE and Ramachandran) runs correctly
-    
+
     print("> Loading network parameters...")
 
-    fname = f"xbb_foldingnet_checkpoints{os.sep}checkpoint_no_optimizer_state_dict_epoch167_loss0.003259085263643.ckpt"
+    fname = f"xbb_foldingnet_checkpoints{os.sep}checkpoint_epoch208_loss-4.205589803059896.ckpt"
     # if GPU is available we will use the GPU else the CPU
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     checkpoint = torch.load(fname, map_location=device)
