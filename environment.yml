@@ -19,5 +19,6 @@ dependencies:
   - ipywidgets
   - plotly
   - nglview
+  - openmmtorchplugin
   - pip:
     - geomloss
