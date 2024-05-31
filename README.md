@@ -63,6 +63,11 @@ Manual installation requires the following three steps:
 #### Using molearn without installation ####
 
 Molearn can used without installation by making the sure the requirements above are met, and adding the `src` directory to your path at the beginning of every script, e.g.:
+installation using conda while creating a new environment `molearn_env`
+```
+conda env create --file environment.yml -n molearn_env
+```
+
 ```
 import sys
 sys.path.insert(0, 'path/to/molearn/src')
