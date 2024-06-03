@@ -27,6 +27,9 @@ The current version of molearn only supports Linux, and has verified to support 
 
 #### Optional Packages
 
+To prepare a raw trajectory for training:
+* [mdtraj](https://mdtraj.org/1.9.4/index.html)
+
 To run energy evaluations with OpenMM:
 * [OpenMM](https://openmm.org/documentation)
 * [openmmtorchplugin](https://github.com/SCMusson/openmmtorchplugin)

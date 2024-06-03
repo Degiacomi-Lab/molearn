@@ -1,4 +1,4 @@
-# Copyright (c) 2022 Samuel C. Musson
+# Copyright (c) 2022 Samuel C. Musson, Gregor Wirnsberger
 #
 # Molearn is free software ;
 # you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation ;
@@ -11,5 +11,6 @@
 """
 loaders holds classes for loading data
 """
-from .pdb_data import PDBData
 
+from .pdb_data import PDBData
+from .prepare import DataAssembler
