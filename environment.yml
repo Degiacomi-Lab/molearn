@@ -19,5 +19,6 @@ dependencies:
   - plotly
   - nglview
   - openmmtorchplugin
+  - mdtraj
   - pip:
     - geomloss
