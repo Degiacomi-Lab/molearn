@@ -25,6 +25,10 @@ In `xbb_foldingnet_checkpoints`, an example output generated when the *foldingne
 
 ## Scripts
 
+#### Data preparation examples
+
+* `prepare_example.py`: an example on how to combine two trajectories in a single dataset that can be used as training examples for *molearn* models.
+
 #### Training examples
 
 * `bb_foldingnet_basic.py`: minimal example demonstrating how to load data, setup *foldingnet*, and train it. This script operates on training examples in the `data` folder and can be executed as-is (after the multiPDB files are extracted). This script will generate output similar to that provided in the folder `xbb_foldingnet_checkpoints`.
