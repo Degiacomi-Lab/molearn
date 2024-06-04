@@ -1,129 +1,216 @@
-import numpy as np
-import torch
+from __future__ import annotations
 from copy import deepcopy
 import biobox as bb
+import os
+import sys
+import warnings
+import pandas as pd
+import numpy as np
+import torch
+import MDAnalysis as mda
+
+sys.path.insert(0, os.path.join(os.path.abspath(os.pardir), "src"))
+warnings.filterwarnings("ignore")
+
+radii = {
+    "H": 1.20,
+    "N": 1.55,
+    "NA": 2.27,
+    "CU": 1.40,
+    "CL": 1.75,
+    "C": 1.70,
+    "O": 1.52,
+    "I": 1.98,
+    "P": 1.80,
+    "B": 1.85,
+    "BR": 1.85,
+    "S": 1.80,
+    "SE": 1.90,
+    "F": 1.47,
+    "FE": 1.80,
+    "K": 2.75,
+    "MN": 1.73,
+    "MG": 1.73,
+    "ZN": 1.39,
+    "HG": 1.8,
+    "XE": 1.8,
+    "AU": 1.8,
+    "LI": 1.8,
+    ".": 1.8,
+}
 
 
 class PDBData:
-    
-    def __init__(self, filename=None, fix_terminal=False, atoms=None):
-        '''
+    def __init__(self, filename=None, topology=None, fix_terminal=False, atoms=None):
+        """
         Create object enabling the manipulation of multi-PDB files into a dataset suitable for training.
-        
+
         :param filename: None, str or list of strings. If not None, :func:`import_pdb <molearn.data.PDBData.import_pdb>` is called on each filename provided.
         :param fix_terminal: if True, calls :func:`fix_terminal <molearn.data.PDBData.fix_terminal>` after import, and before atomselect
         :param atoms: if not None, calls :func:`atomselect <molearn.data.PDBData.atomselect>`
-        '''
-        if isinstance(filename, str):
-            self.import_pdb(filename)
-        elif filename is not None:
-            for _filename in filename:
-                self.import_pdb(_filename)
-        
-        if fix_terminal:
-            self.fix_terminal()
-        if atoms is not None:
-            self.atomselect(atoms=atoms)
+        """
 
-    def import_pdb(self, filename):
-        '''
-        Load multiPDB file.
-        This command can be called multiple times to load many datasets, if these feature the same number of atoms
-        
-        :param filename: path to multiPDB file.
-        '''
-        if not hasattr(self, '_mol'):
-            self._mol = bb.Molecule()
-        self._mol.import_pdb(filename)
-        if not hasattr(self, 'filename'):
-            self.filename = []
-        self.filename.append(filename)
+        self.filename = filename
+        self.topology = topology
+        if filename is not None:
+            self.import_pdb(filename, topology)
+            if fix_terminal:
+                self.fix_terminal()
+            if atoms is not None:
+                self.atomselect(atoms=atoms)
+
+    def import_pdb(self, filename: str | list[str], topology: str):
+        """
+        Load one or multiple trajectory files
+
+        :parameter
+            * filename: the path the the trajectory as a str or a list of filepaths to multiple trajectories
+        """
+        self._mol = mda.Universe(topology, filename)
 
     def fix_terminal(self):
-        '''
-        Rename OT1 N-terminal Oxygen to O if terminal oxygens are named OT1 and OT2 otherwise no oxygen will be selected during an atomselect using atoms = ['CA', 'C','N','O','CB']. No template will be found for terminal residue in openmm_loss. Alternative solution is to use atoms = ['CA', 'C', 'N', 'O', 'CB', 'OT1']. instead.
-        '''
-        ot1 = np.where(self._mol.data['name']=='OT1')[0]
-        ot2 = np.where(self._mol.data['name']=='OT2')[0]
-        if len(ot1)!=0 and len(ot2)!=0:
-            self._mol.data.loc[ot1,'name']='O'
+        """
+        Rename OT1 N-terminal Oxygen to O if terminal oxygens are named OT1 and OT2 otherwise no oxygen will be selected during an atomselect using atoms = ['CA', 'C','N','O','CB']. No template will be found for terminal residue in openmm_loss.
+        """
+        if (
+            len(self._mol.select_atoms("name OT1")) > 0
+            and len(self._mol.select_atoms("name OT2")) > 0
+        ):
+            tmp_names = self._mol.atoms.names
+            tmp_names[tmp_names == "OT1"] = "O"
+            self._mol.atoms.names = tmp_names
 
-    def atomselect(self, atoms, ignore_atoms=[]):
-        '''
-        From all imported PDBs, extract only atoms of interest.
-        :func:`import_pdb <molearn.data.PDBData.import_pdb>` must have been called at least once, either at class instantiation or as a separate call.
-        
-        :param atoms: list of atom names, or "no_hydrogen".
-        '''
-        if atoms == "*":
-            _atoms = list(np.unique(self._mol.data["name"].values))
-            for to_remove in ignore_atoms:
-                if to_remove in _atoms:
-                    _atoms.remove(to_remove)
-        elif atoms == "no_hydrogen":
-            _atoms = self.atoms  # list(np.unique(self._mol.data["name"].values))    #all the atoms
-            _plain_atoms = []
-            for a in _atoms:
-                if a in self._mol.knowledge['atomtype']:
-                    _plain_atoms.append(self._mol.knowledge['atomtype'][a])
-                elif a[:-1] in self._mol.knowledge['atomtype']:
-                    _plain_atoms.append(self._mol.knowledge['atomtype'][a[:-1]])
-                    print(f'Could not find {a}. I am assuing you meant {a[:-1]} instead.')
-                elif a[:-2] in self._mol.knowledge['atomtype']:
-                    _plain_atoms.append(self._mol.knowledge['atomtype'][a[:-2]])
-                    print(f'Could not find {a}. I am assuming you meant {a[:-2]} instead.')
-                else:
-                    _plain_atoms.append(self._mol.knowledge['atomtype'][a])  # if above failed just raise the keyerror
-            _atoms = [atom for atom, element in zip(_atoms, _plain_atoms) if element != 'H']
+    def atomselect(self, atoms: str | list[str]):
+        """
+        Select atoms of interest
+
+        :param str | list[str] atoms: if str then should be used with the MDAnalysis atom selection syntax
+                    `https://userguide.mdanalysis.org/1.1.1/selections.html`
+                    or a list like `["CA", ..., "O"]`
+        """
+
+        selection_string = ""
+        if isinstance(atoms, list):
+            selection_string = " or ".join([f"name {i}" for i in atoms])
+        elif isinstance(atoms, str):
+            selection_string = atoms
         else:
-            _atoms = [_a for _a in atoms if _a not in ignore_atoms]
-
-        _, self._idxs = self._mol.atomselect("*", "*", _atoms, get_index=True)
-        self._mol = self._mol.get_subset(self._idxs)
+            raise ValueError("Unsuported atom selection")
+        self._mol.atoms = self._mol.select_atoms(selection_string)
 
     def prepare_dataset(self):
-        '''
+        """
         Once all datasets have been loaded, normalise data and convert into `torch.Tensor` (ready for training)
-        '''
-        if not hasattr(self, 'dataset'):
-            assert hasattr(self, '_mol'), 'You need to call import_pdb before preparing the dataset'
-            self.dataset = self._mol.coordinates.copy()
-        
-        if not hasattr(self, 'std'):
+        """
+        if not hasattr(self, "dataset"):
+            assert hasattr(
+                self, "_mol"
+            ), "You need to call import_pdb before preparing the dataset"
+
+        self.dataset = np.asarray(
+            [self._mol.atoms.positions.astype(float) for _ in self._mol.trajectory]
+        )
+        if not hasattr(self, "std"):
             self.std = self.dataset.std()
-        if not hasattr(self, 'mean'):
+        if not hasattr(self, "mean"):
             self.mean = self.dataset.mean()
         self.dataset -= self.mean
         self.dataset /= self.std
         self.dataset = torch.from_numpy(self.dataset).float()
-        self.dataset = self.dataset.permute(0,2,1)
-        print(f'Dataset.shape: {self.dataset.shape}')
-        print(f'mean: {str(self.mean)}, std: {str(self.std)}')
+        self.dataset = self.dataset.permute(0, 2, 1)
+        print(f"Dataset shape: {', '.join([str(i) for i in self.dataset.shape])}")
+        print(f"mean: {str(self.mean)}\n std: {str(self.std)}")
 
     def get_atominfo(self):
-        '''
+        """
         generate list of all atoms in dataset, where every line contains [atom name, residue name, resid]
-        '''
-        if not hasattr(self, 'atominfo'):
-            assert hasattr(self, '_mol'), 'You need to call import_pdb before getting atom info'
-            self.atominfo = self._mol.get_data(columns=['name', 'resname', 'resid'])
+        """
+        if not hasattr(self, "atominfo"):
+            assert hasattr(
+                self, "_mol"
+            ), "You need to call import_pdb before getting atom info"
+
+            self.atominfo = np.asarray(
+                [[i.name, i.resname, int(i.resid)] for i in self._mol.atoms],
+                dtype=object,
+            )
         return self.atominfo
 
     def frame(self):
-        '''
+        """
         return `biobox.Molecule` object with loaded data
-        '''
+        """
         M = bb.Molecule()
-        M.coordinates = self._mol.coordinates[[0]]
-        M.data = self._mol.data
-        M.data['index'] = np.arange(self._mol.coordinates.shape[1])
+        _ = self._mol.trajectory[0]
+        M.coordinates = self._mol.atoms.positions
+        M.coordinates = np.expand_dims(M.coordinates, 0)
+        data = []
+        for ci, i in enumerate(self._mol.atoms):
+            intermediate_data = []
+            intermediate_data.append("ATOM")
+            # i.index would also be an option but is different from original PDBData
+            # replaces M.data["index"] = np.arange(self._mol.coordinates.shape[1])
+            intermediate_data += [ci, i.name, i.resname, i.segid, i.resid]
+            try:
+                intermediate_data.append(i.occupancy)
+            except (mda.exceptions.NoDataError, IndexError):
+                intermediate_data.append(1.0)
+
+            try:
+                intermediate_data.append(i.tempfactor)
+            except (mda.exceptions.NoDataError, IndexError):
+                intermediate_data.append(0.0)
+
+            intermediate_data.append(i.type)
+
+            try:
+                intermediate_data.append(i.radius)
+            except (mda.exceptions.NoDataError, IndexError):
+                try:
+                    intermediate_data.append(radii[i.type])
+                except KeyError:
+                    intermediate_data.append(1.2)
+
+            try:
+                intermediate_data.append(i.charge)
+            except (mda.exceptions.NoDataError, IndexError):
+                intermediate_data.append(0.0)
+
+            data.append(intermediate_data)
+        data = pd.DataFrame(
+            data,
+            columns=[
+                "atom",
+                "index",
+                "name",
+                "resname",
+                "chain",
+                "resid",
+                "occupancy",
+                "beta",
+                "atomtype",
+                "radius",
+                "charge",
+            ],
+        )
+        M.data = data
         M.current = 0
-        M.points = M.coordinates.view()[M.current]
-        M.properties['center'] = M.get_center()
+        _ = self._mol.trajectory[M.current]
+        M.points = self._mol.atoms.positions.view()
+        M.properties["center"] = M.get_center()
         return deepcopy(M)
 
-    def get_dataloader(self, batch_size, validation_split=0.1, pin_memory=True, dataset_sample_size=-1, manual_seed=None, shuffle=True, sampler=None):
-        '''
+    def get_dataloader(
+        self,
+        batch_size,
+        validation_split=0.1,
+        pin_memory=True,
+        dataset_sample_size=-1,
+        manual_seed=None,
+        shuffle=True,
+        sampler=None,
+    ):
+        """
         :param batch_size:
         :param validation_split:
         :param pin_memory:
@@ -133,81 +220,127 @@ class PDBData:
         :param sampler:
         :return: `torch.utils.data.DataLoader` for training set
         :return: `torch.utils.data.DataLoader` for validation set
-        '''
-        if not hasattr(self, 'dataset'):
+        """
+        if not hasattr(self, "dataset"):
             self.prepare_dataset()
-        valid_size = int(len(self.dataset)*validation_split)
+        valid_size = int(len(self.dataset) * validation_split)
         train_size = len(self.dataset) - valid_size
         dataset = torch.utils.data.TensorDataset(self.dataset.float())
         if manual_seed is not None:
-            self.train_dataset, self.valid_dataset = torch.utils.data.random_split(dataset, [train_size, valid_size], generator=torch.Generator().manual_seed(manual_seed))
-            self.train_dataloader = torch.utils.data.DataLoader(self.train_dataset, batch_size=batch_size, pin_memory=pin_memory,
-                                                                sampler=torch.utils.data.RandomSampler(self.train_dataset,generator=torch.Generator().manual_seed(manual_seed)))
+            self.train_dataset, self.valid_dataset = torch.utils.data.random_split(
+                dataset,
+                [train_size, valid_size],
+                generator=torch.Generator().manual_seed(manual_seed),
+            )
+            self.train_dataloader = torch.utils.data.DataLoader(
+                self.train_dataset,
+                batch_size=batch_size,
+                pin_memory=pin_memory,
+                sampler=torch.utils.data.RandomSampler(
+                    self.train_dataset,
+                    generator=torch.Generator().manual_seed(manual_seed),
+                ),
+            )
         else:
-            self.train_dataset, self.valid_dataset = torch.utils.data.random_split(dataset, [train_size, valid_size])
-            self.train_dataloader = torch.utils.data.DataLoader(self.train_dataset, batch_size=batch_size, pin_memory=pin_memory, shuffle=True)
-        self.valid_dataloader = torch.utils.data.DataLoader(self.valid_dataset, batch_size=batch_size, pin_memory=pin_memory,shuffle=True)
+            self.train_dataset, self.valid_dataset = torch.utils.data.random_split(
+                dataset, [train_size, valid_size]
+            )
+            self.train_dataloader = torch.utils.data.DataLoader(
+                self.train_dataset,
+                batch_size=batch_size,
+                pin_memory=pin_memory,
+                shuffle=True,
+            )
+        self.valid_dataloader = torch.utils.data.DataLoader(
+            self.valid_dataset,
+            batch_size=batch_size,
+            pin_memory=pin_memory,
+            shuffle=True,
+        )
         return self.train_dataloader, self.valid_dataloader
-    
+
     def split(self, *args, **kwargs):
-        '''
+        """
         Split :func:`PDBData <molearn.data.PDBData>` into two other :func:`PDBData <molearn.data.PDBData>` objects corresponding to train and valid sets.
-        
+
         :param manual_seed: manual seed used to split dataset
         :param validation_split: ratio of data to randomly assigned as validation
         :param train_size: if not None, specify number of train structures to be returned
         :param valid_size: if not None, speficy number of valid structures to be returned
         :return: :func:`PDBData <molearn.data.PDBData>` object corresponding to train set
         :return: :func:`PDBData <molearn.data.PDBData>` object corresponding to validation set
-        '''
+        """
         # validation_split=0.1, valid_size=None, train_size=None, manual_seed = None):
         train_dataset, valid_dataset = self.get_datasets(*args, **kwargs)
         train = PDBData()
         valid = PDBData()
         for data in [train, valid]:
-            for key in ['_mol', 'std', 'mean', 'filename']:
+            for key in ["_mol", "std", "mean", "filename"]:
                 setattr(data, key, getattr(self, key))
         train.dataset = train_dataset
         valid.dataset = valid_dataset
         return train, valid
 
-    def get_datasets(self, validation_split=0.1, valid_size=None, train_size=None, manual_seed=None):
-        '''
+    def only_test(self):
+        """
+        prepare a datset without spliting it into training and validation dataset
+        """
+        if not hasattr(self, "dataset"):
+            self.prepare_dataset()
+        dataset = self.dataset.float()
+        self.indices = np.arange(len(dataset))
+        test = PDBData()
+        for key in ["_mol", "std", "mean", "filename"]:
+            setattr(test, key, getattr(self, key))
+        test.dataset = dataset
+        return test
+
+    def get_datasets(
+        self, validation_split=0.1, valid_size=None, train_size=None, manual_seed=None
+    ):
+        """
         Create a training and validation set from the imported data
-        
+
         :param validation_split: ratio of data to randomly assigned as validation
         :param valid_size: if not None, specify number of train structures to be returned
         :param train_size: if not None, speficy number of valid structures to be returned
         :param manual_seed: seed to initialise the random number generator used for splitting the dataset. Useful to replicate a specific split.
         :return: two `torch.Tensor`, for training and validation structures.
-        '''
-        if not hasattr(self, 'dataset'):
+        """
+        if not hasattr(self, "dataset"):
             self.prepare_dataset()
         dataset = self.dataset.float()
         if train_size is None:
-            _valid_size = int(len(self.dataset)*validation_split)
+            _valid_size = int(len(self.dataset) * validation_split)
             _train_size = len(self.dataset) - _valid_size
         else:
             _train_size = train_size
             if valid_size is None:
-                _valid_size = validation_split*_train_size
+                _valid_size = validation_split * _train_size
             else:
                 _valid_size = valid_size
         from torch import randperm
+
         if manual_seed is not None:
-            indices = randperm(len(self.dataset), generator=torch.Generator().manual_seed(manual_seed))
+            indices = randperm(
+                len(self.dataset), generator=torch.Generator().manual_seed(manual_seed)
+            )
         else:
             indices = randperm(len(self.dataset))
 
         self.indices = indices
         train_dataset = dataset[indices[:_train_size]]
-        valid_dataset = dataset[indices[_train_size:_train_size+_valid_size]]
+        valid_dataset = dataset[indices[_train_size : _train_size + _valid_size]]
         return train_dataset, valid_dataset
 
     @property
     def atoms(self):
-        return list(np.unique(self._mol.data["name"].values))  # all the atoms
-    
+        return list(np.unique(self.frame().data["name"].values))  # all the atoms
+
     @property
     def mol(self):
         return self.frame()
+
+
+if __name__ == "__main__":
+    pass
