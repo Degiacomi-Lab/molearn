@@ -1,6 +1,5 @@
 from __future__ import annotations
 import os
-import argparse
 
 import mdtraj as md
 import numpy as np
@@ -120,14 +119,9 @@ class DataAssembler:
         if isinstance(self.traj_path, str):
             try:
                 # do not enforce topology file on this formats
-                if any(
-                    [
-                        self.traj_path == ".pdb",
-                        self.traj_path == "h5",
-                        self.traj_path == "lh5",
-                    ]
-                ):
-                    loaded = md.load(self.traj_path)
+                fext = os.path.splitext(self.traj_path)[-1]
+                if any([fext == ".pdb", fext == "h5", fext == "lh5"]):
+                    self.traj = md.load(self.traj_path)
                 else:
                     self.traj = md.load(self.traj_path, self.topo_path)
             except OSError:
@@ -137,7 +131,8 @@ class DataAssembler:
         # loading multiple trajectories
         elif isinstance(self.traj_path, list):
             if isinstance(self.traj_path, list) and self.topo_path is None:
-                if os.path.splitext(self.traj_path[0])[-1] == ".pdb":
+                fext = os.path.splitext(self.traj_path[0])[-1]
+                if any([fext == ".pdb", fext == "h5", fext == "lh5"]):
                     self.topo_path = [None] * len(self.traj_path)
             assert isinstance(
                 self.topo_path, list
@@ -401,52 +396,4 @@ class DataAssembler:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    )
-    parser.add_argument(
-        "-s", "--size", type=int, required=False, help="size of the training split"
-    )
-    parser.add_argument(
-        "-t", "--topo", type=str, required=False, help="path to the topology file"
-    )
-    parser.add_argument(
-        "-tr", "--traj", type=str, required=False, help="path to the trajectory file"
-    )
-    parser.add_argument(
-        "-o",
-        "--outpath",
-        type=str,
-        required=False,
-        help="path where result should be stored",
-    )
-
-    args = parser.parse_args()
-    tm = DataAssembler(
-        # ["MurSHORT.dcd", "MurSHORT.dcd"],
-        # ["MurD_closed_open_topo.pdb", "MurD_closed_open_topo.pdb"],
-        ["./test_sims/MurDopen.dcd", "./test_sims/MurDclosed.dcd"],
-        ["./test_sims/topo_MurDopen1F.pdb", "./test_sims/topo_MurDclosed1F.pdb"],
-        test_size=0.0,
-        n_cluster=12,
-        # outpath="./test_out",
-        outpath="./test_sims/clustered/",
-        verbose=True,
-    )
-    """
-    tm = DataAssembler(
-        args.traj,
-        args.topo,
-        n_cluster=args.size,
-        # outpath="rs_42",
-        outpath=args.outpath,
-        verbose=True,
-    )
-    """
-    tm.read_traj()
-    tm.distance_cluster()
-    tm.create_trajectories()
-    tm.stride()
-    tm.create_trajectories()
-    tm.pca_cluster()
-    tm.create_trajectories()
+    pass
