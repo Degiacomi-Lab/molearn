@@ -166,6 +166,12 @@ class DataAssembler:
                     loaded.topology = top0
                 multi_traj.append(loaded)
             self.traj = md.join(multi_traj)
+        # converts ELEMENT names from eg "Cd" -> "C" to avoid later complications
+        topo_table, topo_bonds = self.traj.topology.to_dataframe()
+        topo_table["element"] = topo_table["element"].apply(
+            lambda x: x if len(x.strip()) <= 1 else x.strip()[0]
+        )
+        self.traj.topology = md.Topology.from_dataframe(topo_table, topo_bonds)
         # save new topology
         self.traj[0].save_pdb(
             os.path.join(self.outpath, f"./{self.traj_name}_NEW_TOPO.pdb")
