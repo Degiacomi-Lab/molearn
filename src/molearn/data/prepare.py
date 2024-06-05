@@ -142,7 +142,9 @@ class DataAssembler:
             ), "there must be as many topologies supplied as trajectories"
             multi_traj = []
             top0 = None
+            ucell0 = None
             for ct, (trp, top) in enumerate(zip(self.traj_path, self.topo_path)):
+                print(f"\tLoading Trajectory {ct}")
                 loaded = None
                 try:
                     # do not enforce topology file on this formats
@@ -155,15 +157,17 @@ class DataAssembler:
                     loaded = self._loading_fallback(trp, top)
                 # select only protein atoms from the trajectory
                 loaded = loaded.atom_slice(loaded.top.select("protein"))
-                # to be able to join them
+                # use topology and unit cell from first trajectory to be able to join them
                 if ct == 0:
                     top0 = loaded.topology
+                    ucell0 = loaded.unitcell_vectors
                 else:
                     if top0.n_atoms != loaded.n_atoms:
                         raise ValueError(
                             f"topologies do not match - topology [{ct}] has {loaded.n_atoms} instead of {top0.n_atoms}"
                         )
                     loaded.topology = top0
+                    loaded.unitcell_vectors = ucell0
                 multi_traj.append(loaded)
             self.traj = md.join(multi_traj)
         # converts ELEMENT names from eg "Cd" -> "C" to avoid later complications

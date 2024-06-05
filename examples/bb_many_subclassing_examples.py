@@ -15,14 +15,14 @@ class ValidRMSDTrainer(OpenMM_Physics_Trainer):
     '''
     def valid_step(self, batch):
         results  = super().valid_step(batch)
-        #rmsd 
+        #rmsd
         rmsd = (((batch-self._internal['decoded'])*self.std)**2).sum(dim=1).mean().sqrt()
         results['RMSD'] = rmsd # 'valid_' will automatically be prepended onto this in trainer.valid_epoch, to distinguish it from train_step
         return results
 
 class ValidDOPETrainer(OpenMM_Physics_Trainer):
     '''
-    calculate  DOPE, this might slow your code down significantly so keep an eye on the 'valid_DOPE_extra_time' 
+    calculate  DOPE, this might slow your code down significantly so keep an eye on the 'valid_DOPE_extra_time'
     '''
     def __init__(self,calculate_dope_every_n = 4, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -30,7 +30,7 @@ class ValidDOPETrainer(OpenMM_Physics_Trainer):
 
     def valid_epoch(self, *args, **kwargs):
         '''
-        Override valid_epoch, (make sure to call super().valid_epoch(*args, **kwargs) to keep default behavior too). 
+        Override valid_epoch, (make sure to call super().valid_epoch(*args, **kwargs) to keep default behavior too).
         '''
         # DOPE Calculations are slow, so you probably won't want to calculate them every epoch. Instead every 4 to 16 epochs.
         self.calculate_dope = self.epoch%self.calculate_dope_every==0
@@ -50,7 +50,7 @@ class ValidDOPETrainer(OpenMM_Physics_Trainer):
 
     def valid_step(self, batch):
         '''
-        Keep default behavior by calling super().valid_step(batch), submit jobs to a multiprocessing pool with Parallel_DOPE_Score, then get results back at the end of the epoch in trainer.valid_epoch               
+        Keep default behavior by calling super().valid_step(batch), submit jobs to a multiprocessing pool with Parallel_DOPE_Score, then get results back at the end of the epoch in trainer.valid_epoch
         '''
         results = super().valid_step(batch)
         if not hasattr(self, 'dope_score_class'):
@@ -79,7 +79,7 @@ class TrackMemoryTrainer(OpenMM_Physics_Trainer):
         torch.cuda.reset_max_memory_allocated()
         results['Memory'] = memory
         return results
-        
+
 class DisablePhysicsTrainer(OpenMM_Physics_Trainer):
     '''
     Disable Physics in train_step. This essentially resets the train_step to that of Molearn.trainers.Trainer.
@@ -100,7 +100,7 @@ class DisablePhysicsTrainer(OpenMM_Physics_Trainer):
 
 class CalculateDecodedEnergyTrainer(OpenMM_Physics_Trainer):
     '''
-    OpenMM_Physics_Trainer calculates the energy off interpolated structures. It might be helpful to track the energy of decoded structures too. 
+    OpenMM_Physics_Trainer calculates the energy off interpolated structures. It might be helpful to track the energy of decoded structures too.
     '''
     def common_physics_step(self, batch, latent):
         # calculate interpolated structures energy as normal
@@ -124,8 +124,10 @@ if __name__ == '__main__':
 
     ##### Load Data #####
     data = PDBData()
-    data.import_pdb('data/MurD_closed_selection.pdb')
-    data.import_pdb('data/MurD_open_selection.pdb')
+    data.import_pdb(
+        "./clustered/MurD_open_selection_CLUSTER_aggl_train.dcd",
+        "./clustered/MurD_open_selection_NEW_TOPO.pdb",
+    )
     data.fix_terminal()
     data.atomselect(atoms = ['CA', 'C', 'N', 'CB', 'O'])
 
@@ -135,7 +137,7 @@ if __name__ == '__main__':
 
     trainer.set_data(data, batch_size=8, validation_split=0.1, manual_seed = 25)
     trainer.prepare_physics(remove_NB = True)
-    
+
     trainer.set_autoencoder(AutoEncoder, out_points = data.dataset.shape[-1])
     trainer.prepare_optimiser()
 

@@ -1,5 +1,8 @@
 import torch
 import os
+# import sys
+
+# sys.path.insert(0, os.path.join(os.path.abspath(os.pardir), "src"))
 from molearn.models.foldingnet import AutoEncoder
 from molearn.analysis import MolearnAnalysis
 from molearn.data import PDBData
@@ -40,8 +43,10 @@ def main():
     # by defining the manual see and loading the dataset in the same order as when
     # the neural network was trained, the same train-test split will be obtained
     data = PDBData()
-    data.import_pdb(f"data{os.sep}MurD_closed_selection.pdb")
-    data.import_pdb(f"data{os.sep}MurD_open_selection.pdb")
+    data.import_pdb(
+        "./clustered/MurD_open_selection_CLUSTER_aggl_train.dcd",
+        "./clustered/MurD_open_selection_NEW_TOPO.pdb",
+    )
     data.fix_terminal()
     data.atomselect(atoms=["CA", "C", "N", "CB", "O"])
     data.prepare_dataset()

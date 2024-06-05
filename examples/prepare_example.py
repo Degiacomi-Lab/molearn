@@ -21,7 +21,7 @@ def main():
             "./data/preparation/topo_MurDclosed1F.pdb",
         ],
         test_size=0.0,
-        n_cluster=5,
+        n_cluster=1500,
         outpath=storage_path,
         verbose=True,
     )
