@@ -120,7 +120,7 @@ class DataAssembler:
             try:
                 # do not enforce topology file on this formats
                 fext = os.path.splitext(self.traj_path)[-1]
-                if any([fext == ".pdb", fext == "h5", fext == "lh5"]):
+                if any([fext == ".pdb", fext == ".h5", fext == ".lh5"]):
                     self.traj = md.load(self.traj_path)
                 else:
                     self.traj = md.load(self.traj_path, self.topo_path)
@@ -132,7 +132,8 @@ class DataAssembler:
         elif isinstance(self.traj_path, list):
             if isinstance(self.traj_path, list) and self.topo_path is None:
                 fext = os.path.splitext(self.traj_path[0])[-1]
-                if any([fext == ".pdb", fext == "h5", fext == "lh5"]):
+                # file type doesn't need a topo but zip needs equally long list
+                if any([fext == ".pdb", fext == ".h5", fext == ".lh5"]):
                     self.topo_path = [None] * len(self.traj_path)
             assert isinstance(
                 self.topo_path, list
@@ -142,12 +143,14 @@ class DataAssembler:
             ), "there must be as many topologies supplied as trajectories"
             multi_traj = []
             top0 = None
+            ucell0 = None
             for ct, (trp, top) in enumerate(zip(self.traj_path, self.topo_path)):
+                print(f"\tLoading {os.path.basename(trp)}")
                 loaded = None
                 try:
                     # do not enforce topology file on this formats
-                    trp_ext = os.path.splitext(trp)
-                    if any([trp_ext == ".pdb", trp_ext == "h5", trp_ext == "lh5"]):
+                    trp_ext = os.path.splitext(trp)[-1]
+                    if any([trp_ext == ".pdb", trp_ext == ".h5", trp_ext == ".lh5"]):
                         loaded = md.load(trp)
                     else:
                         loaded = md.load(trp, top)
@@ -155,17 +158,25 @@ class DataAssembler:
                     loaded = self._loading_fallback(trp, top)
                 # select only protein atoms from the trajectory
                 loaded = loaded.atom_slice(loaded.top.select("protein"))
-                # to be able to join them
+                # use topology and unit cell from first trajectory to be able to join them
                 if ct == 0:
                     top0 = loaded.topology
+                    ucell0 = loaded.unitcell_vectors
                 else:
                     if top0.n_atoms != loaded.n_atoms:
                         raise ValueError(
                             f"topologies do not match - topology [{ct}] has {loaded.n_atoms} instead of {top0.n_atoms}"
                         )
                     loaded.topology = top0
+                    loaded.unitcell_vectors = ucell0
                 multi_traj.append(loaded)
             self.traj = md.join(multi_traj)
+        # converts ELEMENT names from eg "Cd" -> "C" to avoid later complications
+        topo_table, topo_bonds = self.traj.topology.to_dataframe()
+        topo_table["element"] = topo_table["element"].apply(
+            lambda x: x if len(x.strip()) <= 1 else x.strip()[0]
+        )
+        self.traj.topology = md.Topology.from_dataframe(topo_table, topo_bonds)
         # save new topology
         self.traj[0].save_pdb(
             os.path.join(self.outpath, f"./{self.traj_name}_NEW_TOPO.pdb")

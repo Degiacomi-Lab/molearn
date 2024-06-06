@@ -50,7 +50,7 @@ class Trainer:
         self.epoch = 0
         self.scheduler = None
         self.verbose = True
-        self.log_filename = "default_log_filename.json"
+        self.log_filename = "default_log_filename.csv"
         self.scheduler_key = None
 
     def get_network_summary(self):

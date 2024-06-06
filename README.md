@@ -24,6 +24,7 @@ The current version of molearn only supports Linux, and has verified to support 
 * numpy
 * PyTorch (1.7+)
 * [Biobox](https://github.com/Degiacomi-Lab/biobox)
+* [MDAnalysis](https://www.mdanalysis.org/)
 
 #### Optional Packages
 
@@ -42,7 +43,6 @@ To calculate DOPE and Ramachandran scores during analysis:
 * [cctbx](https://cctbx.github.io/)
 
 To run the GUI:
-* [MDAnalysis](https://www.mdanalysis.org/)
 * [plotly](https://plotly.com/python/)
 * [NGLView](http://nglviewer.org/nglview/latest/)
 
