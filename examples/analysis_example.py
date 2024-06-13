@@ -2,6 +2,9 @@
 # Import libraries
 import torch
 import os
+# import sys
+
+# sys.path.insert(0, os.path.join(os.path.abspath(os.pardir), "src"))
 from molearn.models.foldingnet import AutoEncoder
 from molearn.analysis import MolearnAnalysis
 from molearn.data import PDBData
@@ -46,7 +49,7 @@ if __name__ == '__main__':
     MA.batch_size = 4
 
     # increasing processes makes DOPE and Ramachandran scores calculations faster,
-    # but more more memory demandingTrue
+    # but more more memory demanding
     MA.processes = 2
 
     # what follows is a method to re-create the training and test set

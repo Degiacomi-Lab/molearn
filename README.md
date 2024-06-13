@@ -24,8 +24,12 @@ The current version of molearn only supports Linux, and has verified to support 
 * numpy
 * PyTorch (1.7+)
 * [Biobox](https://github.com/Degiacomi-Lab/biobox)
+* [MDAnalysis](https://www.mdanalysis.org/)
 
 #### Optional Packages
+
+To prepare a raw trajectory for training:
+* [mdtraj](https://mdtraj.org/1.9.4/index.html)
 
 To run energy evaluations with OpenMM:
 * [OpenMM](https://openmm.org/documentation)
@@ -39,7 +43,6 @@ To calculate DOPE and Ramachandran scores during analysis:
 * [cctbx](https://cctbx.github.io/)
 
 To run the GUI:
-* [MDAnalysis](https://www.mdanalysis.org/)
 * [plotly](https://plotly.com/python/)
 * [NGLView](http://nglviewer.org/nglview/latest/)
 
@@ -62,7 +65,12 @@ Manual installation requires the following three steps:
 
 #### Using molearn without installation ####
 
-Molearn can used without installation by making the sure the requirements above are met, and adding the `src` directory to your path at the beginning of every script, e.g.:
+Molearn can used without installation by making the sure the requirements above are met, and adding the `src` directory to your path at the beginning of every script. For instance, to install all requirements in a new environment `molearn_env`:
+```
+conda env create --file environment.yml -n molearn_env
+```
+Then, within this environment, run scripts starting with:
+
 ```
 import sys
 sys.path.insert(0, 'path/to/molearn/src')

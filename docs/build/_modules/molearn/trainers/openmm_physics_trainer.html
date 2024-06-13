@@ -1,15 +1,18 @@
+
 <!DOCTYPE html>
 
-<html lang="en" data-content_root="../../../">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>molearn.trainers.openmm_physics_trainer &#8212; molearn 2.0.1 documentation</title>
-    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=fa44fd50" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/sphinxdoc.css?v=d59dc883" />
-    <script src="../../../_static/documentation_options.js?v=f5cff4aa"></script>
-    <script src="../../../_static/doctools.js?v=888ff710"></script>
-    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <title>molearn.trainers.openmm_physics_trainer &#8212; molearn 2.0.4 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinxdoc.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
   </head><body>
@@ -22,7 +25,7 @@
         <li class="right" >
           <a href="../../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../../index.html">molearn 2.0.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">molearn 2.0.4 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">molearn.trainers.openmm_physics_trainer</a></li> 
       </ul>
@@ -37,11 +40,32 @@
 <span></span><span class="kn">import</span> <span class="nn">torch</span>
 <span class="kn">from</span> <span class="nn">molearn.loss_functions</span> <span class="kn">import</span> <span class="n">openmm_energy</span>
 <span class="kn">from</span> <span class="nn">.trainer</span> <span class="kn">import</span> <span class="n">Trainer</span>
+<span class="kn">import</span> <span class="nn">os</span>
 
 
-<div class="viewcode-block" id="OpenMM_Physics_Trainer">
-<a class="viewcode-back" href="../../../trainers.html#molearn.trainers.OpenMM_Physics_Trainer">[docs]</a>
-<span class="k">class</span> <span class="nc">OpenMM_Physics_Trainer</span><span class="p">(</span><span class="n">Trainer</span><span class="p">):</span>
+<span class="n">soft_xml_script</span><span class="o">=</span><span class="s1">&#39;&#39;&#39;</span><span class="se">\</span>
+<span class="s1">&lt;ForceField&gt;</span>
+<span class="s1"> &lt;Script&gt;</span>
+<span class="s1">import openmm as mm</span>
+<span class="s1">nb = mm.CustomNonbondedForce(&#39;C/((r/0.2)^4+1)&#39;)</span>
+<span class="s1">nb.addGlobalParameter(&#39;C&#39;, 1.0)</span>
+<span class="s1">sys.addForce(nb)</span>
+<span class="s1">for i in range(sys.getNumParticles()):</span>
+<span class="s1">    nb.addParticle([])</span>
+<span class="s1">exclusions = set()</span>
+<span class="s1">for bond in data.bonds:</span>
+<span class="s1">    exclusions.add((min(bond.atom1, bond.atom2), max(bond.atom1, bond.atom2)))</span>
+<span class="s1">for angle in data.angles:</span>
+<span class="s1">    exclusions.add((min(angle[0], angle[2]), max(angle[0], angle[2])))</span>
+<span class="s1">for a1, a2 in exclusions:</span>
+<span class="s1">    nb.addExclusion(a1, a2)</span>
+<span class="s1"> &lt;/Script&gt;</span>
+<span class="s1">&lt;/ForceField&gt;</span>
+<span class="s1">&#39;&#39;&#39;</span>
+
+
+
+<div class="viewcode-block" id="OpenMM_Physics_Trainer"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.OpenMM_Physics_Trainer">[docs]</a><span class="k">class</span> <span class="nc">OpenMM_Physics_Trainer</span><span class="p">(</span><span class="n">Trainer</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    OpenMM_Physics_Trainer subclasses Trainer and replaces the valid_step and train_step.</span>
 <span class="sd">    An extra &#39;physics_loss&#39; is calculated using OpenMM and the forces are inserted into backwards pass.</span>
@@ -50,10 +74,8 @@
 <span class="sd">    &#39;&#39;&#39;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-
-<div class="viewcode-block" id="OpenMM_Physics_Trainer.prepare_physics">
-<a class="viewcode-back" href="../../../trainers.html#molearn.trainers.OpenMM_Physics_Trainer.prepare_physics">[docs]</a>
-    <span class="k">def</span> <span class="nf">prepare_physics</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">physics_scaling_factor</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">clamp_threshold</span><span class="o">=</span><span class="mf">1e8</span><span class="p">,</span> <span class="n">clamp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">start_physics_at</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        
+<div class="viewcode-block" id="OpenMM_Physics_Trainer.prepare_physics"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.OpenMM_Physics_Trainer.prepare_physics">[docs]</a>    <span class="k">def</span> <span class="nf">prepare_physics</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">physics_scaling_factor</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">clamp_threshold</span><span class="o">=</span><span class="mf">1e8</span><span class="p">,</span> <span class="n">clamp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">start_physics_at</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">xml_file</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">soft_NB</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Create ``self.physics_loss`` object from :func:`loss_functions.openmm_energy &lt;molearn.loss_functions.openmm_energy&gt;`</span>
 <span class="sd">        Needs ``self.mol``, ``self.std``, and ``self._data.atoms`` to have been set with :func:`Trainer.set_data&lt;molearn.trainer.Trainer.set_data&gt;`</span>
@@ -65,18 +87,26 @@
 <span class="sd">        :param \*\*kwargs: All aditional kwargs will be passed to :func:`openmm_energy &lt;molearn.loss_functions.openmm_energy&gt;`</span>
 
 <span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">xml_file</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">soft_NB</span><span class="o">==</span><span class="kc">True</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;using soft nonbonded forces by default&#39;</span><span class="p">)</span>
+            <span class="kn">from</span> <span class="nn">molearn.utils</span> <span class="kn">import</span> <span class="n">random_string</span>
+            <span class="n">tmp_filename</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;soft_nonbonded_</span><span class="si">{</span><span class="n">random_string</span><span class="p">()</span><span class="si">}</span><span class="s1">.xml&#39;</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">tmp_filename</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">soft_xml_script</span><span class="p">)</span>
+            <span class="n">xml_file</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;amber14-all.xml&#39;</span><span class="p">,</span> <span class="n">tmp_filename</span><span class="p">]</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;remove_NB&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">elif</span> <span class="n">xml_file</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">xml_file</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;amber14-all.xml&#39;</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">start_physics_at</span> <span class="o">=</span> <span class="n">start_physics_at</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">psf</span> <span class="o">=</span> <span class="n">physics_scaling_factor</span>
         <span class="k">if</span> <span class="n">clamp</span><span class="p">:</span>
             <span class="n">clamp_kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">max</span><span class="o">=</span><span class="n">clamp_threshold</span><span class="p">,</span> <span class="nb">min</span><span class="o">=-</span><span class="n">clamp_threshold</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">clamp_kwargs</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">physics_loss</span> <span class="o">=</span> <span class="n">openmm_energy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mol</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">std</span><span class="p">,</span> <span class="n">clamp</span><span class="o">=</span><span class="n">clamp_kwargs</span><span class="p">,</span> <span class="n">platform</span><span class="o">=</span><span class="s1">&#39;CUDA&#39;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">device</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s1">&#39;cuda&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="s1">&#39;Reference&#39;</span><span class="p">,</span> <span class="n">atoms</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">atoms</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">physics_loss</span> <span class="o">=</span> <span class="n">openmm_energy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mol</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">std</span><span class="p">,</span> <span class="n">clamp</span><span class="o">=</span><span class="n">clamp_kwargs</span><span class="p">,</span> <span class="n">platform</span><span class="o">=</span><span class="s1">&#39;CUDA&#39;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">device</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s1">&#39;cuda&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="s1">&#39;Reference&#39;</span><span class="p">,</span> <span class="n">atoms</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">atoms</span><span class="p">,</span> <span class="n">xml_file</span> <span class="o">=</span> <span class="n">xml_file</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">tmp_filename</span><span class="p">)</span></div>
 
-
-<div class="viewcode-block" id="OpenMM_Physics_Trainer.common_physics_step">
-<a class="viewcode-back" href="../../../trainers.html#molearn.trainers.OpenMM_Physics_Trainer.common_physics_step">[docs]</a>
-    <span class="k">def</span> <span class="nf">common_physics_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">latent</span><span class="p">):</span>
+<div class="viewcode-block" id="OpenMM_Physics_Trainer.common_physics_step"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.OpenMM_Physics_Trainer.common_physics_step">[docs]</a>    <span class="k">def</span> <span class="nf">common_physics_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">latent</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Called from both :func:`train_step &lt;molearn.trainers.OpenMM_Physics_Trainer.train_step&gt;` and :func:`valid_step &lt;molearn.trainers.OpenMM_Physics_Trainer.valid_step&gt;`.</span>
 <span class="sd">        Takes random interpolations between adjacent samples latent vectors. These are decoded (decoded structures saved as ``self._internal[&#39;generated&#39;] = generated if needed elsewhere) and the energy terms calculated with ``self.physics_loss``.</span>
@@ -96,10 +126,7 @@
 
         <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;physics_loss&#39;</span><span class="p">:</span><span class="n">energy</span><span class="p">}</span>  <span class="c1"># a if not energy.isinf() else torch.tensor(0.0)}</span></div>
 
-
-<div class="viewcode-block" id="OpenMM_Physics_Trainer.train_step">
-<a class="viewcode-back" href="../../../trainers.html#molearn.trainers.OpenMM_Physics_Trainer.train_step">[docs]</a>
-    <span class="k">def</span> <span class="nf">train_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">):</span>
+<div class="viewcode-block" id="OpenMM_Physics_Trainer.train_step"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.OpenMM_Physics_Trainer.train_step">[docs]</a>    <span class="k">def</span> <span class="nf">train_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        This method overrides :func:`Trainer.train_step &lt;molearn.trainers.Trainer.train_step&gt;` and adds an additional &#39;Physics_loss&#39; term.</span>
 
@@ -121,10 +148,7 @@
         <span class="n">results</span><span class="p">[</span><span class="s1">&#39;loss&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">final_loss</span>
         <span class="k">return</span> <span class="n">results</span></div>
 
-
-<div class="viewcode-block" id="OpenMM_Physics_Trainer.valid_step">
-<a class="viewcode-back" href="../../../trainers.html#molearn.trainers.OpenMM_Physics_Trainer.valid_step">[docs]</a>
-    <span class="k">def</span> <span class="nf">valid_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">):</span>
+<div class="viewcode-block" id="OpenMM_Physics_Trainer.valid_step"><a class="viewcode-back" href="../../../trainers.html#molearn.trainers.OpenMM_Physics_Trainer.valid_step">[docs]</a>    <span class="k">def</span> <span class="nf">valid_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        This method overrides :func:`Trainer.valid_step &lt;molearn.trainers.Trainer.valid_step&gt;` and adds an additional &#39;Physics_loss&#39; term.</span>
 
@@ -143,9 +167,7 @@
         <span class="c1"># scale = (self.psf*results[&#39;mse_loss&#39;])/(results[&#39;physics_loss&#39;] +1e-5)</span>
         <span class="n">final_loss</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;mse_loss&#39;</span><span class="p">])</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">psf</span><span class="o">*</span><span class="n">torch</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;physics_loss&#39;</span><span class="p">])</span>
         <span class="n">results</span><span class="p">[</span><span class="s1">&#39;loss&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">final_loss</span>
-        <span class="k">return</span> <span class="n">results</span></div>
-</div>
-
+        <span class="k">return</span> <span class="n">results</span></div></div>
 
 
 <span class="k">if</span> <span class="vm">__name__</span><span class="o">==</span><span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
@@ -181,14 +203,14 @@
         <li class="right" >
           <a href="../../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../../index.html">molearn 2.0.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">molearn 2.0.4 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">molearn.trainers.openmm_physics_trainer</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-    &#169; Copyright 2021, S. C. Musson, M. T. Degiacomi.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.5.
+        &#169; Copyright 2021, S. C. Musson, M. T. Degiacomi.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.0.2.
     </div>
   </body>
 </html>

@@ -1,15 +1,18 @@
+
 <!DOCTYPE html>
 
-<html lang="en" data-content_root="../../../">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>molearn.scoring.dope_score &#8212; molearn 2.0.1 documentation</title>
-    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=fa44fd50" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/sphinxdoc.css?v=d59dc883" />
-    <script src="../../../_static/documentation_options.js?v=f5cff4aa"></script>
-    <script src="../../../_static/doctools.js?v=888ff710"></script>
-    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <title>molearn.scoring.dope_score &#8212; molearn 2.0.4 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinxdoc.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
   </head><body>
@@ -22,8 +25,9 @@
         <li class="right" >
           <a href="../../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../../index.html">molearn 2.0.1 documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">molearn 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../scoring.html" accesskey="U">molearn.scoring</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">molearn.scoring.dope_score</a></li> 
       </ul>
     </div>  
@@ -51,9 +55,7 @@
 <span class="kn">import</span> <span class="nn">os</span>
     
 
-<div class="viewcode-block" id="DOPE_Score">
-<a class="viewcode-back" href="../../../scoring.html#molearn.scoring.DOPE_Score">[docs]</a>
-<span class="k">class</span> <span class="nc">DOPE_Score</span><span class="p">:</span>
+<div class="viewcode-block" id="DOPE_Score"><a class="viewcode-back" href="../../../scoring.html#molearn.scoring.DOPE_Score">[docs]</a><span class="k">class</span> <span class="nc">DOPE_Score</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    This class contains methods to calculate dope without saving to save and load PDB files for every structure. Atoms in a biobox coordinate tensor are mapped to the coordinates in the modeller model directly.</span>
 <span class="sd">    &#39;&#39;&#39;</span>
@@ -111,9 +113,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">cg</span> <span class="o">=</span> <span class="n">ConjugateGradients</span><span class="p">()</span>
         <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">tmp_file</span><span class="p">)</span>
 
-<div class="viewcode-block" id="DOPE_Score.get_dope">
-<a class="viewcode-back" href="../../../scoring.html#molearn.scoring.DOPE_Score.get_dope">[docs]</a>
-    <span class="k">def</span> <span class="nf">get_dope</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">frame</span><span class="p">,</span> <span class="n">refine</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="DOPE_Score.get_dope"><a class="viewcode-back" href="../../../scoring.html#molearn.scoring.DOPE_Score.get_dope">[docs]</a>    <span class="k">def</span> <span class="nf">get_dope</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">frame</span><span class="p">,</span> <span class="n">refine</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Get the dope score. Injects coordinates into modeller and uses `mdl.build(build_method=&#39;INTERNAL_COORDINATES&#39;, initialize_xyz=False)` to reconstruct missing atoms.</span>
 <span class="sd">        If a error is thrown by modeller or at any stage, we just return a fixed large value of 1e10.</span>
@@ -147,11 +147,8 @@
             <span class="k">return</span> <span class="n">dope_score</span>
         <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
             <span class="k">return</span> <span class="mf">1e10</span></div>
-
         
-<div class="viewcode-block" id="DOPE_Score.get_all_dope">
-<a class="viewcode-back" href="../../../scoring.html#molearn.scoring.DOPE_Score.get_all_dope">[docs]</a>
-    <span class="k">def</span> <span class="nf">get_all_dope</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">refine</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="DOPE_Score.get_all_dope"><a class="viewcode-back" href="../../../scoring.html#molearn.scoring.DOPE_Score.get_all_dope">[docs]</a>    <span class="k">def</span> <span class="nf">get_all_dope</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">refine</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Expect a array of frames. return array of DOPE score value.</span>
 <span class="sd">        </span>
@@ -176,9 +173,7 @@
                 
             <span class="n">dope_scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fast_fs</span><span class="o">.</span><span class="n">assess_dope</span><span class="p">())</span>
             
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">dope_scores</span><span class="p">)</span></div>
-</div>
-
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">dope_scores</span><span class="p">)</span></div></div>
 
 
 <span class="k">def</span> <span class="nf">set_global_score</span><span class="p">(</span><span class="n">score</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">):</span>
@@ -199,9 +194,7 @@
     <span class="k">return</span> <span class="n">worker_dope_score</span><span class="o">.</span><span class="n">get_dope</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="Parallel_DOPE_Score">
-<a class="viewcode-back" href="../../../scoring.html#molearn.scoring.Parallel_DOPE_Score">[docs]</a>
-<span class="k">class</span> <span class="nc">Parallel_DOPE_Score</span><span class="p">:</span>
+<div class="viewcode-block" id="Parallel_DOPE_Score"><a class="viewcode-back" href="../../../scoring.html#molearn.scoring.Parallel_DOPE_Score">[docs]</a><span class="k">class</span> <span class="nc">Parallel_DOPE_Score</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">    a multiprocessing class to get modeller DOPE scores.</span>
 <span class="sd">    A typical use case would looke like::</span>
@@ -239,17 +232,13 @@
     <span class="k">def</span> <span class="nf">__reduce__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">,</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mol</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">processes</span><span class="p">))</span>
 
-<div class="viewcode-block" id="Parallel_DOPE_Score.get_score">
-<a class="viewcode-back" href="../../../scoring.html#molearn.scoring.Parallel_DOPE_Score.get_score">[docs]</a>
-    <span class="k">def</span> <span class="nf">get_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="Parallel_DOPE_Score.get_score"><a class="viewcode-back" href="../../../scoring.html#molearn.scoring.Parallel_DOPE_Score.get_score">[docs]</a>    <span class="k">def</span> <span class="nf">get_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        :param np.array coords: # shape (N, 3) numpy array</span>
 <span class="sd">        &#39;&#39;&#39;</span>
         
         <span class="c1"># is copy necessary?</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pool</span><span class="o">.</span><span class="n">apply_async</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">process_function</span><span class="p">,</span> <span class="p">(</span><span class="n">coords</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">kwargs</span><span class="p">))</span></div>
-</div>
-
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pool</span><span class="o">.</span><span class="n">apply_async</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">process_function</span><span class="p">,</span> <span class="p">(</span><span class="n">coords</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">kwargs</span><span class="p">))</span></div></div>
 </pre></div>
 
             <div class="clearer"></div>
@@ -281,14 +270,15 @@
         <li class="right" >
           <a href="../../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../../index.html">molearn 2.0.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">molearn 2.0.4 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../scoring.html" >molearn.scoring</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">molearn.scoring.dope_score</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-    &#169; Copyright 2021, S. C. Musson, M. T. Degiacomi.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.5.
+        &#169; Copyright 2021, S. C. Musson, M. T. Degiacomi.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.0.2.
     </div>
   </body>
 </html>

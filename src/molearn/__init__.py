@@ -11,7 +11,7 @@
 
 
 __author__ = "V. K. Ramaswamy, S. C. Musson, C. G. Willcocks, M. T. Degiacomi"
-__version__ = '2.0.1'
+__version__ = '2.0.4'
 __date__ = '$Date: 2023-05-16 $'
 
 

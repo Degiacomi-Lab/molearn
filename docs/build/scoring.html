@@ -1,16 +1,19 @@
+
 <!DOCTYPE html>
 
-<html lang="en" data-content_root="./">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
-    <title>Scoring &#8212; molearn 2.0.1 documentation</title>
-    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
-    <link rel="stylesheet" type="text/css" href="_static/sphinxdoc.css?v=d59dc883" />
-    <script src="_static/documentation_options.js?v=f5cff4aa"></script>
-    <script src="_static/doctools.js?v=888ff710"></script>
-    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <title>Scoring &#8212; molearn 2.0.4 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinxdoc.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="_static/doctools.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Analysis" href="analysis.html" />
@@ -31,7 +34,7 @@
         <li class="right" >
           <a href="trainers.html" title="Trainers"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">molearn 2.0.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">molearn 2.0.4 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Scoring</a></li> 
       </ul>
     </div>  
@@ -42,10 +45,10 @@
           <div class="body" role="main">
             
   <section id="scoring">
-<h1>Scoring<a class="headerlink" href="#scoring" title="Link to this heading">¶</a></h1>
+<h1>Scoring<a class="headerlink" href="#scoring" title="Permalink to this heading">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="molearn.scoring.DOPE_Score">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DOPE_Score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mol</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/scoring/dope_score.html#DOPE_Score"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.scoring.DOPE_Score" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DOPE_Score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mol</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/scoring/dope_score.html#DOPE_Score"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.scoring.DOPE_Score" title="Permalink to this definition">¶</a></dt>
 <dd><p>This class contains methods to calculate dope without saving to save and load PDB files for every structure. Atoms in a biobox coordinate tensor are mapped to the coordinates in the modeller model directly.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -54,7 +57,7 @@
 </dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="molearn.scoring.DOPE_Score.get_all_dope">
-<span class="sig-name descname"><span class="pre">get_all_dope</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coords</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">refine</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/scoring/dope_score.html#DOPE_Score.get_all_dope"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.scoring.DOPE_Score.get_all_dope" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">get_all_dope</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coords</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">refine</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/scoring/dope_score.html#DOPE_Score.get_all_dope"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.scoring.DOPE_Score.get_all_dope" title="Permalink to this definition">¶</a></dt>
 <dd><p>Expect a array of frames. return array of DOPE score value.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -74,7 +77,7 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="molearn.scoring.DOPE_Score.get_dope">
-<span class="sig-name descname"><span class="pre">get_dope</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">frame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">refine</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/scoring/dope_score.html#DOPE_Score.get_dope"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.scoring.DOPE_Score.get_dope" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">get_dope</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">frame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">refine</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/scoring/dope_score.html#DOPE_Score.get_dope"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.scoring.DOPE_Score.get_dope" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the dope score. Injects coordinates into modeller and uses <cite>mdl.build(build_method=’INTERNAL_COORDINATES’, initialize_xyz=False)</cite> to reconstruct missing atoms.
 If a error is thrown by modeller or at any stage, we just return a fixed large value of 1e10.</p>
 <dl class="field-list simple">
@@ -97,7 +100,7 @@ If a error is thrown by modeller or at any stage, we just return a fixed large v
 
 <dl class="py class">
 <dt class="sig sig-object py" id="molearn.scoring.Parallel_DOPE_Score">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Parallel_DOPE_Score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mol</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">processes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'spawn'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/scoring/dope_score.html#Parallel_DOPE_Score"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.scoring.Parallel_DOPE_Score" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Parallel_DOPE_Score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mol</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">processes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'spawn'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/scoring/dope_score.html#Parallel_DOPE_Score"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.scoring.Parallel_DOPE_Score" title="Permalink to this definition">¶</a></dt>
 <dd><p>a multiprocessing class to get modeller DOPE scores.
 A typical use case would looke like:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">score_class</span> <span class="o">=</span> <span class="n">Parallel_DOPE_Score</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
@@ -120,7 +123,7 @@ A typical use case would looke like:</p>
 </dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="molearn.scoring.Parallel_DOPE_Score.get_score">
-<span class="sig-name descname"><span class="pre">get_score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coords</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/scoring/dope_score.html#Parallel_DOPE_Score.get_score"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.scoring.Parallel_DOPE_Score.get_score" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">get_score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coords</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/scoring/dope_score.html#Parallel_DOPE_Score.get_score"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.scoring.Parallel_DOPE_Score.get_score" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>coords</strong> (<em>np.array</em>) – # shape (N, 3) numpy array</p>
@@ -132,66 +135,13 @@ A typical use case would looke like:</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="molearn.scoring.Ramachandran_Score">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Ramachandran_Score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mol</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/scoring/ramachandran_score.html#Ramachandran_Score"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.scoring.Ramachandran_Score" title="Link to this definition">¶</a></dt>
-<dd><p>This class contains methods that use iotbx/mmtbx to calulate the quality of phi and psi values in a protein.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>mol</strong> (<em>biobox.Molecule</em>) – One example frame to gain access to the topology. Mol will also be used to save a temporary pdb file that will be reloaded to create the initial iotbx Model.</p></li>
-<li><p><strong>threshold</strong> (<em>float</em>) – (default: 1e-3) Threshold used to determine similarity between biobox.molecule coordinates and iotbx model coordinates. Determine that iotbx model was created successfully.</p></li>
-</ul>
-</dd>
-</dl>
-<dl class="py method">
-<dt class="sig sig-object py" id="molearn.scoring.Ramachandran_Score.get_score">
-<span class="sig-name descname"><span class="pre">get_score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coords</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">as_ratio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/scoring/ramachandran_score.html#Ramachandran_Score.get_score"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.scoring.Ramachandran_Score.get_score" title="Link to this definition">¶</a></dt>
-<dd><p>Given coords (corresponding to self.mol) will calculate Ramachandran scores using cctbux ramalyze module
-Returns the counts of number of torsion angles that fall within favored, allowed, and outlier regions and finally the total number of torsion angles analysed.
-:param numpy.ndarray coords: shape (N, 3)
-:returns: (favored, allowed, outliers, total)
-:rtype: tuple of ints</p>
-</dd></dl>
-
-</dd></dl>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Ramachandran_Score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/scoring.html#Ramachandran_Score"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.scoring.Ramachandran_Score" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="molearn.scoring.Parallel_Ramachandran_Score">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Parallel_Ramachandran_Score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mol</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">processes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/scoring/ramachandran_score.html#Parallel_Ramachandran_Score"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.scoring.Parallel_Ramachandran_Score" title="Link to this definition">¶</a></dt>
-<dd><p>A multiprocessing class to get Ramachandran scores. 
-A typical use case would looke like:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">score_class</span> <span class="o">=</span> <span class="n">Parallel_Ramachandran_Score</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-<span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
-<span class="k">for</span> <span class="n">frame</span> <span class="ow">in</span> <span class="n">coordinates_array</span><span class="p">:</span>
-    <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">score_class</span><span class="o">.</span><span class="n">get_score</span><span class="p">(</span><span class="n">frame</span><span class="p">))</span>
-    <span class="c1"># Ramachandran scores will be calculated asynchronously in background</span>
-<span class="o">...</span>
-<span class="c1"># to retrieve the results</span>
-<span class="n">results</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">r</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">results</span><span class="p">])</span>
-<span class="n">favored</span> <span class="o">=</span> <span class="n">results</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span>
-<span class="n">allowed</span> <span class="o">=</span> <span class="n">results</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span>
-<span class="n">outliers</span> <span class="o">=</span> <span class="n">results</span><span class="p">[:,</span><span class="mi">2</span><span class="p">]</span>
-<span class="n">total</span> <span class="o">=</span> <span class="n">results</span><span class="p">[:,</span><span class="mi">3</span><span class="p">]</span>
-</pre></div>
-</div>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>mol</strong> (<em>biobox.Molecule</em>) – biobox melucel containing one example fram of the protein to be analysed. This will be passed to Ramachandran_Score instances in each thread.</p></li>
-<li><p><strong>processes</strong> (<em>int</em>) – (default: -1) Number of processes argument to pass to multiprocessing.pool. This controls the number of therads created.</p></li>
-</ul>
-</dd>
-</dl>
-<dl class="py method">
-<dt class="sig sig-object py" id="molearn.scoring.Parallel_Ramachandran_Score.get_score">
-<span class="sig-name descname"><span class="pre">get_score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coords</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/scoring/ramachandran_score.html#Parallel_Ramachandran_Score.get_score"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.scoring.Parallel_Ramachandran_Score.get_score" title="Link to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>coords</strong> – # shape (N, 3) numpy array</p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Parallel_Ramachandran_Score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/molearn/scoring.html#Parallel_Ramachandran_Score"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#molearn.scoring.Parallel_Ramachandran_Score" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 </section>
 
@@ -202,32 +152,6 @@ A typical use case would looke like:</p>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-  <div>
-    <h3><a href="index.html">Table of Contents</a></h3>
-    <ul>
-<li><a class="reference internal" href="#">Scoring</a><ul>
-<li><a class="reference internal" href="#molearn.scoring.DOPE_Score"><code class="docutils literal notranslate"><span class="pre">DOPE_Score</span></code></a><ul>
-<li><a class="reference internal" href="#molearn.scoring.DOPE_Score.get_all_dope"><code class="docutils literal notranslate"><span class="pre">DOPE_Score.get_all_dope()</span></code></a></li>
-<li><a class="reference internal" href="#molearn.scoring.DOPE_Score.get_dope"><code class="docutils literal notranslate"><span class="pre">DOPE_Score.get_dope()</span></code></a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#molearn.scoring.Parallel_DOPE_Score"><code class="docutils literal notranslate"><span class="pre">Parallel_DOPE_Score</span></code></a><ul>
-<li><a class="reference internal" href="#molearn.scoring.Parallel_DOPE_Score.get_score"><code class="docutils literal notranslate"><span class="pre">Parallel_DOPE_Score.get_score()</span></code></a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#molearn.scoring.Ramachandran_Score"><code class="docutils literal notranslate"><span class="pre">Ramachandran_Score</span></code></a><ul>
-<li><a class="reference internal" href="#molearn.scoring.Ramachandran_Score.get_score"><code class="docutils literal notranslate"><span class="pre">Ramachandran_Score.get_score()</span></code></a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#molearn.scoring.Parallel_Ramachandran_Score"><code class="docutils literal notranslate"><span class="pre">Parallel_Ramachandran_Score</span></code></a><ul>
-<li><a class="reference internal" href="#molearn.scoring.Parallel_Ramachandran_Score.get_score"><code class="docutils literal notranslate"><span class="pre">Parallel_Ramachandran_Score.get_score()</span></code></a></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-
-  </div>
   <div>
     <h4>Previous topic</h4>
     <p class="topless"><a href="trainers.html"
@@ -274,13 +198,13 @@ A typical use case would looke like:</p>
         <li class="right" >
           <a href="trainers.html" title="Trainers"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">molearn 2.0.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">molearn 2.0.4 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Scoring</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-    &#169; Copyright 2021, S. C. Musson, M. T. Degiacomi.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.5.
+        &#169; Copyright 2021, S. C. Musson, M. T. Degiacomi.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.0.2.
     </div>
   </body>
 </html>

@@ -10,6 +10,7 @@ https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.011052).
 #### Training data
 
 The files `MurD_closed.tar.gz` and `MurD_open.tar.gz` contain 900 conformations each of MurD, generated with MD simulations of its closed and open state. Extracting these files will yield `MurD_closed_selection.pdb` and `MurD_open_selection.pdb`.
+In order to use them as training data please run the `prepare_example.py` in order to obtain a joined and prepared trajectory.
 
 #### Test data
 
@@ -24,6 +25,10 @@ In `xbb_foldingnet_checkpoints`, an example output generated when the *foldingne
 
 
 ## Scripts
+
+#### Data preparation examples
+
+* `prepare_example.py`: an example on how to combine two trajectories in a single dataset that can be used as training examples for *molearn* models.
 
 #### Training examples
 
