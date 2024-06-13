@@ -26,7 +26,7 @@ if __name__ =='__main__':
 if __name__ == '__main__':
     print("> Loading network parameters...")
 
-    fname = f'xbb_foldingnet_checkpoints{os.sep}checkpoint_no_optimizer_state_dict_epoch167_loss0.003259085263643.ckpt'
+    fname = f'foldingnet_checkpoints_nmr_alignres{os.sep}checkpoint_1_epoch253_loss-2.2429894754442117.ckpt'
     # change 'cpu' to 'cuda' if you have a suitable cuda enabled device
     #checkpoint = torch.load(fname, map_location=torch.device('cpu'))
     checkpoint = torch.load(fname, map_location=torch.device('cuda'))
@@ -53,7 +53,7 @@ if __name__ == '__main__':
     # by defining the manual see and loading the dataset in the same order as when
     #the neural network was trained, the same train-test split will be obtained
     data = PDBData()
-    data.import_pdb(f'data{os.sep}MurD_closed_selection.pdb')
+    data.import_pdb(f'data{os.sep}MurD_closed_sel/home/pghw87/Documents/md-sim/Analysis/Python-codeection.pdb')
     data.import_pdb(f'data{os.sep}MurD_open_selection.pdb')
     #data.import_pdb('/home3/pghw87/trajectories/MurD/MurD_closed.pdb')
     #data.import_pdb('/home3/pghw87/trajectories/MurD/MurD_open.pdb')
@@ -76,7 +76,7 @@ if __name__ == '__main__':
     if not FULL_DATASETS:
         data_train.dataset = data_train.dataset[::40]
         data_valid.dataset = data_valid.dataset[::4]
-        data_test.dataset = data_test.dataset[::10]
+        #data_test.dataset = data_test.dataset[::10]
 
 #%%
 # print out the size of train, valid, test data
@@ -89,26 +89,33 @@ if __name__ == '__main__':
 if __name__ == '__main__':
     MA.set_dataset("training", data_train)
     MA.set_dataset("valid", data_valid)
-    MA.set_dataset('test', data_test)
+    #MA.set_dataset('test', data_test)
 
 
 #%%
 # Calculate RMSD of training and test set
 if __name__ == '__main__':
-    print("> calculating RMSD of training and test set")
+    print("> calculating RMSD of training and test sets")
 
     err_train = MA.get_error('training')
     err_valid = MA.get_error('valid')
-    err_test = MA.get_error('test')
+    #err_test = MA.get_error('test')
 
-    print(f'Mean RMSD is {err_train.mean()} for training set and {err_valid.mean()} for valid set and {err_test.mean()} for test set')
-
+    #print(f'Mean RMSD is {err_train.mean()} for training set and {err_valid.mean()} for valid set and {err_test.mean()} for test set')
+    print(f'Mean RMSD is {err_train.mean()} for training set and {err_valid.mean()} for valid set')
+#%%
+if __name__ == '__main__':
     # Plot RMSD 
     fig, ax = plt.subplots()
-    violin = ax.violinplot([err_train, err_valid, err_test], showmeans = True, )
-    ax.set_xticks([1,2,3])
-    ax.set_title('RMSD of training and test set')
-    ax.set_xticklabels(['Training', 'Validation','Testing'])
+    #violin = ax.violinplot([err_train, err_valid, err_test], showmeans = True, )
+    violin = ax.violinplot([err_train, err_valid], showmeans = True, )
+    #ax.set_xticks([1,2,3])
+    ax.set_xticks([1,2])
+    #ax.set_title('RMSD of training, validaion and testing set')
+    ax.set_title('RMSD of training and validation for residues 1-84 aligned (NMR structures) with foldingnet')
+    #ax.set_xticklabels(['Training', 'Validation','Testing'])
+    ax.set_xticklabels(['Training', 'Validation'])
+    fig.gca().set_ylabel(r'RMSD ($ \AA$)')
     plt.savefig('RMSD_plot.png')
 
 #%%
@@ -123,16 +130,29 @@ if __name__ == '__main__':
         MA.setup_grid(10)
     landscape_err_latent, landscape_err_3d, xaxis, yaxis = MA.scan_error()
 
-    # Plot error grid
+#%%
+if __name__ == '__main__':
+# Plot RMSD grid in latent space
     fig, ax = plt.subplots()
-    c = ax.pcolormesh(xaxis, yaxis, landscape_err_latent, vmax =8)
-    fig.colorbar(c)
+    c = ax.pcolormesh(xaxis, yaxis, landscape_err_latent, vmax = 8)
+    fig.colorbar(c, label = 'latent space RMSD ($ \AA$)')
+    ax.set_title("Error grid (RMSD) in latent space")
     coords = as_numpy(MA.get_encoded('valid'))
-    tcoords = as_numpy(MA.get_encoded('test'))
+    #tcoords = as_numpy(MA.get_encoded('test'))
     plt.scatter(coords[:,0,0], coords[:,1,0], label = 'Valid')
-    plt.scatter(tcoords[:,0,0], tcoords[:,1,0], label ='Test')
-    ax.legend()
-    plt.savefig('Error_grid.png')
+    #plt.scatter(tcoords[:,0,0], tcoords[:,1,0], label ='Test')
+    plt.savefig('Error_rmsd_grid.png')
+
+    # Plot drift grid in latent space
+    fig, ax = plt.subplots()
+    c = ax.pcolormesh(xaxis, yaxis, landscape_err_3d, vmax = 1)
+    fig.colorbar(c, label = 'latent space drfit ($ \AA$)')
+    ax.set_title("Error grid (drift) in latent space")
+    coords = as_numpy(MA.get_encoded('valid'))
+    #tcoords = as_numpy(MA.get_encoded('test'))
+    plt.scatter(coords[:,0,0], coords[:,1,0], label = 'Valid')
+    #plt.scatter(tcoords[:,0,0], tcoords[:,1,0], label ='Test')
+    plt.savefig('Error_drift_grid.png')
 
 #%%
 # Generate dope scores
@@ -144,10 +164,13 @@ if __name__ == '__main__':
 if __name__ == '__main__':
     fig, ax  = plt.subplots()
     c = ax.pcolormesh(xvals, yvals, dope)
-    fig.colorbar(c)
+    #ax.set_title("Dope score of residues 0-83 aligned in latent space of foldingnet")
+    coords = as_numpy(MA.get_encoded('valid'))
+    #tcoords = as_numpy(MA.get_encoded('test'))
+    plt.scatter(coords[:,0,0], coords[:,1,0], label = 'Valid', c='white')
+    fig.colorbar(c, label = 'latent space DOPE score ($ \AA$)')
+    #plt.scatter(tcoords[:,0,0], tcoords[:,1,0], label ='Test')
     #ax.legend()
-    #ax.
-
     plt.savefig('Dope_grid.png')
 
     ## to visualise the GUI, execute the code above in a Jupyter notebook, then call:
@@ -156,7 +179,6 @@ if __name__ == '__main__':
 #%%
 # Generate ramachandran score
 if __name__ == '__main__':
-    #dope, xvals, yvals = MA.scan_dope()
     ramachandran, xvals, yvals = MA.scan_ramachandran()
 
 #%%
@@ -164,7 +186,10 @@ if __name__ == '__main__':
 if __name__ == '__main__':
     fig, ax  = plt.subplots()
     c = ax.pcolormesh(xvals, yvals, ramachandran)
-    #plt.scatter(xvals, yvals)
+    fig.colorbar(c)
+    ax.set_title("Ramachandran grid in latent space")
+    plt.scatter(coords[:,0,0], coords[:,1,0], label = 'Valid')
+    plt.scatter(tcoords[:,0,0], tcoords[:,1,0], label ='Test')
     plt.savefig('Ramachandran.png')
 
 
