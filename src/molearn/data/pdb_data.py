@@ -59,7 +59,7 @@ class PDBData:
             if atoms is not None:
                 self.atomselect(atoms=atoms)
 
-    def import_pdb(self, filename: str | list[str], topology: str | None):
+    def import_pdb(self, filename: str | list[str], topology: str | None = None):
         """
         Load one or multiple trajectory files
 
