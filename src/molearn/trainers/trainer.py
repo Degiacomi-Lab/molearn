@@ -31,10 +31,11 @@ class Trainer:
 
     """
 
-    def __init__(self, device=None, log_filename="log_file.dat"):
+    def __init__(self, device=None, log_filename="log_file.dat", json_log=False):
         """
         :param torch.Device device: if not given will be determinined automatically based on torch.cuda.is_available()
         :param str log_filename: (default: 'default_log_filename.json') file used to log outputs to
+        :param bool json_log: True to use json.dump to save the log file
         """
         if not device:
             self.device = (
@@ -52,6 +53,7 @@ class Trainer:
         self.verbose = True
         self.log_filename = "default_log_filename.csv"
         self.scheduler_key = None
+        self.json_log = json_log
 
     def get_network_summary(self):
         """
@@ -151,17 +153,22 @@ class Trainer:
                     print(f"{k: <{max_key_len+1}}: {v:.6f}")
             print()
 
-        # create header if file doesn't exist => first epoch
-        if not os.path.isfile(self.log_filename):
-            with open(self.log_filename, "a") as f:
-                f.write(f"{','.join([str(k) for k in log_dict.keys()])}\n")
+        if not self.json_log:
+            # create header if file doesn't exist => first epoch
+            if not os.path.isfile(self.log_filename):
+                with open(self.log_filename, "a") as f:
+                    f.write(f"{','.join([str(k) for k in log_dict.keys()])}\n")
 
-        with open(self.log_filename, "a") as f:
-            # just try to format if it is not a Failure
-            if "Failure" not in log_dict.values():
-                f.write(f"{','.join([str(v) for v in log_dict.values()])}\n")
-            else:
-                dump = json.dumps(log_dict)
+            with open(self.log_filename, "a") as f:
+                # just try to format if it is not a Failure
+                if "Failure" not in log_dict.values():
+                    f.write(f"{','.join([str(v) for v in log_dict.values()])}\n")
+                else:
+                    dump = json.dumps(log_dict)
+                    f.write(dump + "\n")
+        else:
+            dump = json.dumps(log_dict)
+            with open(self.log_filename, "a") as f:
                 f.write(dump + "\n")
 
     def scheduler_step(self, logs):
