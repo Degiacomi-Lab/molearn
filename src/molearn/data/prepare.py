@@ -148,7 +148,8 @@ class DataAssembler:
             top0 = None
             ucell0 = None
             for ct, (trp, top) in enumerate(zip(self.traj_path, self.topo_path)):
-                print(f"\tLoading {os.path.basename(trp)}")
+                if self.verbose:
+                    print(f"\tLoading {os.path.basename(trp)}")
                 loaded = None
                 try:
                     # do not enforce topology file on this formats
@@ -174,24 +175,38 @@ class DataAssembler:
                     loaded.unitcell_vectors = ucell0
                 multi_traj.append(loaded)
             self.traj = md.join(multi_traj)
+        # Recenter and apply periodic boundary
+        if self.image_mol:
+            try:
+                if self.verbose:
+                    print("Imaging faild - retrying with supplying anchor molecules")
+                self.traj.image_molecules(inplace=True)
+            except ValueError:
+                try:
+                    self.traj.image_molecules(
+                        inplace=True,
+                        anchor_molecules=[set(self.traj.topology.residue(0).atoms)],
+                    )
+                except ValueError as e:
+                    print(
+                        f"Unable to image molecule due to '{e}' - will just recenter it"
+                    )
+            self.traj.superpose(self.traj[0])
+        # maybe not needed after image_molecules
+        self.traj.center_coordinates()
         # converts ELEMENT names from eg "Cd" -> "C" to avoid later complications
         topo_table, topo_bonds = self.traj.topology.to_dataframe()
         topo_table["element"] = topo_table["element"].apply(
             lambda x: x if len(x.strip()) <= 1 else x.strip()[0]
         )
+        if self.verbose:
+            print("Saving new topology")
         self.traj.topology = md.Topology.from_dataframe(topo_table, topo_bonds)
         # save new topology
         self.traj[0].save_pdb(
             os.path.join(self.outpath, f"./{self.traj_name}_NEW_TOPO.pdb")
         )
-        # Recenter and apply periodic boundary
-        if self.image_mol:
-            try:
-                self.traj.image_molecules(inplace=True)
-            except ValueError as e:
-                print(f"Unable to image molecule due to '{e}' - will just recenter it")
-        # maybe not needed after image_molecules
-        self.traj.center_coordinates()
+
         n_frames = self.traj.n_frames
         # which index separated indices from training and test dataset
         self.test_border = int(n_frames * (1.0 - self.test_size))
@@ -208,6 +223,8 @@ class DataAssembler:
         atom_indices = [
             a.index for a in train_traj.topology.atoms if a.element.symbol != "H"
         ]
+        if self.verbose:
+            print("Calculating disance matrix")
         # distance matrix between all frames
         self.traj_dists = np.empty((n_train_frames, n_train_frames))
         for i in range(n_train_frames):
