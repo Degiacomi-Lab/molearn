@@ -18,14 +18,24 @@ def main():
             # "./data/preparation/MurDclosed.dcd",
         ],
         # topologies
+<<<<<<< HEAD
         # [
         #     "./data/preparation/topo_MurDopen1F.pdb",
         #     "./data/preparation/topo_MurDclosed1F.pdb",
         # ],
         test_size=0.15,
         n_cluster=10,
+=======
+        [
+            "./data/preparation/topo_MurDopen1F.pdb",
+            "./data/preparation/topo_MurDclosed1F.pdb",
+        ],
+        test_size=0.0,
+        n_cluster=15,
+>>>>>>> 28aff03 (added ability to align on subset of atoms)
         outpath=storage_path,
         verbose=True,
+        image_mol=True,
     )
     # reading in the trajectories and removing of all atoms apart from protein atoms
     tm.read_traj()
