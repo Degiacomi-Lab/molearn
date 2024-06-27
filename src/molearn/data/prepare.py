@@ -102,11 +102,13 @@ class DataAssembler:
         """
         return load_func(traj_path, topo_path)
 
-    def read_traj(self) -> None:
+    def read_traj(self, atom_indices=None, ref_atom_indices=None) -> None:
         """
         Read in one or multiple trajectories, remove everything but protein atoms and
         image the molecule to center it in the water box, and create a training/validation
         and test split.
+        :param array_like | None atom_indices: The indices of the atoms to superpose. If not supplied, all atoms will be used.
+        :param array_like | None ref_atom_indices: Use these atoms on the reference structure. If not supplied, the same atom indices will be used for this trajectory and the reference one.
         """
         if self.verbose:
             print("Reading trajectory")
@@ -188,7 +190,11 @@ class DataAssembler:
                     print(
                         f"Unable to image molecule due to '{e}' - will just recenter it"
                     )
-            self.traj.superpose(self.traj[0])
+            self.traj.superpose(
+                self.traj[0],
+                atom_indices=atom_indices,
+                ref_atom_indices=ref_atom_indices,
+            )
         # maybe not needed after image_molecules
         self.traj.center_coordinates()
         # converts ELEMENT names from eg "Cd" -> "C" to avoid later complications
