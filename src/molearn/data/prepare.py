@@ -102,11 +102,13 @@ class DataAssembler:
         """
         return load_func(traj_path, topo_path)
 
-    def read_traj(self) -> None:
+    def read_traj(self, atom_indices=None, ref_atom_indices=None) -> None:
         """
         Read in one or multiple trajectories, remove everything but protein atoms and
         image the molecule to center it in the water box, and create a training/validation
         and test split.
+        :param array_like | None atom_indices: The indices of the atoms to superpose. If not supplied, all atoms will be used.
+        :param array_like | None ref_atom_indices: Use these atoms on the reference structure. If not supplied, the same atom indices will be used for this trajectory and the reference one.
         """
         if self.verbose:
             print("Reading trajectory")
@@ -145,7 +147,8 @@ class DataAssembler:
             top0 = None
             ucell0 = None
             for ct, (trp, top) in enumerate(zip(self.traj_path, self.topo_path)):
-                print(f"\tLoading {os.path.basename(trp)}")
+                if self.verbose:
+                    print(f"\tLoading {os.path.basename(trp)}")
                 loaded = None
                 try:
                     # do not enforce topology file on this formats
@@ -171,24 +174,42 @@ class DataAssembler:
                     loaded.unitcell_vectors = ucell0
                 multi_traj.append(loaded)
             self.traj = md.join(multi_traj)
+        # Recenter and apply periodic boundary
+        if self.image_mol:
+            try:
+                if self.verbose:
+                    print("Imaging faild - retrying with supplying anchor molecules")
+                self.traj.image_molecules(inplace=True)
+            except ValueError:
+                try:
+                    self.traj.image_molecules(
+                        inplace=True,
+                        anchor_molecules=[set(self.traj.topology.residue(0).atoms)],
+                    )
+                except ValueError as e:
+                    print(
+                        f"Unable to image molecule due to '{e}' - will just recenter it"
+                    )
+            self.traj.superpose(
+                self.traj[0],
+                atom_indices=atom_indices,
+                ref_atom_indices=ref_atom_indices,
+            )
+        # maybe not needed after image_molecules
+        self.traj.center_coordinates()
         # converts ELEMENT names from eg "Cd" -> "C" to avoid later complications
         topo_table, topo_bonds = self.traj.topology.to_dataframe()
         topo_table["element"] = topo_table["element"].apply(
             lambda x: x if len(x.strip()) <= 1 else x.strip()[0]
         )
+        if self.verbose:
+            print("Saving new topology")
         self.traj.topology = md.Topology.from_dataframe(topo_table, topo_bonds)
         # save new topology
         self.traj[0].save_pdb(
             os.path.join(self.outpath, f"./{self.traj_name}_NEW_TOPO.pdb")
         )
-        # Recenter and apply periodic boundary
-        if self.image_mol:
-            try:
-                self.traj.image_molecules(inplace=True)
-            except ValueError as e:
-                print(f"Unable to image molecule due to '{e}' - will just recenter it")
-        # maybe not needed after image_molecules
-        self.traj.center_coordinates()
+
         n_frames = self.traj.n_frames
         # which index separated indices from training and test dataset
         self.test_border = int(n_frames * (1.0 - self.test_size))
@@ -205,6 +226,8 @@ class DataAssembler:
         atom_indices = [
             a.index for a in train_traj.topology.atoms if a.element.symbol != "H"
         ]
+        if self.verbose:
+            print("Calculating disance matrix")
         # distance matrix between all frames
         self.traj_dists = np.empty((n_train_frames, n_train_frames))
         for i in range(n_train_frames):

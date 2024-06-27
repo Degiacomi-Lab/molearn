@@ -21,9 +21,10 @@ def main():
             "./data/preparation/topo_MurDclosed1F.pdb",
         ],
         test_size=0.0,
-        n_cluster=1500,
+        n_cluster=15,
         outpath=storage_path,
         verbose=True,
+        image_mol=True,
     )
     # reading in the trajectories and removing of all atoms apart from protein atoms
     tm.read_traj()
