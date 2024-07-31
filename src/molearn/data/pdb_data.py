@@ -105,6 +105,40 @@ class PDBData:
             raise ValueError("Unsuported atom selection")
         self._mol.atoms = self._mol.select_atoms(selection_string)
 
+    def pad_and_cat(self, datasets: list[torch.Tensor], target_dim2: int = 0):
+        """
+        Concatenate loaded coordinate tensors to one big dataset
+        !!!
+        ONLY alters the coordinates not the biobox objects or anything else
+        they will not be compatible with the  new coordinates in the dataset
+        !!!
+
+        :param list[torch.Tensor]: the coordinate tensors of multiple loaded datasets
+        :param int: size at the dimension that should be padded - to calculate how many zeros to add
+
+        """
+        if not hasattr(self, "dataset"):
+            raise AttributeError(
+                "You need to call import_pdb before concatenating the dataset"
+            )
+        for ci, i in enumerate(datasets):
+            dim0, dim1, dim2 = i.shape
+            assert (
+                dim2 <= target_dim2
+            ), f"Invalid target_dim2 for dataset {ci}: dim2 is {dim2} and target_dim2 is {target_dim2}, make sure target_dim2 is bigger than dim2"
+            added_padding = target_dim2 - dim2
+            if hasattr(self, "paddings"):
+                self.paddings.append(added_padding)
+            else:
+                self.paddings = [added_padding]
+
+            pad = torch.zeros((dim0, dim1, added_padding))
+            if ci == 0:
+                self.dataset = torch.cat((i, pad), 2)
+            else:
+                padded_i = torch.cat((i, pad), 2)
+                self.dataset = torch.cat((self.dataset, padded_i), 0)
+
     def prepare_dataset(self):
         """
         Once all datasets have been loaded, normalise data and convert into `torch.Tensor` (ready for training)
