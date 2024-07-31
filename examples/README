@@ -1,0 +1,6 @@
+padding adds zero padding to a provided size
+it is located in ../src/molearn/data/pdb_data.py as pad_and_cat
+it needs a list of tensors which are the loaded coordinates of different trajectories and a size to know how much padding to add (should be the size of the biggest protein from all trajectories if one protein is of size 2000 and the other one is of size 2500 then the needed size is 2500)
+it then concatenates the coordinates to the first of the given datasets but it doesn't alter the biobox objects so the coordinates won't match these anymore
+in order to do analysis the ../src/molearn/analysis/analyser.py get_error_padding instead of the normal get_error function need to be used
+there is a dataset creation example in ./padding_example.py
