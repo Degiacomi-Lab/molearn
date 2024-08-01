@@ -128,6 +128,55 @@ class PDBData:
         print(f"Dataset shape: {self.dataset.shape}")
         print(f"mean: {str(self.mean)}\n std: {str(self.std)}")
 
+    def contactmap(
+        self,
+        dist_th: float | None = None,
+        mask_val: float = 0.0,
+        binary_map: bool = False,
+    ):
+        """
+        create dataset `self.contact_maps` containing the contact maps for each frame and replace `self.dataset` with `self.contact_maps` as new dataset
+
+        :param dist_th float | None: distances bigger than that get set to mask_val
+        :param mask_val float: value to which exceeding distances are set
+        :param binary_map bool: True to convert the distance map to a binary interacting/not interacting map based on dist_th - `mask_val` should be set to 0.0
+        """
+        assert hasattr(
+            self, "mean"
+        ), "You need to call prepare_dataset before creating the contact map dataset"
+        if binary_map:
+            assert (
+                dist_th is not None
+            ), "Interacting distance needs to be provided for creation of the binary interaction map"
+
+        d0, _, d2 = self.dataset.shape
+        self.contact_maps = torch.empty((d0, d2, d2))
+        for ci, i in enumerate(self.dataset.permute(0, 2, 1)):
+            # so real sized data is used when distance mask should be applied
+            if dist_th is not None:
+                i = i * self.std + self.mean
+
+            arr1_coords_rs = i.reshape(i.shape[0], 1, 3)
+            arr2_coord_rs = i.reshape(1, i.shape[0], 3)
+            # calculating the distance between each point and returning a 2D array with all distances
+            dist = ((arr1_coords_rs - arr2_coord_rs) ** 2).sum(axis=2).sqrt()
+
+            if dist_th is not None:
+                # everything further apart than dist_th will be set to mask_val
+                th_bool = dist > dist_th
+                dist[th_bool] = mask_val
+                if binary_map:
+                    dist[~th_bool] = 1.0
+                self.contact_maps[ci] = dist
+
+        if not binary_map:
+            self.contact_std = self.contact_maps.std()
+            self.contact_mean = self.contact_maps.mean()
+            self.contact_maps -= self.contact_mean
+            self.contact_maps /= self.contact_std
+        # to be able to just use self.get_dataloader for training without any modification
+        self.dataset = self.contact_maps
+
     def get_atominfo(self):
         """
         generate list of all atoms in dataset, where every line contains [atom name, residue name, resid]
