@@ -1,0 +1,6 @@
+This branch adds functionality to create contact maps (either real distances or binary interacting/not interacting) as dataset which then can be used for training and prediction
+it replaces the original coordinate dataset with the contact map dataset
+needs an implementation of a method to recreate a structure from contact maps
+if that is implemented in a way that it recreates a structure directly as neural net output the physics loss can probably also be used
+otherwise one will need to use only the MSE loss or something like Binary Cross-Entropy if the distance matrices are binary
+
