@@ -1,0 +1,3 @@
+This branch adds a simple transformer implementation that is trained to predict the next coordinate in a sequence
+At the moment it is difficult to generate diverse samples after training
+Therefore an additional loss to the MSE loss is added but needs to be tuned or even changed
