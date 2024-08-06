@@ -14,20 +14,29 @@ trainers holds classes for training networks
 
 from .trainer import *
 from .torch_physics_trainer import *
-
+from .transformer_trainer import Transformer_Trainer
 
 
 class RaiseErrorOnInit:
-    module = 'unknown module is creating an ImportError'
-    def __init__(self,*args, **kwargs):
-        raise ImportError(f'{self.module}. Therefore {self.__class__.__name__} can not be used')
+    module = "unknown module is creating an ImportError"
+
+    def __init__(self, *args, **kwargs):
+        raise ImportError(
+            f"{self.module}. Therefore {self.__class__.__name__} can not be used"
+        )
+
+
 try:
     from .openmm_physics_trainer import *
 except ImportError as e:
     import warnings
-    warnings.warn(f"{e}. OpenMM or openmmtorchplugin are not installed. If this is needed please install with `mamba install -c conda-forge openmmtorchplugin=1.1.3 openmm`")
+
+    warnings.warn(
+        f"{e}. OpenMM or openmmtorchplugin are not installed. If this is needed please install with `mamba install -c conda-forge openmmtorchplugin=1.1.3 openmm`"
+    )
 try:
     from .sinkhorn_trainer import *
 except ImportError as e:
-    warnings.warn(f"{e}. sinkhorn is not installed. If this is needed please install with `pip install geomloss`")
-
+    warnings.warn(
+        f"{e}. sinkhorn is not installed. If this is needed please install with `pip install geomloss`"
+    )
