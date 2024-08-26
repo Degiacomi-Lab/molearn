@@ -38,6 +38,9 @@ def main():
     # simply striding over the trajectories with a step size computed to result in n_cluster frames
     tm.stride()
     tm.create_trajectories()
+    # creating a new trajectory based on provided indices
+    tm.own_idx("index_sample.txt")
+    tm.create_trajectories()
     """
     the given example will create the following files in a new directory named 'clustered'
     *   MurDopen_CLUSTER_aggl_train.dcd
@@ -45,8 +48,10 @@ def main():
     *   MurDopen_CLUSTER_pca_train.dcd
     *   MurDopen_CLUSTER_pca_train_frames.txt
     *   MurDopen_NEW_TOPO.pdb
-    *   MurDopen_STRIDE_5_train.dcd
-    *   MurDopen_STRIDE_5_train_frames.txt
+    *   MurDopen_STRIDE_train.dcd
+    *   MurDopen_STRIDE_train_frames.txt
+    *   MurDopen_PROVIDED_train.dcd
+    *   MurDopen_PROVIDED_train_frames.txd
     the txt files contain the indices of frames of the original trajectory
     the dcd files contain the new trajectory
     the pdb file is the new topology for the new trajectory

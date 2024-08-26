@@ -7,8 +7,6 @@ import numpy as np
 from sklearn.cluster import AgglomerativeClustering, KMeans
 from sklearn.decomposition import PCA
 
-np.random.seed(42)
-
 
 class DataAssembler:
     def __init__(
@@ -20,6 +18,7 @@ class DataAssembler:
         image_mol: bool = False,
         outpath: str = "",
         verbose: bool = False,
+        dist_mat: bool = True,
     ):
         """
         Create clustered trajectories, stride trajectories and randomly sampled test frames
@@ -34,6 +33,7 @@ class DataAssembler:
         :param bool image_mol: True to image to molecule (center it in the box)
         :param str outpath: directory path where the new trajector(y)ies should be stored
         :param bool verbose: True to get info which steps are currently performed
+        :param bool verbose: True to calculate the n_frames x n_frames distance matrix
         """
         self.traj_path = traj_path
         self.topo_path = topo_path
@@ -42,6 +42,7 @@ class DataAssembler:
         self.image_mol = image_mol
         self.outpath = outpath
         self.verbose = verbose
+        self.dist_mat = dist_mat
         assert os.path.exists(self.outpath), "Outpath does not exist"
 
     def _loading_fallback(self, traj_path, topo_path):
@@ -222,18 +223,19 @@ class DataAssembler:
         # number of frames for training/validation set
         n_train_frames = len(self.train_idx)
 
-        # remove H atoms from distance calculation
-        atom_indices = [
-            a.index for a in train_traj.topology.atoms if a.element.symbol != "H"
-        ]
-        if self.verbose:
-            print("Calculating disance matrix")
-        # distance matrix between all frames
-        self.traj_dists = np.empty((n_train_frames, n_train_frames))
-        for i in range(n_train_frames):
-            self.traj_dists[i] = md.rmsd(
-                train_traj, train_traj, i, atom_indices=atom_indices
-            )
+        if self.dist_mat:
+            # remove H atoms from distance calculation
+            atom_indices = [
+                a.index for a in train_traj.topology.atoms if a.element.symbol != "H"
+            ]
+            if self.verbose:
+                print("Calculating disance matrix")
+            # distance matrix between all frames
+            self.traj_dists = np.empty((n_train_frames, n_train_frames))
+            for i in range(n_train_frames):
+                self.traj_dists[i] = md.rmsd(
+                    train_traj, train_traj, i, atom_indices=atom_indices
+                )
 
     def calc_rmsd_f(
         self,
@@ -294,7 +296,7 @@ class DataAssembler:
         """
         assert hasattr(
             self, "traj_dists"
-        ), "No pairweise frame distances present - read in trajectory first"
+        ), "No pairweise frame distances present - read in trajectory first and make sure `dist_mat=True`"
         if self.verbose:
             print("Distance clustering")
         # replace AgglomerativeClustering with any distance matrix based clustering function
@@ -363,6 +365,21 @@ class DataAssembler:
         self.cluster_idx = stride_idx
         self.cluster_method = f"STRIDE_{self.n_cluster}"
 
+    def own_idx(self, file_path: str):
+        """
+        Provide indices for frames to create a new trajectory.
+        Useful if trajectory should be sub sampled by some external metric.
+
+        :param str file_path: path where the file storing the indices is located. Needs to have each index in a separate line.
+        """
+        provided_idx = []
+        with open(file_path, "r") as ifile:
+            for i in ifile:
+                provided_idx.append(int(i))
+        self.train_idx = np.asarray(provided_idx)
+        self.cluster_idx = np.arange(len(self.train_idx))
+        self.cluster_method = "PROVIDED"
+
     def _save_idx(
         self, filepath: str, idxs: list[int] | np.ndarray[tuple[int], np.dtype[np.int_]]
     ) -> None:
@@ -389,12 +406,17 @@ class DataAssembler:
             [
                 hasattr(self, "traj"),
                 hasattr(self, "traj_name"),
-                hasattr(self, "traj_dists"),
                 hasattr(self, "train_idx"),
-                hasattr(self, "frame_idx"),
-                hasattr(self, "test_border"),
+                hasattr(self, "cluster_idx"),
             ]
         ), "Read in trajectory first"
+        assert all(
+            [
+                hasattr(self, "train_idx"),
+                hasattr(self, "cluster_idx"),
+                hasattr(self, "cluster_method"),
+            ]
+        ), "Cluster the trajectory first"
 
         assert hasattr(
             self, "cluster_idx"
