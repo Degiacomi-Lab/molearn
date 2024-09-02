@@ -77,7 +77,7 @@ def main():
     # get the latent coords with the lowest errors
     coords_oi = np.asarray(
         [
-            [xaxis[i // grid_side_len], yaxis[i % grid_side_len]]
+            [xaxis[i % grid_side_len], yaxis[i // grid_side_len]]
             for i in sort_by_err[:n_structs]
         ]
     )
