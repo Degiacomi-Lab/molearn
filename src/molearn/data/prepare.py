@@ -453,18 +453,24 @@ class DataAssembler:
         self.cluster_idx = stride_idx
         self.cluster_method = f"STRIDE_{self.n_cluster}"
 
-    def own_idx(self, file_path: str):
+    def own_idx(self, file_path: str | np.ndarray[tuple[int], np.dtype[np.int64]]):
         """
         Provide indices for frames to create a new trajectory.
         Useful if trajectory should be sub sampled by some external metric.
 
-        :param str file_path: path where the file storing the indices is located. Needs to have each index in a separate line.
+        :param str  | np.ndarray[tuple[int], np.dtype[np.int64]] file_path: path where the file storing the indices is located. Needs to have each index in a separate line. Or can be a numpy array.
         """
-        provided_idx = []
-        with open(file_path, "r") as ifile:
-            for i in ifile:
-                provided_idx.append(int(i))
-        self.train_idx = np.asarray(provided_idx)
+        if isinstance(file_path, str):
+            provided_idx = []
+            with open(file_path, "r") as ifile:
+                for i in ifile:
+                    provided_idx.append(int(i))
+            provided_idx = np.asarray(provided_idx)
+        elif isinstance(file_path, np.ndarray):
+            provided_idx = file_path
+        else:
+            raise ValueError("Provided indices are in an incompatible format")
+        self.train_idx = provided_idx
         self.cluster_idx = np.arange(len(self.train_idx))
         self.cluster_method = "PROVIDED"
 

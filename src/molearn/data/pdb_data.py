@@ -25,19 +25,24 @@ class PDBData:
         if atoms is not None:
             self.atomselect(atoms=atoms)
 
-    def import_pdb(self, filename):
-        '''
-        Load multiPDB file.
-        This command can be called multiple times to load many datasets, if these feature the same number of atoms
-        
-        :param filename: path to multiPDB file.
-        '''
-        if not hasattr(self, '_mol'):
-            self._mol = bb.Molecule()
-        self._mol.import_pdb(filename)
-        if not hasattr(self, 'filename'):
-            self.filename = []
-        self.filename.append(filename)
+    def import_pdb(self, filename: str | list[str], topology: str | None = None):
+        """
+        Load one or multiple trajectory files
+
+        :param str | list[str] filename: the path the trajectory as a str or a list of filepaths to multiple trajectories
+        :param str | None topology: the path the topology file for the trajector(y)ies
+        """
+
+        if isinstance(filename, list) and topology is None:
+            first_universe = mda.Universe(filename[0])
+            self._mol = mda.Universe(first_universe._topology, filename)
+        if isinstance(filename, list) and topology is not None:
+            first_universe = mda.Universe(topology[0], filename[0])
+            self._mol = mda.Universe(first_universe._topology, filename)
+        elif topology is None:
+            self._mol = mda.Universe(filename)
+        else:
+            self._mol = mda.Universe(topology, filename)
 
     def fix_terminal(self):
         '''
@@ -114,9 +119,59 @@ class PDBData:
         return `biobox.Molecule` object with loaded data
         '''
         M = bb.Molecule()
-        M.coordinates = self._mol.coordinates[[0]]
-        M.data = self._mol.data
-        M.data['index'] = np.arange(self._mol.coordinates.shape[1])
+        _ = self._mol.trajectory[0]
+        M.coordinates = self._mol.atoms.positions
+        M.coordinates = np.expand_dims(M.coordinates, 0)
+        data = []
+        for ci, i in enumerate(self._mol.atoms):
+            intermediate_data = []
+            intermediate_data.append(i.record_type)
+            # i.index would also be an option but is different from original PDBData
+            # replaces M.data["index"] = np.arange(self._mol.coordinates.shape[1])
+            intermediate_data += [ci, i.name, i.resname, i.chainID, i.resid]
+            try:
+                intermediate_data.append(i.occupancy)
+            except (mda.exceptions.NoDataError, IndexError):
+                intermediate_data.append(1.0)
+
+            try:
+                intermediate_data.append(i.tempfactor)
+            except (mda.exceptions.NoDataError, IndexError):
+                intermediate_data.append(0.0)
+
+            intermediate_data.append(i.type)
+
+            try:
+                intermediate_data.append(i.radius)
+            except (mda.exceptions.NoDataError, IndexError):
+                try:
+                    intermediate_data.append(radii[i.type])
+                except KeyError:
+                    intermediate_data.append(1.2)
+
+            try:
+                intermediate_data.append(i.charge)
+            except (mda.exceptions.NoDataError, IndexError):
+                intermediate_data.append(0.0)
+
+            data.append(intermediate_data)
+        data = pd.DataFrame(
+            data,
+            columns=[
+                "atom",
+                "index",
+                "name",
+                "resname",
+                "chain",
+                "resid",
+                "occupancy",
+                "beta",
+                "atomtype",
+                "radius",
+                "charge",
+            ],
+        )
+        M.data = data
         M.current = 0
         M.points = M.coordinates.view()[M.current]
         M.properties['center'] = M.get_center()
