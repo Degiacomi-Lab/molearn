@@ -70,6 +70,9 @@ class PDBData:
         if isinstance(filename, list) and topology is None:
             first_universe = mda.Universe(filename[0])
             self._mol = mda.Universe(first_universe._topology, filename)
+        if isinstance(filename, list) and topology is not None:
+            first_universe = mda.Universe(topology[0], filename[0])
+            self._mol = mda.Universe(first_universe._topology, filename)
         elif topology is None:
             self._mol = mda.Universe(filename)
         else:
@@ -154,10 +157,10 @@ class PDBData:
         data = []
         for ci, i in enumerate(self._mol.atoms):
             intermediate_data = []
-            intermediate_data.append("ATOM")
+            intermediate_data.append(i.record_type)
             # i.index would also be an option but is different from original PDBData
             # replaces M.data["index"] = np.arange(self._mol.coordinates.shape[1])
-            intermediate_data += [ci, i.name, i.resname, i.segid, i.resid]
+            intermediate_data += [ci, i.name, i.resname, i.chainID, i.resid]
             try:
                 intermediate_data.append(i.occupancy)
             except (mda.exceptions.NoDataError, IndexError):

@@ -39,4 +39,4 @@ In `xbb_foldingnet_checkpoints`, an example output generated when the *foldingne
 #### Analysis examples
 
 * `analysis_example.py`: minimal example of analysis of trained neural network. This script operates on the content of the `data` and `xbb_foldingnet_checkpoints` folders. Note that more detailed explanations on analysis are available on our [molearn notebooks](https://github.com/Degiacomi-Lab/molearn_notebook)
-* `interpolation_example.py`: this example demonstrates how to generate interpolations between two positions in the latent space in two ways (1) as a straight line or (2) using the A* shortest path algorithm on a DOPE score landscape.
+* `interpolation_example.py`: this example demonstrates how to generate interpolations between two positions in the latent space in two ways (1) as a straight line or (2) using the A* shortest path algorithm on an input-to-decoded RMSD landscape.
