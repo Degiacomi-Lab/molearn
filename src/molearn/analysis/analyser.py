@@ -16,6 +16,8 @@ import os
 from copy import deepcopy
 import numpy as np
 import torch.optim
+from pathlib import Path
+from typing import Union
 
 try:
     # from modeller import *
@@ -87,11 +89,11 @@ class MolearnAnalysis:
         """
         return self._datasets[key]
 
-    def set_dataset(self, key, data, atomselect="*"):
+    def set_dataset(self, key, data, atomselect="protein"):
         """
         :param data: :func:`PDBData <molearn.data.PDBData>` object containing atomic coordinates
         :param str key: label to be associated with data
-        :param list/str atomselect: list of atom names to load, or '*' to indicate that all atoms are loaded.
+        :param list/str atomselect: list of atom names to load, or 'protein' to indicate that all atoms are loaded.
         """
         if isinstance(data, str) and data.endswith(".pdb"):
             d = PDBData()
@@ -453,6 +455,24 @@ structure you want, e.g., analyser.scan_error_from_target(key, index=0)"
 
         return self.dope_score_class.get_score(f * self.stdval, refine=refine, **kwargs)
 
+    def _ca_chirality(N, CA, C, CB):
+        """
+        Calculate chirality of Cα atom in a protein residue.
+
+        :param N: Cartesian coordinates of N atom
+        :param CA: Cartesian coordinates of CA atom
+        :param C: Cartesian coordinates of C atom
+        :param CB: Cartesian coordinates of CB atom
+        :return: dot product of normal vector to the plane defined by N, CA, and C
+        """
+        ca_c = C - CA
+        ca_cb = CB - CA
+        ca_n = N - CA
+        normal = np.cross(ca_n, ca_c)
+        dot_product = np.dot(normal, ca_cb)
+        # L if dot_product > 0 else D
+        return dot_product
+
     def get_all_ramachandran_score(self, tensor):
         """
         Calculate Ramachandran score of an ensemble of atomic conrdinates.
@@ -560,6 +580,57 @@ structure you want, e.g., analyser.scan_error_from_target(key, index=0)"
 
         return self.surfaces["Ramachandran_favored"], self.xvals, self.yvals
 
+    def scan_ca_chirality(self):
+        """
+        Calculate chiralities of Cα atoms on a grid sampling the latent space.
+        Requires a grid system to be defined via a prior call to :func:`set_dataset <molearn.analysis.MolearnAnalysis.setup_grid>`.
+        Requires the atom selection includes Cα atoms.
+        Saves a surface in memory, with key 'CA_chirality'.
+
+        :return: Number of CA inversions on the latent space NxN surface
+        :return: x-axis values
+        :return: y-axis values
+        """
+        assert (
+            set(['CA','C','N','CB']).issubset(set(self.atoms))
+            ), "Atom selection shoud at least include CA, C, N, and CB"
+        
+        key = "Chirality"
+        if key not in self.surfaces:
+            assert (
+                "grid" in self._encoded
+            ), "make sure to call MolearnAnalysis.setup_grid first"
+            decoded = self.get_decoded("grid")
+
+            mol_df = self.mol.data
+
+            # Get atom indices 
+            indices = dict()
+            for resid in range(len(mol_df.resid.unique())):
+                resname = mol_df[mol_df['resid'] == resid].resname.unique()[0]
+                if not resname == 'GLY':
+                    N_id = mol_df[(mol_df['resid'] == resid) & (mol_df['name'] == 'N')].index[0]
+                    C_id = mol_df[(mol_df['resid'] == resid) & (mol_df['name'] == 'C')].index[0]
+                    CA_id = mol_df[(mol_df['resid'] == resid) & (mol_df['name'] == 'CA')].index[0]
+                    CB_id = mol_df[(mol_df['resid'] == resid) & (mol_df['name'] == 'CB')].index[0]
+                    indices[resname + str(resid)] = (N_id, CA_id, C_id, CB_id)
+            
+            results = []
+            for i, j in enumerate(decoded):
+                s = (j.view(1, 3, -1).permute(0, 2, 1) * self.stdval).numpy()
+                inversions = {}
+                for k, v in indices.items():
+                    dot_prod = self._ca_chirality(s[0,v[0],:], 
+                                                  s[0,v[1],:], 
+                                                  s[0,v[2],:], 
+                                                  s[0,v[3],:])
+                    if dot_prod < 0:
+                        inversions[k] = dot_prod
+                results.append(len(inversions))
+            self.surfaces[key] = np.array(results).reshape(self.n_samples, self.n_samples)
+
+        return self.surfaces[key], self.xvals, self.yvals 
+
     def scan_custom(self, fct, params, key):
         """
         Generate a surface coloured as a function of a user-defined function.
@@ -580,43 +651,67 @@ structure you want, e.g., analyser.scan_error_from_target(key, index=0)"
 
         return self.surfaces[key], self.xvals, self.yvals
 
-    def _relax(self, pdb_path: str, mini_path: str) -> None:
+    def _relax(self, pdb_file: Union[str, Path], out_path: Union[str, Path], maxIterations: int = 1000) -> None:
         """
-        relax generated structure
+        Model the sidechains and relax generated structure
 
-        :param str pdb_path: path of the pdb file to relax
-        :param str mini_path: path where the new relaxed structure should be saved
+        :param str pdb_file: path to the pdb file generated by the model
+        :param str out_path: path where the modelled/relaxed structures are be saved
         """
-        # read pdb
-        pdb = PDBFile(pdb_path)
-        # preparation
-        forcefield = ForceField("amber99sb.xml")
-        modeller = Modeller(pdb.topology, pdb.positions)
-        modeller.addHydrogens(forcefield)
-        system = forcefield.createSystem(modeller.topology, nonbondedMethod=NoCutoff)
-        integrator = VerletIntegrator(0.001 * picoseconds)
-        simulation = Simulation(modeller.topology, system, integrator)
-        simulation.context.setPositions(modeller.positions)
-        # minimize protein
-        simulation.minimizeEnergy(maxIterations=100)
-        positions = simulation.context.getState(getPositions=True).getPositions()
-        # write new pdb file
-        PDBFile.writeFile(simulation.topology, positions, open(mini_path, "w+"))
 
+        if not isinstance(pdb_file, Path):
+            pdb_file = Path(pdb_file)
+        if not isinstance(out_path, Path):
+            out_path = Path(out_path)
+
+        # Assume sidechain modelling is required if the number of selected atoms is less than 6
+        if len(self.atoms) < 6:
+            modelled_file = out_path/(pdb_file.stem + "_modelled.pdb")
+            try:
+                env = Environ()
+                env.libs.topology.read(file='$(LIB)/top_heav.lib')
+                env.libs.parameters.read(file='$(LIB)/par.lib')   
+
+                mdl = complete_pdb(env, str(pdb_file))
+                mdl.write(str(modelled_file))
+                pdb_file = modelled_file
+            except:
+                print(f'Failed to model {pdb_file}')
+        try:
+            relaxed_file = out_path/(pdb_file.stem + "_relaxed.pdb")
+            # Read pdb
+            pdb = PDBFile(pdb_file)
+            # Add hydrogens
+            forcefield = ForceField("amber99sb.xml")
+            modeller = Modeller(pdb.topology, pdb.positions)
+            modeller.addHydrogens(forcefield)
+
+            system = forcefield.createSystem(modeller.topology, nonbondedMethod=NoCutoff)
+            integrator = VerletIntegrator(0.001 * picoseconds)
+            simulation = Simulation(modeller.topology, system, integrator)
+            simulation.context.setPositions(modeller.positions)
+            # Energy minimization
+            simulation.minimizeEnergy(maxIterations=maxIterations)
+            positions = simulation.context.getState(getPositions=True).getPositions()
+            # Write energy minimized file
+            PDBFile.writeFile(simulation.topology, positions, open(relaxed_file, "w+"))
+        except:
+            print(f'Failed to relax {pdb_file}')
+    
     def _pdb_file(
         self,
         prot_coords: np.ndarray[tuple[int, int], np.dtype[np.float64]],
-        outpath: str,
+        pdb_file: str,
     ) -> None:
         """
         create pdb file for given coordinates
 
         :param np.ndarray[tuple[int, int], np.dtype[np.float64]] prot_coords: coordinates of all atoms of a protein
-        :param str outpath: path where the pdb file should be stored
+        :param str pdb_file: path where the pdb file should be stored
         """
         pdb_data = self.mol.data
         with open(
-            outpath,
+            pdb_file,
             "w+",
         ) as cfile:
             for ck, k in enumerate(prot_coords):
@@ -661,13 +756,13 @@ structure you want, e.g., analyser.scan_error_from_target(key, index=0)"
         gen_prot_coords = s * self.stdval + self.meanval
         # create pdb file
         if pdb_path is not None:
-            for ci, i in enumerate(tqdm(gen_prot_coords, desc="Generating pdb file")):
-                struct_path = os.path.join(pdb_path, f"s{ci}.pdb")
-                self._pdb_file(i, struct_path)
+            for i, coord in enumerate(tqdm(gen_prot_coords, desc="Generating pdb files")):
+                struct_path = os.path.join(pdb_path, f"s{i}.pdb")
+                self._pdb_file(coord, struct_path)
                 # relax and save as new file
                 if relax:
                     self._relax(
-                        struct_path, f"{os.path.splitext(struct_path)[0]}_relax.pdb"
+                        struct_path, pdb_path, maxIterations=1000
                     )
 
         return gen_prot_coords
