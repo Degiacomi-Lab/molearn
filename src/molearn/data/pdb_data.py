@@ -37,7 +37,7 @@ class PDBData:
             first_universe = mda.Universe(filename[0])
             self._mol = mda.Universe(first_universe._topology, filename)
         if isinstance(filename, list) and topology is not None:
-            first_universe = mda.Universe(topology[0], filename[0])
+            first_universe = mda.Universe(topology, filename[0])
             self._mol = mda.Universe(first_universe._topology, filename)
         elif topology is None:
             self._mol = mda.Universe(filename)
