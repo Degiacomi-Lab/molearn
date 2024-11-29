@@ -710,14 +710,14 @@ structure you want, e.g., analyser.scan_error_from_target(key, index=0)"
         :param str out_path: path where the modelled/relaxed structures are be saved
         """
 
-        if not isinstance(pdb_file, Path):
-            pdb_file = Path(pdb_file)
-        if not isinstance(out_path, Path):
-            out_path = Path(out_path)
+        if not isinstance(pdb_file, str):
+            pdb_file = str(pdb_file)
+        if not isinstance(out_path, str):
+            out_path = str(out_path)
 
-        # Assume sidechain modelling is required if the number of selected atoms is less than 6
+        # Assume sidechain modelling is required if the number of selected atoms is fewer than 6
         if len(self.atoms) < 6:
-            modelled_file = out_path/(pdb_file.stem + "_modelled.pdb")
+            modelled_file = out_path + os.sep + (pdb_file.stem + "_modelled.pdb")
             try:
                 env = Environ()
                 env.libs.topology.read(file='$(LIB)/top_heav.lib')
@@ -729,7 +729,7 @@ structure you want, e.g., analyser.scan_error_from_target(key, index=0)"
             except Exception as e:
                 print(f'Failed to model {pdb_file}\n{e}')
         try:
-            relaxed_file = out_path/(pdb_file.stem + "_relaxed.pdb")
+            relaxed_file = out_path + os.sep + (pdb_file.stem + "_relaxed.pdb")
             # Read pdb
             pdb = PDBFile(pdb_file)
             # Add hydrogens
