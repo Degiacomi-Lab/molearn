@@ -667,7 +667,7 @@ structure you want, e.g., analyser.scan_error_from_target(key, index=0)"
                     indices[resname + str(resid)] = (N_id, CA_id, C_id, CB_id)
             
             results = []
-            for i, j in enumerate(decoded):
+            for j in decoded:
                 s = (j.view(1, 3, -1).permute(0, 2, 1) * self.stdval).numpy()
                 inversions = {}
                 for k, v in indices.items():
@@ -726,8 +726,8 @@ structure you want, e.g., analyser.scan_error_from_target(key, index=0)"
                 mdl = complete_pdb(env, str(pdb_file))
                 mdl.write(str(modelled_file))
                 pdb_file = modelled_file
-            except:
-                print(f'Failed to model {pdb_file}')
+            except Exception as e:
+                print(f'Failed to model {pdb_file}\n{e}')
         try:
             relaxed_file = out_path/(pdb_file.stem + "_relaxed.pdb")
             # Read pdb
@@ -746,8 +746,8 @@ structure you want, e.g., analyser.scan_error_from_target(key, index=0)"
             positions = simulation.context.getState(getPositions=True).getPositions()
             # Write energy minimized file
             PDBFile.writeFile(simulation.topology, positions, open(relaxed_file, "w+"))
-        except:
-            print(f'Failed to relax {pdb_file}')
+        except Exception as e:
+            print(f'Failed to relax {pdb_file}\n{e}')
     
     def _pdb_file(
         self,
