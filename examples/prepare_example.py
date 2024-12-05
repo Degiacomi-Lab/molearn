@@ -12,16 +12,17 @@ def main():
     tm = DataAssembler(
         # trajectories
         [
-            "./data/preparation/MurDopen.dcd",
-            "./data/preparation/MurDclosed.dcd",
+            "./data/preparation/calmodulin_mega.pdb",
+            # "./data/preparation/MurDopen.dcd",
+            # "./data/preparation/MurDclosed.dcd",
         ],
         # topologies
-        [
-            "./data/preparation/topo_MurDopen1F.pdb",
-            "./data/preparation/topo_MurDclosed1F.pdb",
-        ],
+        # [
+        #     "./data/preparation/topo_MurDopen1F.pdb",
+        #     "./data/preparation/topo_MurDclosed1F.pdb",
+        # ],
         test_size=0.0,
-        n_cluster=1500,
+        n_cluster=10,
         outpath=storage_path,
         verbose=True,
     )
@@ -29,6 +30,11 @@ def main():
     tm.read_traj()
     # using agglomerative clustering to sample the trajectories
     tm.distance_cluster()
+    # creating a dendrogram of the agglomerative clustering
+    
+    tm.create_dendrogram(method="ward")
+    labels = tm.dendrogram_labels()
+    print(labels)
     # creating the new trajectory as dcd file and a new topology as pdb file
     tm.create_trajectories()
     # using PCA and the first n components for KMeans clustering to sample the trajectories
@@ -38,7 +44,7 @@ def main():
     tm.stride()
     tm.create_trajectories()
     """
-    the given example will create the following files in a new directory named 'clustered'
+    the given example wilc prel create the following files in a new directory named 'clustered'
     *   MurDopen_CLUSTER_aggl_train.dcd
     *   MurDopen_CLUSTER_aggl_train_frames.txt
     *   MurDopen_CLUSTER_pca_train.dcd

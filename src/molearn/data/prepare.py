@@ -1,15 +1,18 @@
+#%%
 from __future__ import annotations
 import os
 
 import mdtraj as md
 import numpy as np
-
 from sklearn.cluster import AgglomerativeClustering, KMeans
 from sklearn.decomposition import PCA
+import scipy.cluster.hierarchy as sch
+from scipy.cluster.hierarchy import fcluster
+import matplotlib.pyplot as plt
 
 np.random.seed(42)
 
-
+#%%
 class DataAssembler:
     def __init__(
         self,
@@ -263,26 +266,61 @@ class DataAssembler:
             # add the trajectory frame index of the representative to the list of used frames
             self.cluster_idx.append(idx_idx[label_bool][iidx])
 
-    def distance_cluster(
-        self,
-    ) -> None:
-        """
-        cluster the trajectory with AgglomerativeClustering based on the rmsd between the frames
-        """
-        assert hasattr(
-            self, "traj_dists"
-        ), "No pairweise frame distances present - read in trajectory first"
-        if self.verbose:
-            print("Distance clustering")
-        # replace AgglomerativeClustering with any distance matrix based clustering function
-        cluster_func = AgglomerativeClustering(
-            n_clusters=self.n_cluster, metric="precomputed", linkage="average"
-        )
-        # cluster the frames with KMeans and find the representative frame for each cluster
-        cluster_func.fit(self.traj_dists)
-        idx_idx = np.arange(len(cluster_func.labels_))
-        self._find_representatives(idx_idx, cluster_func.labels_)
-        self.cluster_method = "CLUSTER_aggl"
+    # def distance_cluster(
+    #     self,
+    # ) -> None:
+    #     """
+    #     cluster the trajectory with AgglomerativeClustering based on the rmsd between the frames
+    #     """
+    #     assert hasattr(
+    #         self, "traj_dists"
+    #     ), "No pairweise frame distances present - read in trajectory first"
+    #     if self.verbose:
+    #         print("Distance clustering")
+    #     # replace AgglomerativeClustering with any distance matrix based clustering function
+    #     cluster_func = AgglomerativeClustering(
+    #         n_clusters=self.n_cluster, metric="precomputed", linkage="average"
+    #     )
+    #     # cluster the frames with KMeans and find the representative frame for each cluster
+    #     cluster_func.fit(self.traj_dists)
+    #     idx_idx = np.arange(len(cluster_func.labels_))
+    #     self._find_representatives(idx_idx, cluster_func.labels_)
+    #     self.cluster_method = "CLUSTER_aggl"
+        
+
+def distance_cluster(self) -> None:
+    """
+    Cluster the trajectory with hierarchical clustering (linkage) based on the RMSD
+    between the frames and plot a dendrogram.
+    """
+    assert hasattr(
+        self, "traj_dists"
+    ), "No pairwise frame distances present - read in trajectory first"
+    
+    if self.verbose:
+        print("Distance clustering")
+
+    # Perform hierarchical clustering using scipy
+    linkage_matrix = linkage(self.traj_dists, method="average")  
+
+    # Plot the dendrogram
+    plt.figure(figsize=(10, 7))
+    dendrogram(linkage_matrix, no_labels=True)
+    plt.title("Dendrogram of Frames")
+    plt.xlabel("Frame Index")
+    plt.ylabel("Distance")
+    plt.show()
+
+    # Define clusters by specifying n_clusters
+    cluster_labels = fcluster(linkage_matrix, t=self.n_cluster, criterion="maxclust")
+
+    # Store cluster labels and representatives
+    idx_idx = np.arange(len(cluster_labels))
+    self._find_representatives(idx_idx, cluster_labels)
+    self.cluster_method = "CLUSTER_linkage"
+
+    if self.verbose:
+        print(f"Assigned {self.n_cluster} clusters.")
 
     def pca_cluster(self, n: int = 3) -> None:
         """
@@ -408,3 +446,5 @@ class DataAssembler:
 
 if __name__ == "__main__":
     pass
+
+# %%
