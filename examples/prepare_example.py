@@ -30,11 +30,10 @@ def main():
     tm.read_traj()
     # using agglomerative clustering to sample the trajectories
     tm.distance_cluster()
-    # creating a dendrogram of the agglomerative clustering
-    
-    tm.create_dendrogram(method="ward")
-    labels = tm.dendrogram_labels()
-    print(labels)
+    # creating a dendrogram of the linkage clustering
+    tm.linkage_cluster()
+    # creating new trajectory based on linkage clustering
+    tm.create_traj_linkage()
     # creating the new trajectory as dcd file and a new topology as pdb file
     tm.create_trajectories()
     # using PCA and the first n components for KMeans clustering to sample the trajectories

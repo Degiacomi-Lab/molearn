@@ -7,7 +7,7 @@ import numpy as np
 from sklearn.cluster import AgglomerativeClustering, KMeans
 from sklearn.decomposition import PCA
 import scipy.cluster.hierarchy as sch
-from scipy.cluster.hierarchy import fcluster
+from scipy.cluster.hierarchy import dendrogram, linkage, fcluster
 import matplotlib.pyplot as plt
 
 np.random.seed(42)
@@ -266,61 +266,61 @@ class DataAssembler:
             # add the trajectory frame index of the representative to the list of used frames
             self.cluster_idx.append(idx_idx[label_bool][iidx])
 
-    # def distance_cluster(
-    #     self,
-    # ) -> None:
-    #     """
-    #     cluster the trajectory with AgglomerativeClustering based on the rmsd between the frames
-    #     """
-    #     assert hasattr(
-    #         self, "traj_dists"
-    #     ), "No pairweise frame distances present - read in trajectory first"
-    #     if self.verbose:
-    #         print("Distance clustering")
-    #     # replace AgglomerativeClustering with any distance matrix based clustering function
-    #     cluster_func = AgglomerativeClustering(
-    #         n_clusters=self.n_cluster, metric="precomputed", linkage="average"
-    #     )
-    #     # cluster the frames with KMeans and find the representative frame for each cluster
-    #     cluster_func.fit(self.traj_dists)
-    #     idx_idx = np.arange(len(cluster_func.labels_))
-    #     self._find_representatives(idx_idx, cluster_func.labels_)
-    #     self.cluster_method = "CLUSTER_aggl"
+    def distance_cluster(
+        self,
+    ) -> None:
+        """
+        cluster the trajectory with AgglomerativeClustering based on the rmsd between the frames
+        """
+        assert hasattr(
+            self, "traj_dists"
+        ), "No pairweise frame distances present - read in trajectory first"
+        if self.verbose:
+            print("Distance clustering")
+        # replace AgglomerativeClustering with any distance matrix based clustering function
+        cluster_func = AgglomerativeClustering(
+            n_clusters=self.n_cluster, metric="precomputed", linkage="average"
+        )
+        # cluster the frames with KMeans and find the representative frame for each cluster
+        cluster_func.fit(self.traj_dists)
+        idx_idx = np.arange(len(cluster_func.labels_))
+        self._find_representatives(idx_idx, cluster_func.labels_)
+        self.cluster_method = "CLUSTER_aggl"
         
 
-def distance_cluster(self) -> None:
-    """
-    Cluster the trajectory with hierarchical clustering (linkage) based on the RMSD
-    between the frames and plot a dendrogram.
-    """
-    assert hasattr(
-        self, "traj_dists"
-    ), "No pairwise frame distances present - read in trajectory first"
-    
-    if self.verbose:
-        print("Distance clustering")
+    def linkage_cluster(self) -> None:
+        """
+        Cluster the trajectory with hierarchical clustering (linkage) based on the RMSD
+        between the frames and plot a dendrogram.
+        """
+        assert hasattr(
+            self, "traj_dists"
+        ), "No pairwise frame distances present - read in trajectory first"
+        
+        if self.verbose:
+            print("Distance clustering")
 
-    # Perform hierarchical clustering using scipy
-    linkage_matrix = linkage(self.traj_dists, method="average")  
+        # Perform hierarchical clustering using scipy
+        linkage_matrix = linkage(self.traj_dists, method='ward')  
 
-    # Plot the dendrogram
-    plt.figure(figsize=(10, 7))
-    dendrogram(linkage_matrix, no_labels=True)
-    plt.title("Dendrogram of Frames")
-    plt.xlabel("Frame Index")
-    plt.ylabel("Distance")
-    plt.show()
+        # Plot the dendrogram
+        plt.figure(figsize=(10, 7))
+        dendrogram(linkage_matrix, no_labels=True)
+        plt.title("Dendrogram of Frames")
+        plt.xlabel("Frame Index")
+        plt.ylabel("Distance")
+        plt.show()
 
-    # Define clusters by specifying n_clusters
-    cluster_labels = fcluster(linkage_matrix, t=self.n_cluster, criterion="maxclust")
+        # Define clusters by specifying n_clusters
+        cluster_labels = fcluster(linkage_matrix, t=self.n_cluster, criterion="maxclust")
 
-    # Store cluster labels and representatives
-    idx_idx = np.arange(len(cluster_labels))
-    self._find_representatives(idx_idx, cluster_labels)
-    self.cluster_method = "CLUSTER_linkage"
+        # Store cluster labels and representatives
+        idx_idx = np.arange(len(cluster_labels))
+        self._find_representatives(idx_idx, cluster_labels)
+        self.cluster_method = "CLUSTER_linkage"
 
-    if self.verbose:
-        print(f"Assigned {self.n_cluster} clusters.")
+        if self.verbose:
+            print(f"Assigned {self.n_cluster} clusters.")
 
     def pca_cluster(self, n: int = 3) -> None:
         """
@@ -442,9 +442,70 @@ def distance_cluster(self) -> None:
             self.traj[self.frame_idx[self.test_border :]].save_dcd(
                 os.path.join(self.outpath, f"./{self.traj_name}_test.dcd")
             )
+            
+    def create_traj_linkage(self, test_cluster: int) -> None:
+        """
+        Save clustered indices for the training trajectory and create a test trajectory
+        consisting of frames from a specific cluster and a training set with all frames 
+        excluding the specific cluster
+
+        :param int test_cluster: Cluster to use as the test set.
+        """
+        assert all(
+            [
+                hasattr(self, "traj"),
+                hasattr(self, "traj_name"),
+                hasattr(self, "traj_dists"),
+                hasattr(self, "train_idx"),
+                hasattr(self, "frame_idx"),
+                hasattr(self, "cluster_idx"),
+            ]
+        ), "Ensure trajectory is clustered first"
+
+        # Get cluster labels
+        cluster_labels = fcluster(linkage(self.traj_dists, method="ward"), t=self.n_cluster, criterion="maxclust")
+
+        # Separate indices for train and test sets based on the cluster
+        test_cluster_indices = np.where(cluster_labels == test_cluster)[0]
+        train_cluster_indices = np.where(cluster_labels != test_cluster)[0]
+
+        if self.verbose:
+            print(f"Creating train and test trajectories with test cluster {test_cluster}")
+
+        # Save train trajectory
+        ori_frame_train_idx = self.train_idx[train_cluster_indices]
+        self._save_idx(
+            os.path.join(
+                self.outpath,
+                f"./{self.traj_name}_train_excluding_cluster_{test_cluster}_frames.txt",
+            ),
+            ori_frame_train_idx,
+        )
+        self.traj[ori_frame_train_idx].save_dcd(
+            os.path.join(
+                self.outpath, f"{self.traj_name}_train_excluding_cluster_{test_cluster}.dcd"
+            )
+        )
+
+        # Save test trajectory
+        ori_frame_test_idx = self.train_idx[test_cluster_indices]
+        self._save_idx(
+            os.path.join(
+                self.outpath,
+                f"./{self.traj_name}_test_cluster_{test_cluster}_frames.txt",
+            ),
+            ori_frame_test_idx,
+        )
+        self.traj[ori_frame_test_idx].save_dcd(
+            os.path.join(
+                self.outpath, f"{self.traj_name}_test_cluster_{test_cluster}.dcd"
+            )
+        )
+
+        if self.verbose:
+            print("Train and test trajectories successfully created.")
 
 
-if __name__ == "__main__":
-    pass
-
+    if __name__ == "__main__":
+        pass
 # %%
