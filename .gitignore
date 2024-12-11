@@ -280,3 +280,11 @@ ERROR*
 LOG*
 *.swp
 *.swo
+
+*.lock
+*.npz
+*.xtc
+*.pdb
+*.dcd
+*.xml
+*.txt
