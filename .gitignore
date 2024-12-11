@@ -281,10 +281,18 @@ LOG*
 *.swp
 *.swo
 
+<<<<<<< HEAD
 *.lock
 *.npz
 *.xtc
 *.pdb
+=======
+
+*.npz
+*.lock
+*.pdb
+*.xtc
+>>>>>>> 906b123 (include traj and pdb files)
 *.dcd
 *.xml
 *.txt
