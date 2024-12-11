@@ -275,3 +275,5 @@ ERROR*
 LOG*
 *.swp
 *.swo
+
+archive/
