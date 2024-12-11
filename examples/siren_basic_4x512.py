@@ -13,8 +13,8 @@ if __name__ == '__main__':
 
     ##### Load Data #####
     data = PDBData()
-    data.import_pdb('/home/pghw87/Documents/molearn/Eng-asal/molearn/examples/data/MurD_closed_selection.pdb')
-    data.import_pdb('/home/pghw87/Documents/molearn/Eng-asal/molearn/examples/data/MurD_open_selection.pdb')
+    data.import_pdb('/home/pghw87/Documents/molearn/Eng-asal/molearn/examples/data/noh-sliced100.pdb')
+    # data.import_pdb('/home/pghw87/Documents/molearn/Eng-asal/molearn/examples/data/MurD_open_selection.pdb')
     #data.import_pdb('data/MurD_closed_selection.pdb')
     #data.import_pdb('data/MurD_open_selection.pdb')
     #data.import_pdb('/home3/pghw87/trajectories/MurD/MurD_closed.pdb')
@@ -41,8 +41,8 @@ if __name__ == '__main__':
 
     runkwargs = dict(
         log_filename='log_file.dat',
-        log_folder='siren_checkpoints',
-        checkpoint_folder='siren_checkpoints',
+        log_folder='siren_checkpoints_nirK',
+        checkpoint_folder='siren_checkpoints_nirK',
         )
 
     best = 1e24

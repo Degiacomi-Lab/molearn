@@ -5,17 +5,15 @@ from molearn.data import PDBData
 from molearn.trainers import OpenMM_Physics_Trainer
 from molearn.models.siren import AutoEncoder
 import torch
-
 #%%
 if __name__ == '__main__':
 
     ##### Load Data #####
     data = PDBData()
-    data.import_pdb('data/aggregated_align_1-84.pdb')
-    #data.import_pdb('data/MurD_closed_selection.pdb')
+    #data.import_pdb('data/aggregated_align_1-84.pdb')
+    # data.import_pdb('data/MurD_closed_selection.pdb')
     #data.import_pdb('data/MurD_open_selection.pdb')
-    #data.import_pdb('/home3/pghw87/trajectories/MurD/MurD_closed.pdb')
-    #data.import_pdb('/home3/pghw87/trajectories/MurD/MurD_open.pdb')
+    data.import_pdb('data/nirk_training.pdb')
 
     data.fix_terminal()
     data.atomselect(atoms = ['CA', 'C', 'N', 'CB', 'O'])
@@ -38,8 +36,8 @@ if __name__ == '__main__':
 
     runkwargs = dict(
         log_filename='log_file.dat',
-        log_folder='siren_checkpoints_nmr_alignall',
-        checkpoint_folder='siren_checkpoints_nmr_alignres',
+        log_folder='siren_checkpoints_nirK',
+        checkpoint_folder='siren_checkpoints_nirK',
         )
 
     best = 1e24

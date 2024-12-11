@@ -1,10 +1,11 @@
  #%%
-import sys, os
-sys.path.insert(0, os.path.join(os.path.abspath(os.pardir),'src'))
+import os
+import sys
+sys.path.insert(0, os.path.join(os.path.abspath(os.pardir), "src"))
+import torch
+from molearn.models.siren import AutoEncoder
 from molearn.data import PDBData
 from molearn.trainers import OpenMM_Physics_Trainer
-from molearn.models.siren import AutoEncoder
-import torch
 from molearn.analysis import MolearnAnalysis
 import matplotlib.pyplot as plt
 from molearn.utils import as_numpy
@@ -26,7 +27,7 @@ if __name__ =='__main__':
 if __name__ == '__main__':
     print("> Loading network parameters...")
 
-    fname = f'siren_checkpoints_nmr_alignres{os.sep}checkpoint_epoch220_loss-0.49344822612859435.ckpt'
+    fname = f'siren_checkpoints_nirK{os.sep}checkpoint_2_epoch1500_loss-6.402386005659749.ckpt'
     # change 'cpu' to 'cuda' if you have a suitable cuda enabled device
     checkpoint = torch.load(fname, map_location=torch.device('cpu'))
     #checkpoint = torch.load(fname, map_location=torch.device('cuda'))
@@ -39,7 +40,7 @@ if __name__ == '__main__':
     # by defining the manual see and loading the dataset in the same order as when
     #the neural network was trained, the same train-test split will be obtained
     data = PDBData()
-    data.import_pdb(f'data{os.sep}aggregated_align_1-84.pdb')
+    data.import_pdb(f'data{os.sep}nirk_training.pdb')
     #data.import_pdb(f'data{os.sep}MurD_closed_selection.pdb')
     #data.import_pdb(f'data{os.sep}MurD_open_selection.pdb')
     #data.import_pdb('/home3/pghw87/trajectories/MurD/MurD_closed.pdb')
@@ -48,13 +49,13 @@ if __name__ == '__main__':
     data.atomselect(atoms = ['CA', 'C', 'N', 'CB', 'O'])
     data.prepare_dataset()
     data_train, data_valid = data.split(manual_seed=25)
-    # data_test = PDBData()
-    # data_test.import_pdb(f'data{os.sep}MurD_closed_apo_selection.pdb')
-    # data_test.std = data.std
-    # data_test.mean = data.mean
-    # data_test.fix_terminal()
-    # data_test.atomselect(atoms = ['CA', 'C', 'N', 'CB', 'O'])
-    # data_test.prepare_dataset()
+    data_test = PDBData()
+    data_test.import_pdb(f'data{os.sep}nirk_test.pdb')
+    data_test.std = data.std
+    data_test.mean = data.mean
+    data_test.fix_terminal()
+    data_test.atomselect(atoms = ['CA', 'C', 'N', 'CB', 'O'])
+    data_test.prepare_dataset()
 #%%
 # Created MA object, import train and valid data
 if __name__ == '__main__':
@@ -72,8 +73,8 @@ if __name__ == '__main__':
     MA.processes = 2
 #%%
     # print out the size of train, valid, test data
-# if __name__ == '__main__':
-#     print(f'Train set shape {data_train.dataset.shape}, Valid set shape {data_valid.dataset.shape}, Test set shape {data_test.dataset.shape}')
+if __name__ == '__main__':
+    print(f'Train set shapdata_traine {data_train.dataset.shape}, Valid set shape {data_valid.dataset.shape}, Test set shape {data_test.dataset.shape}')
 #%%
 # store the training and valid set in the MolearnAnalysis instance
 # the second parameter of the sollowing commands can be both a PDBData instance
@@ -81,7 +82,7 @@ if __name__ == '__main__':
 if __name__ == '__main__':
     MA.set_dataset("training", data_train)
     MA.set_dataset("valid", data_valid)
-    #MA.set_dataset('test', data_test)
+    MA.set_dataset('test', data_test)
 
 # %%
 # Calculate RMSD of training and test set
@@ -90,22 +91,22 @@ if __name__ == '__main__':
 
     err_train = MA.get_error('training')
     err_valid = MA.get_error('valid')
-    #err_test = MA.get_error('test')
+    err_test = MA.get_error('test')
 
-    #print(f'Mean RMSD is {err_train.mean()} for training set and {err_valid.mean()} for valid set and {err_test.mean()} for test set')
-    print(f'Mean RMSD is {err_train.mean()} for training set and {err_valid.mean()} for valid set')
+    print(f'Mean RMSD is {err_train.mean()} for training set and {err_valid.mean()} for valid set and {err_test.mean()} for test set')
+    # print(f'Mean RMSD is {err_train.mean()} for training set and {err_valid.mean()} for valid set')
 #%%
 if __name__ == '__main__':
     # Plot RMSD 
     fig, ax = plt.subplots()
-    #violin = ax.violinplot([err_train, err_valid, err_test], showmeans = True, )
-    violin = ax.violinplot([err_train, err_valid], showmeans = True, )
-    #ax.set_xticks([1,2,3])
-    ax.set_xticks([1,2])
+    violin = ax.violinplot([err_train, err_valid, err_test], showmeans = True, )
+    # violin = ax.violinplot([err_train, err_valid], showmeans = True, )
+    ax.set_xticks([1,2,3])
+    # ax.set_xticks([1,2])
     #ax.set_title('RMSD of training, validation and testing sets')
-    ax.set_title('RMSD of training and validation for residues 1-84 aligned (NMR structures) with Siren')
-    #ax.set_xticklabels(['Training', 'Validation','Testing'])
-    ax.set_xticklabels(['Training', 'Validation'])
+    # ax.set_title('RMSD of training and validation for residues 1-84 aligned (NMR structures) with Siren')
+    ax.set_xticklabels(['Training', 'Validation','Testing'])
+    # ax.set_xticklabels(['Training', 'Validation'])
     fig.gca().set_ylabel(r'RMSD ($ \AA$)')
     plt.savefig('RMSD_plot.png')
 # %%
@@ -124,23 +125,23 @@ if __name__ == '__main__':
     fig, ax = plt.subplots()
     c = ax.pcolormesh(xaxis, yaxis, landscape_err_latent, vmax = 8)
     fig.colorbar(c, label = 'latent space RMSD ($ \AA$)')
-    ax.set_title("Error grid (RMSD) in latent space")
+    # ax.set_title("Error grid (RMSD) in latent space")
     coords = as_numpy(MA.get_encoded('valid'))
-    #tcoords = as_numpy(MA.get_encoded('test'))
-    plt.scatter(coords[:,0,0], coords[:,1,0], label = 'Validation')
-    #plt.scatter(tcoords[:,0,0], tcoords[:,1,0], label ='Testing')
+    tcoords = as_numpy(MA.get_encoded('test'))
+    plt.scatter(coords[:,0,0], coords[:,1,0], label = 'Validation', color = 'white')
+    plt.scatter(tcoords[:,0,0], tcoords[:,1,0], label ='Testing', color = 'blue')
     plt.savefig('Error_rmsd_grid.png')
-
-    # Plot drift grid in latent space
-    fig, ax = plt.subplots()
-    c = ax.pcolormesh(xaxis, yaxis, landscape_err_3d, vmax = 1)
-    fig.colorbar(c, label = 'latent space drfit ($ \AA$)')
-    ax.set_title("Error grid (drift) in latent space")
-    coords = as_numpy(MA.get_encoded('valid'))
-    #tcoords = as_numpy(MA.get_encoded('test'))
-    plt.scatter(coords[:,0,0], coords[:,1,0], label = 'Validation')
-    #plt.scatter(tcoords[:,0,0], tcoords[:,1,0], label ='Testing')
-    plt.savefig('Error_drift_grid.png')
+    ax.legend()
+    # # Plot drift grid in latent space
+    # fig, ax = plt.subplots()
+    # c = ax.pcolormesh(xaxis, yaxis, landscape_err_3d, vmax = 1)
+    # fig.colorbar(c, label = 'latent space drfit ($ \AA$)')
+    # ax.set_title("Error grid (drift) in latent space")
+    # coords = as_numpy(MA.get_encoded('valid'))
+    # #tcoords = as_numpy(MA.get_encoded('test'))
+    # plt.scatter(coords[:,0,0], coords[:,1,0], label = 'Validation')
+    # #plt.scatter(tcoords[:,0,0], tcoords[:,1,0], label ='Testing')
+    # plt.savefig('Error_drift_grid.png')
 
 #%%
 # Generate dope scores
@@ -152,13 +153,13 @@ if __name__ == '__main__':
 if __name__ == '__main__':
     fig, ax  = plt.subplots()
     c = ax.pcolormesh(xvals, yvals, dope)
-    ax.set_title("Dope score of residues 0-83 aligned in latent space of Siren")
-    fig.colorbar(c, label = 'latent space DDOPE score ($ \AA$)')
+    # ax.set_title("Dope score of residues 0-83 aligned in latent space of Siren")
+    fig.colorbar(c, label = 'latent space DDOPE score')
     coords = as_numpy(MA.get_encoded('valid'))
     #tcoords = as_numpy(MA.get_encoded('test'))
     plt.scatter(coords[:,0,0], coords[:,1,0], label = 'Valid', c='white')
-    #plt.scatter(tcoords[:,0,0], tcoords[:,1,0], label ='Test')
-    #ax.legend()
+    plt.scatter(tcoords[:,0,0], tcoords[:,1,0], label ='Test', c='blue')
+    ax.legend()
     plt.savefig('Dope_grid.png')
 
     ## to visualise the GUI, execute the code above in a Jupyter notebook, then call:
