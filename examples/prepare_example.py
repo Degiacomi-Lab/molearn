@@ -1,3 +1,4 @@
+#%%
 import os
 import sys
 
@@ -21,7 +22,7 @@ def main():
         #     "./data/preparation/topo_MurDopen1F.pdb",
         #     "./data/preparation/topo_MurDclosed1F.pdb",
         # ],
-        test_size=0.0,
+        test_size=0.15,
         n_cluster=10,
         outpath=storage_path,
         verbose=True,
@@ -30,10 +31,8 @@ def main():
     tm.read_traj()
     # using agglomerative clustering to sample the trajectories
     tm.distance_cluster()
-    # creating a dendrogram of the linkage clustering
-    tm.linkage_cluster()
-    # creating new trajectory based on linkage clustering
-    tm.create_traj_linkage()
+    # creating a dendrogram of the agglomerative clustering
+    tm.create_dendrogram()
     # creating the new trajectory as dcd file and a new topology as pdb file
     tm.create_trajectories()
     # using PCA and the first n components for KMeans clustering to sample the trajectories
@@ -42,6 +41,7 @@ def main():
     # simply striding over the trajectories with a step size computed to result in n_cluster frames
     tm.stride()
     tm.create_trajectories()
+    tm.create_trajectories_by_cluster(test_cluster=1)
     """
     the given example wilc prel create the following files in a new directory named 'clustered'
     *   MurDopen_CLUSTER_aggl_train.dcd
@@ -60,3 +60,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# %%
