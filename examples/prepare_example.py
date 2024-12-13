@@ -18,23 +18,15 @@ def main():
             # "./data/preparation/MurDclosed.dcd",
         ],
         # topologies
-<<<<<<< HEAD
         # [
         #     "./data/preparation/topo_MurDopen1F.pdb",
         #     "./data/preparation/topo_MurDclosed1F.pdb",
         # ],
         test_size=0.15,
         n_cluster=10,
-=======
-        [
-            "./data/preparation/topo_MurDopen1F.pdb",
-            "./data/preparation/topo_MurDclosed1F.pdb",
-        ],
-        test_size=0.0,
-        n_cluster=15,
->>>>>>> 28aff03 (added ability to align on subset of atoms)
         outpath=storage_path,
         verbose=True,
+        image_mol=True,
         image_mol=True,
     )
     # reading in the trajectories and removing of all atoms apart from protein atoms
@@ -51,6 +43,9 @@ def main():
     # simply striding over the trajectories with a step size computed to result in n_cluster frames
     tm.stride()
     tm.create_trajectories()
+    # creating a new trajectory based on provided indices
+    tm.own_idx("index_sample.txt")
+    tm.create_trajectories()
     tm.create_trajectories_by_cluster(test_cluster=1)
     """
     the given example wilc prel create the following files in a new directory named 'clustered'
@@ -59,6 +54,10 @@ def main():
     *   MurDopen_CLUSTER_pca_train.dcd
     *   MurDopen_CLUSTER_pca_train_frames.txt
     *   MurDopen_NEW_TOPO.pdb
+    *   MurDopen_STRIDE_train.dcd
+    *   MurDopen_STRIDE_train_frames.txt
+    *   MurDopen_PROVIDED_train.dcd
+    *   MurDopen_PROVIDED_train_frames.txd
     *   MurDopen_STRIDE_train.dcd
     *   MurDopen_STRIDE_train_frames.txt
     *   MurDopen_PROVIDED_train.dcd

@@ -24,6 +24,7 @@ class DataAssembler:
         outpath: str = "",
         verbose: bool = False,
         dist_mat: bool = True,
+        dist_mat: bool = True,
     ):
         """
         Create clustered trajectories, stride trajectories and randomly sampled test frames
@@ -39,6 +40,7 @@ class DataAssembler:
         :param str outpath: directory path where the new trajector(y)ies should be stored
         :param bool verbose: True to get info which steps are currently performed
         :param bool verbose: True to calculate the n_frames x n_frames distance matrix
+        :param bool verbose: True to calculate the n_frames x n_frames distance matrix
         """
         self.traj_path = traj_path
         self.topo_path = topo_path
@@ -47,6 +49,7 @@ class DataAssembler:
         self.image_mol = image_mol
         self.outpath = outpath
         self.verbose = verbose
+        self.dist_mat = dist_mat
         self.dist_mat = dist_mat
         assert os.path.exists(self.outpath), "Outpath does not exist"
 
@@ -109,10 +112,13 @@ class DataAssembler:
         return load_func(traj_path, topo_path)
 
     def read_traj(self, atom_indices=None, ref_atom_indices=None) -> None:
+    def read_traj(self, atom_indices=None, ref_atom_indices=None) -> None:
         """
         Read in one or multiple trajectories, remove everything but protein atoms and
         image the molecule to center it in the water box, and create a training/validation
         and test split.
+        :param array_like | None atom_indices: The indices of the atoms to superpose. If not supplied, all atoms will be used.
+        :param array_like | None ref_atom_indices: Use these atoms on the reference structure. If not supplied, the same atom indices will be used for this trajectory and the reference one.
         :param array_like | None atom_indices: The indices of the atoms to superpose. If not supplied, all atoms will be used.
         :param array_like | None ref_atom_indices: Use these atoms on the reference structure. If not supplied, the same atom indices will be used for this trajectory and the reference one.
         """
@@ -153,6 +159,8 @@ class DataAssembler:
             top0 = None
             ucell0 = None
             for ct, (trp, top) in enumerate(zip(self.traj_path, self.topo_path)):
+                if self.verbose:
+                    print(f"\tLoading {os.path.basename(trp)}")
                 if self.verbose:
                     print(f"\tLoading {os.path.basename(trp)}")
                 loaded = None
@@ -203,6 +211,29 @@ class DataAssembler:
             )
         # maybe not needed after image_molecules
         self.traj.center_coordinates()
+        # Recenter and apply periodic boundary
+        if self.image_mol:
+            try:
+                if self.verbose:
+                    print("Imaging faild - retrying with supplying anchor molecules")
+                self.traj.image_molecules(inplace=True)
+            except ValueError:
+                try:
+                    self.traj.image_molecules(
+                        inplace=True,
+                        anchor_molecules=[set(self.traj.topology.residue(0).atoms)],
+                    )
+                except ValueError as e:
+                    print(
+                        f"Unable to image molecule due to '{e}' - will just recenter it"
+                    )
+            self.traj.superpose(
+                self.traj[0],
+                atom_indices=atom_indices,
+                ref_atom_indices=ref_atom_indices,
+            )
+        # maybe not needed after image_molecules
+        self.traj.center_coordinates()
         # converts ELEMENT names from eg "Cd" -> "C" to avoid later complications
         topo_table, topo_bonds = self.traj.topology.to_dataframe()
         topo_table["element"] = topo_table["element"].apply(
@@ -210,11 +241,14 @@ class DataAssembler:
         )
         if self.verbose:
             print("Saving new topology")
+        if self.verbose:
+            print("Saving new topology")
         self.traj.topology = md.Topology.from_dataframe(topo_table, topo_bonds)
         # save new topology
         self.traj[0].save_pdb(
             os.path.join(self.outpath, f"./{self.traj_name}_NEW_TOPO.pdb")
         )
+
 
         n_frames = self.traj.n_frames
         # which index separated indices from training and test dataset
@@ -228,6 +262,19 @@ class DataAssembler:
         # number of frames for training/validation set
         n_train_frames = len(self.train_idx)
 
+        if self.dist_mat:
+            # remove H atoms from distance calculation
+            atom_indices = [
+                a.index for a in train_traj.topology.atoms if a.element.symbol != "H"
+            ]
+            if self.verbose:
+                print("Calculating disance matrix")
+            # distance matrix between all frames
+            self.traj_dists = np.empty((n_train_frames, n_train_frames))
+            for i in range(n_train_frames):
+                self.traj_dists[i] = md.rmsd(
+                    train_traj, train_traj, i, atom_indices=atom_indices
+                )
         if self.dist_mat:
             # remove H atoms from distance calculation
             atom_indices = [
@@ -474,6 +521,27 @@ class DataAssembler:
         self.cluster_idx = np.arange(len(self.train_idx))
         self.cluster_method = "PROVIDED"
 
+    def own_idx(self, file_path: str | np.ndarray[tuple[int], np.dtype[np.int64]]):
+        """
+        Provide indices for frames to create a new trajectory.
+        Useful if trajectory should be sub sampled by some external metric.
+
+        :param str  | np.ndarray[tuple[int], np.dtype[np.int64]] file_path: path where the file storing the indices is located. Needs to have each index in a separate line. Or can be a numpy array.
+        """
+        if isinstance(file_path, str):
+            provided_idx = []
+            with open(file_path, "r") as ifile:
+                for i in ifile:
+                    provided_idx.append(int(i))
+            provided_idx = np.asarray(provided_idx)
+        elif isinstance(file_path, np.ndarray):
+            provided_idx = file_path
+        else:
+            raise ValueError("Provided indices are in an incompatible format")
+        self.train_idx = provided_idx
+        self.cluster_idx = np.arange(len(self.train_idx))
+        self.cluster_method = "PROVIDED"
+
     def _save_idx(
         self, filepath: str, idxs: list[int] | np.ndarray[tuple[int], np.dtype[np.int_]]
     ) -> None:
@@ -502,8 +570,16 @@ class DataAssembler:
                 hasattr(self, "traj_name"),
                 hasattr(self, "train_idx"),
                 hasattr(self, "cluster_idx"),
+                hasattr(self, "cluster_idx"),
             ]
         ), "Read in trajectory first"
+        assert all(
+            [
+                hasattr(self, "train_idx"),
+                hasattr(self, "cluster_idx"),
+                hasattr(self, "cluster_method"),
+            ]
+        ), "Cluster the trajectory first"
         assert all(
             [
                 hasattr(self, "train_idx"),
