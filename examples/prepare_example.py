@@ -13,7 +13,7 @@ def main():
     tm = DataAssembler(
         # trajectories
         [
-            "./data/preparation/calmodulin_mega.pdb",
+            "./data/preparation/calmodulin_nmr_mega_aligned_all.pdb",
             # "./data/preparation/MurDopen.dcd",
             # "./data/preparation/MurDclosed.dcd",
         ],
@@ -26,7 +26,6 @@ def main():
         n_cluster=10,
         outpath=storage_path,
         verbose=True,
-        image_mol=True,
         image_mol=True,
     )
     # reading in the trajectories and removing of all atoms apart from protein atoms
@@ -44,7 +43,7 @@ def main():
     tm.stride()
     tm.create_trajectories()
     # creating a new trajectory based on provided indices
-    tm.own_idx("index_sample.txt")
+    # tm.own_idx("index_sample.txt")
     tm.create_trajectories()
     tm.create_trajectories_by_cluster(test_cluster=1)
     """

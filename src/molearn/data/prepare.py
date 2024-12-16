@@ -24,7 +24,6 @@ class DataAssembler:
         outpath: str = "",
         verbose: bool = False,
         dist_mat: bool = True,
-        dist_mat: bool = True,
     ):
         """
         Create clustered trajectories, stride trajectories and randomly sampled test frames
@@ -49,7 +48,6 @@ class DataAssembler:
         self.image_mol = image_mol
         self.outpath = outpath
         self.verbose = verbose
-        self.dist_mat = dist_mat
         self.dist_mat = dist_mat
         assert os.path.exists(self.outpath), "Outpath does not exist"
 
@@ -111,7 +109,6 @@ class DataAssembler:
         """
         return load_func(traj_path, topo_path)
 
-    def read_traj(self, atom_indices=None, ref_atom_indices=None) -> None:
     def read_traj(self, atom_indices=None, ref_atom_indices=None) -> None:
         """
         Read in one or multiple trajectories, remove everything but protein atoms and
@@ -360,48 +357,7 @@ class DataAssembler:
         idx_idx = np.arange(len(cluster_func.labels_))
         self._find_representatives(idx_idx, cluster_func.labels_)
         self.cluster_method = "CLUSTER_aggl"
-    def distance_cluster(
-        self,
-    ) -> None:
-        """
-        cluster the trajectory with AgglomerativeClustering based on the rmsd between the frames
-        """
-        assert hasattr(
-            self, "traj_dists"
-        ), "No pairweise frame distances present - read in trajectory first"
-        if self.verbose:
-            print("Distance clustering")
-        # replace AgglomerativeClustering with any distance matrix based clustering function
-        cluster_func = AgglomerativeClustering(
-            n_clusters=self.n_cluster, metric="precomputed", linkage="average"
-        )
-        # cluster the frames with KMeans and find the representative frame for each cluster
-        cluster_func.fit(self.traj_dists)
-        idx_idx = np.arange(len(cluster_func.labels_))
-        self._find_representatives(idx_idx, cluster_func.labels_)
-        self.cluster_method = "CLUSTER_aggl"
-    def distance_cluster(
-        self,
-    ) -> None:
-        """
-        cluster the trajectory with AgglomerativeClustering based on the rmsd between the frames
-        """
-        assert hasattr(
-            self, "traj_dists"
-        ), "No pairweise frame distances present - read in trajectory first"
-        if self.verbose:
-            print("Distance clustering")
-        # replace AgglomerativeClustering with any distance matrix based clustering function
-        cluster_func = AgglomerativeClustering(
-            n_clusters=self.n_cluster, metric="precomputed", linkage="average"
-        )
-        # cluster the frames with KMeans and find the representative frame for each cluster
-        cluster_func.fit(self.traj_dists)
-        idx_idx = np.arange(len(cluster_func.labels_))
-        self._find_representatives(idx_idx, cluster_func.labels_)
-        self.cluster_method = "CLUSTER_aggl"
         
-
     def create_dendrogram(self, distance_threshold=50) -> None:
         """
         Cluster the trajectory with hierarchical clustering (linkage) based on the RMSD
@@ -424,7 +380,7 @@ class DataAssembler:
         dendrogram(self.linkage_matrix, no_labels=True, color_threshold=distance_threshold)
         plt.title("Dendrogram of Frames")
         plt.xlabel("Frame Index")
-        plt.ylabel(r"Distance ($\AA$)")
+        plt.ylabel("Distance")
         plt.show()
 
         # Define clusters by specifying n_clusters
@@ -474,13 +430,12 @@ class DataAssembler:
         """
         if self.verbose:
             print("Reducing size")
-        n_train_frames = len(self.train_idx)
-        # indices that create a stride over the remaining training trajectory
-        stride_idx = np.arange(
-            0,
+            n_train_frames = len(self.train_idx)
+            # indices that create a stride over the remaining training trajectory
+            stride_idx = own
             n_train_frames,
             step=np.floor(n_train_frames / self.n_cluster).astype(int),
-        )
+        
         # train_idx need to be sorted so the strides are again over a normal trajectory
         # and not a shuffled one
         stride_pre_idx = self.train_idx.copy()
@@ -499,27 +454,6 @@ class DataAssembler:
             )
         self.cluster_idx = stride_idx
         self.cluster_method = f"STRIDE_{self.n_cluster}"
-
-    def own_idx(self, file_path: str | np.ndarray[tuple[int], np.dtype[np.int64]]):
-        """
-        Provide indices for frames to create a new trajectory.
-        Useful if trajectory should be sub sampled by some external metric.
-
-        :param str  | np.ndarray[tuple[int], np.dtype[np.int64]] file_path: path where the file storing the indices is located. Needs to have each index in a separate line. Or can be a numpy array.
-        """
-        if isinstance(file_path, str):
-            provided_idx = []
-            with open(file_path, "r") as ifile:
-                for i in ifile:
-                    provided_idx.append(int(i))
-            provided_idx = np.asarray(provided_idx)
-        elif isinstance(file_path, np.ndarray):
-            provided_idx = file_path
-        else:
-            raise ValueError("Provided indices are in an incompatible format")
-        self.train_idx = provided_idx
-        self.cluster_idx = np.arange(len(self.train_idx))
-        self.cluster_method = "PROVIDED"
 
     def own_idx(self, file_path: str | np.ndarray[tuple[int], np.dtype[np.int64]]):
         """
@@ -675,20 +609,6 @@ class DataAssembler:
                 self.outpath, f"{self.traj_name}_train_excluding_cluster_{test_cluster}.dcd"
             )
         )
-        # Save train trajectory
-        ori_frame_train_idx = self.train_idx[train_cluster_indices]
-        self._save_idx(
-            os.path.join(
-                self.outpath,
-                f"./{self.traj_name}_train_excluding_cluster_{test_cluster}_frames.txt",
-            ),
-            ori_frame_train_idx,
-        )
-        self.traj[ori_frame_train_idx].save_dcd(
-            os.path.join(
-                self.outpath, f"{self.traj_name}_train_excluding_cluster_{test_cluster}.dcd"
-            )
-        )
 
         # Save test trajectory
         ori_frame_test_idx = self.train_idx[test_cluster_indices]
@@ -704,23 +624,7 @@ class DataAssembler:
                 self.outpath, f"{self.traj_name}_test_cluster_{test_cluster}.dcd"
             )
         )
-        # Save test trajectory
-        ori_frame_test_idx = self.train_idx[test_cluster_indices]
-        self._save_idx(
-            os.path.join(
-                self.outpath,
-                f"./{self.traj_name}_test_cluster_{test_cluster}_frames.txt",
-            ),
-            ori_frame_test_idx,
-        )
-        self.traj[ori_frame_test_idx].save_dcd(
-            os.path.join(
-                self.outpath, f"{self.traj_name}_test_cluster_{test_cluster}.dcd"
-            )
-        )
 
-        if self.verbose:
-            print("Train and test trajectories successfully created.")
         if self.verbose:
             print("Train and test trajectories successfully created.")
 
