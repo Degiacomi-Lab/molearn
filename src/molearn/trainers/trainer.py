@@ -1,6 +1,7 @@
 import os
 import glob
 import shutil
+import math
 import numpy as np
 import time
 import torch
@@ -540,6 +541,21 @@ class Trainer:
                 raise Exception(
                     "Something went wrong, you surely havnt done 1000 repeats?"
                 )
+
+    def _get_scale(
+        self, cur_mse_loss: float, loss_to_scale: float, scale_scale: float = 1.0
+    ):
+        """
+        get a scaling factor to scale a loss to be in the same order of magnitude like `cur_mse_loss`
+
+        :param float cur_mse_loss: the mse loss of the current epoch
+        :param float loss_to_scale: the loss that should be scaled to be in the same order of magnitude as the `cur_mse_loss`
+        :param float scale_scale: scale to in-/ decrease the scale further
+        :return float scaling_factor: the calculated scaling factor for the `loss_to_scale`
+        """
+        mag_mse = math.floor(math.log10(cur_mse_loss if cur_mse_loss > 0 else 1e-32))
+        mag_phy = math.floor(math.log10(loss_to_scale if loss_to_scale > 0 else 1e-32))
+        return 10 ** (mag_mse - mag_phy) * scale_scale
 
 
 if __name__ == "__main__":
