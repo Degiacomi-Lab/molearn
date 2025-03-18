@@ -41,7 +41,8 @@ class OpenMM_Physics_Trainer(Trainer):
         physics_scaling_factor=0.1,
         clamp_threshold=1e8,
         clamp=False,
-        start_physics_at=10,
+        start_physics_at=0, 
+        # start_physics_at=10,
         xml_file=None,
         soft_NB=True,
         **kwargs,
@@ -57,7 +58,8 @@ class OpenMM_Physics_Trainer(Trainer):
         :param \*\*kwargs: All aditional kwargs will be passed to :func:`openmm_energy <molearn.loss_functions.openmm_energy>`
 
         """
-        if xml_file is None and soft_NB:
+        if xml_file is None and soft_NB == True:
+        # if xml_file is None and soft_NB:
             print("using soft nonbonded forces by default")
             from molearn.utils import random_string
 
@@ -121,16 +123,18 @@ class OpenMM_Physics_Trainer(Trainer):
         results.update(self.common_physics_step(batch, self._internal["encoded"]))
 
         with torch.no_grad():
-            if self.epoch == self.start_physics_at:
-                self.phy_scale = self._get_scale(
-                    results["mse_loss"],
-                    results["physics_loss"],
-                    self.psf,
-                )
-        if self.epoch >= self.start_physics_at:
-            final_loss = results["mse_loss"] + self.phy_scale * results["physics_loss"]
-        else:
-            final_loss = results["mse_loss"]
+            scale = (self.psf * results["mse_loss"]) / (results["physics_loss"] + 1e-5)
+        final_loss = results["mse_loss"] + scale * results["physics_loss"]
+        #     if self.epoch == self.start_physics_at:
+        #         self.phy_scale = self._get_scale(
+        #             results["mse_loss"],
+        #             results["physics_loss"],
+        #             self.psf,
+        #         )
+        # if self.epoch >= self.start_physics_at:
+        #     final_loss = results["mse_loss"] + self.phy_scale * results["physics_loss"]
+        # else:
+        #     final_loss = results["mse_loss"]
 
         results["loss"] = final_loss
         return results
