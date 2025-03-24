@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import seaborn as sns
 
-
 plt.rcParams.update({
     "axes.titlesize": 16,    # Figure title
     "axes.labelsize": 14,    # X and Y labels
@@ -196,7 +195,6 @@ def plot_dope_hist(MA, plot_data=None, fname=None, refine=True, **kwargs):
 
 
     fig, ax = plt.subplots(figsize=(10, 6))
-    
     sns.violinplot(data=data,
                    split=True, inner="quart", 
                    palette=palette, 
@@ -212,7 +210,6 @@ def plot_dope_hist(MA, plot_data=None, fname=None, refine=True, **kwargs):
     ax.set_title('Distribution of DOPE Scores')
     ax.grid(True, linestyle='--', alpha=0.6)
     
-    # Save the plot if wkdir is provided
     if fname:
         plt.savefig(fname, bbox_inches='tight', **kwargs)
     plt.show()
@@ -220,7 +217,7 @@ def plot_dope_hist(MA, plot_data=None, fname=None, refine=True, **kwargs):
     return None
 
 
-def plot_rmsd_hist(MA, plot_data=None, fname=None, refine=True, **kwargs):
+def plot_rmsd_hist(MA, plot_data=None, fname=None, **kwargs):
     """
     Plot distributions of RMSD scores of the chosen datasets.
 
@@ -475,7 +472,7 @@ def plot_inversion_surface(MA, plot_data=None, levels=10, cmap='gist_heat_r', fn
     cmap = mpl.cm.get_cmap(name=cmap, lut=levels+1)
     cmap.set_under(cmap(0))
     cmap.set_bad(cmap(0))
-    cmap.set_over(cmap(1))
+    cmap.set_over(cmap(levels))
 
     data = MA.surfaces['Chirality']
     masked_data = np.ma.masked_where(data == 0, data)
