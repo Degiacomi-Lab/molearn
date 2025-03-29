@@ -98,4 +98,4 @@ https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.011052)
 ## Contributing ##
 
 For information on how to report bugs, request new features, or contribute to the code, please see [CONTRIBUTING.md](CONTRIBUTING.md).
-For any other question please contact matteo.t.degiacomi@durham.ac.uk.
+For any other question please contact matteo.degiacomi@ed.ac.uk.
