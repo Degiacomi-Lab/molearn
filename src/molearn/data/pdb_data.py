@@ -36,6 +36,7 @@ radii = {
     "XE": 1.8,
     "AU": 1.8,
     "LI": 1.8,
+    "CU": 1.4,
     ".": 1.8,
 }
 
@@ -70,7 +71,7 @@ class PDBData:
         if isinstance(filename, list) and topology is None:
             first_universe = mda.Universe(filename[0])
             self._mol = mda.Universe(first_universe._topology, filename)
-        if isinstance(filename, list) and topology is not None:
+        elif isinstance(filename, list) and topology is not None:
             first_universe = mda.Universe(topology, filename[0])
             self._mol = mda.Universe(first_universe._topology, filename)
         elif topology is None:
