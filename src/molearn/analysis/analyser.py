@@ -296,7 +296,7 @@ class MolearnAnalysis:
             results_decode = []
             for j in dataset:
                 s = (j.view(1, 3, -1).permute(0, 2, 1) * self.stdval).numpy().squeeze()
-                chir_test = self._chirality_whole(
+                chir_test = self._ca_chirality(
                     s[idx[:, 0], :],
                     s[idx[:, 1], :],
                     s[idx[:, 2], :],
@@ -306,7 +306,7 @@ class MolearnAnalysis:
                 results_dataset.append(wrong_chir.sum())
             for j in decoded:
                 s = (j.view(1, 3, -1).permute(0, 2, 1) * self.stdval).numpy().squeeze()
-                chir_test = self._chirality_whole(
+                chir_test = self._ca_chirality(
                     s[idx[:, 0], :],
                     s[idx[:, 1], :],
                     s[idx[:, 2], :],
@@ -322,7 +322,7 @@ class MolearnAnalysis:
             results_decode = []
             for j in decoded:
                 s = (j.view(1, 3, -1).permute(0, 2, 1) * self.stdval).numpy().squeeze()
-                chir_test = self._chirality_whole(
+                chir_test = self._ca_chirality(
                     s[idx[:, 0], :],
                     s[idx[:, 1], :],
                     s[idx[:, 2], :],
@@ -586,46 +586,53 @@ structure you want, e.g., analyser.scan_error_from_target(key, index=0)"
 
         return self.dope_score_class.get_score(f * self.stdval, refine=refine, **kwargs)
 
-    def _chirality_whole(
-        self,
-        n: np.ndarray[tuple[int,], np.dtype[np.float64]],
-        ca: np.ndarray[tuple[int,], np.dtype[np.float64]],
-        c: np.ndarray[tuple[int,], np.dtype[np.float64]],
-        cb: np.ndarray[tuple[int,], np.dtype[np.float64]],
-    ):
+    @staticmethod
+    def _ca_chirality(n, ca, c, cb):
         """
-        check chirality for a set of amino acid
+        Compute the chirality of Cα atoms given vectors of coordinates of N, Cα, C, and Cβ atoms.
+
+        :param numpy.array n: Cartesian coordinates of N atom
+        :param numpy.array ca: Cartesian coordinates of CA atom
+        :param numpy.array c: Cartesian coordinates of C atom
+        :param numpy.array cb: Cartesian coordinates of CB atom
         """
         ca_n = n - ca
         ca_c = c - ca
         cb_ca = cb - ca
         normal = np.cross(ca_n, ca_c)
         dot = np.einsum("ij,ij->i", normal, cb_ca)
-        # same but more calculations
-        # dot = np.diagonal(np.matmul(normal, cb_ca.T))
+
         return dot
 
-    @staticmethod
-    def _ca_chirality(N, CA, C, CB):
-        """
-        Calculate chirality of Cα atom in a protein residue.
+    # @staticmethod
+    # def _ca_chirality(N, CA, C, CB):
+    #     """
+    #     Calculate chirality of Cα atom in a protein residue.
 
-        :param N: Cartesian coordinates of N atom
-        :param CA: Cartesian coordinates of CA atom
-        :param C: Cartesian coordinates of C atom
-        :param CB: Cartesian coordinates of CB atom
-        :return: dot product of normal vector to the plane defined by N, CA, and C
-        """
-        ca_c = C - CA
-        ca_cb = CB - CA
-        ca_n = N - CA
-        normal = np.cross(ca_n, ca_c)
-        dot_product = np.dot(normal, ca_cb)
-        # L if dot_product > 0 else D
-        return dot_product
+    #     :param N: Cartesian coordinates of N atom
+    #     :param CA: Cartesian coordinates of CA atom
+    #     :param C: Cartesian coordinates of C atom
+    #     :param CB: Cartesian coordinates of CB atom
+    #     :return: dot product of normal vector to the plane defined by N, CA, and C
+    #     """
+    #     ca_c = C - CA
+    #     ca_cb = CB - CA
+    #     ca_n = N - CA
+    #     normal = np.cross(ca_n, ca_c)
+    #     dot_product = np.dot(normal, ca_cb)
+    #     # L if dot_product > 0 else D
+    #     return dot_product
 
     @staticmethod
     def _bond_lengths(crds, indices):
+        """
+        Calculate bond lengths between pairs of atoms.
+
+        :param numpy.array crds: Cartesian coordinates of all atoms
+        :param list indices: list of tuples containing pairs of atom indices
+
+        :return numpy.array: bond lengths
+        """
         bond_lengths = [
             np.linalg.norm(crds[:, :, i[0]] - crds[:, :, i[1]], axis=1) for i in indices
         ]
@@ -742,38 +749,33 @@ structure you want, e.g., analyser.scan_error_from_target(key, index=0)"
         """
         Calculate chiralities of Cα atoms on a grid sampling the latent space.
         Requires a grid system to be defined via a prior call to :func:`set_dataset <molearn.analysis.MolearnAnalysis.setup_grid>`.
-        Requires the atom selection includes Cα atoms.
-        Saves a surface in memory, with key 'CA_chirality'.
-
-        :return: Number of CA inversions on the latent space NxN surface
-        :return: x-axis values
-        :return: y-axis values
+        Requires the atom selection to include Cα atoms.
+        Saves a surface in memory, with key 'Chirality'.
         """
-        key = "Chirality"
-        if key not in self.surfaces:
-            assert (
-                "grid" in self._encoded
-            ), "make sure to call MolearnAnalysis.setup_grid first"
-        
+
+        assert (
+            "grid" in self._encoded
+        ), "make sure to call MolearnAnalysis.setup_grid first"
         inversions = self.get_inversions("grid")['decoded_inversions']
-        self.surfaces[key] = np.array(inversions).reshape(
+        self.surfaces["Chirality"] = np.array(inversions).reshape(
             self.n_samples, self.n_samples
         )
-        return self.surfaces[key], self.xvals, self.yvals
 
     def scan_bondlength(self):
         """
         Calculate bond lengths on a grid sampling the latent space.
+        Requires a grid system to be defined via a prior call to :func:`set_dataset <molearn.analysis.MolearnAnalysis.setup_grid>`.
+        Saves multiple surfaces, depending on atom selection, of bondlengths mean and std in memory. 
         """
+
         assert (
             "grid" in self._encoded
         ), "make sure to call MolearnAnalysis.setup_grid first"
-
         bond_lengths_dict = self.get_bondlengths(key='grid')
         for k, v in bond_lengths_dict['decoded_bondlen'].items():
             self.surfaces[k] = v.mean(axis=0).reshape(self.n_samples, self.n_samples)
             self.surfaces[k+'_std'] = v.std(axis=0).reshape(self.n_samples, self.n_samples)
-        
+
     def scan_custom(self, fct, params, key):
         """
         Generate a surface coloured as a function of a user-defined function.
@@ -854,7 +856,7 @@ structure you want, e.g., analyser.scan_error_from_target(key, index=0)"
         pdb_file: str,
     ) -> None:
         """
-        create pdb file for given coordinates
+        Create pdb file for given coordinates
 
         :param np.ndarray[tuple[int, int], np.dtype[np.float64]] prot_coords: coordinates of all atoms of a protein
         :param str pdb_file: path where the pdb file should be stored
