@@ -5,10 +5,10 @@ channels:
   - plotly
   - defaults
 dependencies:
-  - python=3.8
+  - python=3.11
   - numpy
-  - modeller
   - mdanalysis
+  - modeller
   - cctbx
   - pandas
   - scipy
