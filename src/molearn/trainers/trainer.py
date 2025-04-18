@@ -52,7 +52,7 @@ class Trainer:
         self.epoch = 0
         self.scheduler = None
         self.verbose = True
-        self.log_filename = "default_log_filename.csv"
+        self.log_filename = log_filename
         self.scheduler_key = None
         self.json_log = json_log
 
@@ -302,6 +302,17 @@ class Trainer:
             self.optimiser.zero_grad()
             train_result = self.train_step(batch)
             train_result["loss"].backward()
+
+            # grad_norms = {}
+            # for name, param in self.autoencoder.named_parameters():
+            #     if param.grad is not None:
+            #         # Calculate the gradient norm for each parameter
+            #         grad_norm = param.grad.norm().item()
+            #         grad_norms[name] = grad_norm
+            # # Write grad_norms to a log file:
+            # with open("gradients_log.txt", "a") as log_file:
+            #     log_file.write(f"Epoch {epoch}, Batch {i}: {grad_norms}\n")
+
             self.optimiser.step()
             if i == 0:
                 results = {
