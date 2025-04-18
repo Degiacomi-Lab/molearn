@@ -18,7 +18,7 @@ def main():
     fname = f"xbb_foldingnet_checkpoints{os.sep}checkpoint_epoch208_loss-4.205589803059896.ckpt"
     # if GPU is available we will use the GPU else the CPU
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    checkpoint = torch.load(fname, map_location=device)
+    checkpoint = torch.load(fname, map_location=device, weights_only=False)
     net = AutoEncoder(**checkpoint["network_kwargs"])
     net.load_state_dict(checkpoint["model_state_dict"])
 
