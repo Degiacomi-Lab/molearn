@@ -10,22 +10,29 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+
     - name: Set up Python 3.11
       uses: actions/setup-python@v4
       with:
         python-version: '3.11'
-    - name: Add conda to system path
+
+    - name: Add conda to PATH
       run: |
-        # $CONDA is an environment variable pointing to the root of the miniconda directory
         echo $CONDA/bin >> $GITHUB_PATH
-    - name: Install dependencies
+
+    - name: Install mamba
       run: |
-        conda install -y python=3.11
-        conda env update --file environment.yml --name base
+        # install mamba into the base conda env
+        conda install -n base -c conda-forge mamba -y
+
+    - name: Install dependencies with mamba
+      run: |
+        # this will be much faster than conda's solver
+        mamba env update --file environment.yml --name base
+
     - name: Test
       run: |
         cd test
         python test_openmm_plugin.py
         python test_pdbdata.py
         python test_trainer.py
-
