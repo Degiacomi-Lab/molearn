@@ -7,7 +7,6 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        # ensure shells load conda correctly for activation
         shell: bash -l {0}
 
     steps:
@@ -16,17 +15,17 @@ jobs:
       - name: Set up conda + mamba
         uses: conda-incubator/setup-miniconda@v3
         with:
-          # install Python 3.11
           python-version: '3.11'
-          # tell it to pull in mamba from conda-forge
+          activate-environment: base
           mamba-version: '*'
-          # solve using conda-forge (mamba is fastest here)
           channels: conda-forge,defaults
           channel-priority: strict
-          # update the base env instead of creating `test`
-          auto-activate-base: true
-          activate-environment: ""
+          auto-update-conda: false
+          remove-profiles: true
+          conda-solver: libmamba
+          clean-patched-environment-file: true
           environment-file: environment.yml
+          run-post: true
 
       - name: Test
         run: |
