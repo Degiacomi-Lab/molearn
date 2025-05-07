@@ -1,28 +1,32 @@
-name: Tests
-
-on: [push]
-
 jobs:
   build-linux:
     runs-on: ubuntu-latest
-    env:
-      # point Conda/mamba at a temp directory for package caching
-      CONDA_PKGS_DIRS: ${{ runner.temp }}/conda_pkgs
+    defaults:
+      run:
+        # ensure shells load conda correctly for activation
+        shell: bash -l {0}
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Add conda to PATH
-        run: echo $CONDA/bin >> $GITHUB_PATH
+      - name: Set up conda + mamba
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          # install Python 3.11
+          python-version: '3.11'
+          # tell it to pull in mamba from conda-forge
+          mamba-version: '*'
+          # solve using conda-forge (mamba is fastest here)
+          channels: conda-forge,defaults
+          channel-priority: strict
+          # update the base env instead of creating `test`
+          auto-activate-base: true
+          activate-environment: ""
+          environment-file: environment.yml
 
-      - name: Install mamba
+      - name: Test
         run: |
-          # install mamba into the base env
-          conda install -n base -c conda-forge mamba -y
-
-      - name: Create cache directory
-        run: |
-          mkdir -p $CONDA_PKGS_DIRS
-
-      - name: Install dependencies with mamba
-        run: |
-          mamba env update --file environment.yml --name base
+          cd test
+          python test_openmm_plugin.py
+          python test_pdbdata.py
+          python test_trainer.py
