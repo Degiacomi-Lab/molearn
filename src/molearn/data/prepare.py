@@ -3,8 +3,10 @@ import os
 
 import mdtraj as md
 import numpy as np
-
+import matplotlib.pyplot as plt
+from scipy.cluster.hierarchy import dendrogram, fcluster, linkage
 from sklearn.cluster import AgglomerativeClustering, KMeans
+from scipy.spatial.distance import squareform
 from sklearn.decomposition import PCA
 
 
@@ -309,11 +311,14 @@ class DataAssembler:
         self._find_representatives(idx_idx, cluster_func.labels_)
         self.cluster_method = "CLUSTER_aggl"
 
-    def create_dendrogram(self, distance_threshold=50, output_path="dendrogram.png") -> None:
+    def create_dendrogram(self, distance_threshold: float = None) -> None:
         """
-        Cluster the trajectory with hierarchical clustering (linkage) based on the RMSD between the frames
-        and plot a dendrogram.
-        Group frames that have pairwise distances less than "distance_threshold" in one cluster (default is 50).
+        Perform hierarchical clustering on the training trajectory using pairwise RMSD
+        between frames, and visualize the result with a dendrogram.
+
+        param: float | None distance_threshold: Optional distance threshold used to cut the
+        hierarchical clustering tree into clusters. If not supplied, the maximum linkage
+        distance will be used.
         """
         assert hasattr(
             self, "traj_dists"
@@ -325,22 +330,33 @@ class DataAssembler:
         # Perform hierarchical clustering using scipy
         self.linkage_matrix = linkage(self.traj_dists, method="ward")  
 
+        # Find the maximum distance between merged clusters to guide an appropriate threshold choice
+        max_dist = max(self.linkage_matrix[:, 2])
+        threshold = distance_threshold if distance_threshold is not None else max_dist
+       
+        if self.verbose:
+            print(f"Max linkage distance: {max_dist}")
+            print(f"Using distance threshold: {threshold}")
+
+        # Get frame labels for the dendrogram (actual frame indices from the original trajectory)
+            frame_labels = [str(i) for i in self.train_idx]
+
         # Plot the dendrogram
         plt.figure(figsize=(10, 7))
-        dendrogram(self.linkage_matrix, no_labels=True, color_threshold=distance_threshold)
+        dendrogram(self.linkage_matrix, labels=frame_labels, leaf_font_size=8, leaf_rotation=90, color_threshold=threshold)
         plt.title("Dendrogram of Frames")
         plt.xlabel("Frame Index")
         plt.ylabel("Distance")
         plt.savefig('dendrogram.png')
 
         # Define clusters by specifying n_clusters
-        self.cluster_labels = fcluster(self.linkage_matrix, t=distance_threshold, criterion="distance")
+        self.cluster_labels = fcluster(self.linkage_matrix, t=max_dist, criterion="distance")
 
         # Store cluster labels and representatives
         idx_idx = np.arange(len(self.cluster_labels))
         self._find_representatives(idx_idx, self.cluster_labels)
         self.cluster_method = "CLUSTER_linkage"
-
+        
         if self.verbose:
             print(f"Assigned {self.n_cluster} clusters.")
 
