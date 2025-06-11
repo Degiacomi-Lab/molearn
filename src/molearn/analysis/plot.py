@@ -13,7 +13,7 @@ plt.rcParams.update({
 })
 
 
-def plot_bondlength_hist(MA, plot_data=None, wkdir=None, **kwargs):
+def plot_bondlength_hist(MA, plot_data=None, bins=100, wkdir=None, **kwargs):
     """
     Plot distributions of bond lengths of the chosen datasets.
 
@@ -58,22 +58,128 @@ def plot_bondlength_hist(MA, plot_data=None, wkdir=None, **kwargs):
         for ax, (dataset_data, decoded_data), label, (dataset_color, decoded_color) in zip(axes, data_pairs, labels, colors):
             
             if dataset_data is not None:
-                ax.hist(dataset_data[key].flatten(), bins=100, color=dataset_color, label=f'{label} Dataset', alpha=0.5, density=True, hatch='//')
+                ax.hist(dataset_data[key].flatten(), bins=bins, color=dataset_color, label=f'{label} Dataset', alpha=0.5, density=True, hatch='//')
             
-            ax.hist(decoded_data[key].flatten(), bins=100, color=decoded_color, label=f'{label} Decoded', alpha=0.5, density=True)
+            ax.hist(decoded_data[key].flatten(), bins=bins, color=decoded_color, label=f'{label} Decoded', alpha=0.5, density=True)
             
             ax.set_title(f'{label} - {key} bond lengths')
             ax.set_ylabel('Density')
             ax.legend()
-        
-        axes[-1].set_xlabel('Bond length (Å)')
-        
+            ax.set_xlim(0, 2.5)
+            ax.set_xlabel('Bond length (Å)')
+            ax.tick_params(labelbottom=True)
+            ax.tick_params(labelleft=False)
+
         plt.tight_layout()
         
         if wkdir is not None:
-            plt.savefig(wkdir / f'{key}_bond_len_dist.png', dpi=300, bbox_inches='tight')
+            plt.savefig(wkdir / f'BL_{key}_hist.pdf', bbox_inches='tight')
         plt.show()
         
+    return None
+
+
+def plot_dihedral_hist(MA, plot_data=None, bins=100, wkdir=None, **kwargs):
+
+    data_pairs = []
+    labels = []
+    colors = []
+    
+    for key, label, decoded_color in plot_data:
+        dataset_color = "gray"  # Set dataset distribution as gray
+        if key in MA._datasets.keys():
+            dataset_dihedrals = MA.get_dihedrals(key)['dataset_dihedrals']
+            decoded_dihedrals = MA.get_dihedrals(key)['decoded_dihedrals']
+        elif key in MA._encoded.keys():
+            decoded_dihedrals = MA.get_dihedrals(key)['decoded_dihedrals']
+            dataset_dihedrals, dataset_color = None, None
+        else:
+            raise ValueError(f"{key} not found in datasets or encoded data")
+        data_pairs.append((dataset_dihedrals, decoded_dihedrals))
+        labels.append(label)
+        colors.append((dataset_color, decoded_color))
+
+    num_plots = len(data_pairs)
+    
+    for key in data_pairs[0][1].keys():
+        fig, axes = plt.subplots(num_plots, 1, figsize=(8, 4 * num_plots), sharex=True)
+        
+        if num_plots == 1:
+            axes = [axes]  # Ensure axes is iterable if there’s only one plot
+        
+        for ax, (dataset_data, decoded_data), label, (dataset_color, decoded_color) in zip(axes, data_pairs, labels, colors):
+            
+            if dataset_data is not None:
+                ax.hist(dataset_data[key].flatten(), bins=bins, color=dataset_color, label=f'{label} Dataset', alpha=0.5, density=True, hatch='//')
+            
+            ax.hist(decoded_data[key].flatten(), bins=bins, color=decoded_color, label=f'{label} Decoded', alpha=0.5, density=True)
+            
+            ax.set_title(f'{label} - {key}')
+            ax.set_ylabel('Density')
+            ax.legend()
+            ax.set_xlim(-np.pi, np.pi)
+            ax.set_xlabel('Radians')
+            ax.tick_params(labelbottom=True)
+            ax.tick_params(labelleft=False)
+
+        plt.tight_layout()
+
+        if wkdir is not None:
+            plt.savefig(wkdir / f'Dihed_{key}_hist.pdf',bbox_inches='tight')
+        plt.show()
+
+    return None
+
+
+def plot_angle_hist(MA, plot_data=None, bins=100, wkdir=None, **kwargs):
+
+    data_pairs = []
+    labels = []
+    colors = []
+    
+    for key, label, decoded_color in plot_data:
+        dataset_color = "gray"  # Set dataset distribution as gray
+        if key in MA._datasets.keys():
+            dataset_angles = MA.get_angles(key)['dataset_angles']
+            decoded_angles = MA.get_angles(key)['decoded_angles']
+        elif key in MA._encoded.keys():
+            decoded_angles = MA.get_angles(key)['decoded_angles']
+            dataset_angles, dataset_color = None, None
+        else:
+            raise ValueError(f"{key} not found in datasets or encoded data")
+        data_pairs.append((dataset_angles, decoded_angles))
+        labels.append(label)
+        colors.append((dataset_color, decoded_color))
+
+    num_plots = len(data_pairs)
+    
+    for key in data_pairs[0][1].keys():
+        fig, axes = plt.subplots(num_plots, 1, figsize=(8, 4 * num_plots))
+        
+        if num_plots == 1:
+            axes = [axes]  # Ensure axes is iterable if there’s only one plot
+        
+        for ax, (dataset_data, decoded_data), label, (dataset_color, decoded_color) in zip(axes, data_pairs, labels, colors):
+            
+            if dataset_data is not None:
+                ax.hist(dataset_data[key].flatten(), bins=bins, color=dataset_color, label=f'{label} Dataset', alpha=0.5, density=True, hatch='//')
+            
+            ax.hist(decoded_data[key].flatten(), bins=bins, color=decoded_color, label=f'{label} Decoded', alpha=0.5, density=True)
+            
+            ax.set_title(f'{label} - {key}')
+            ax.set_ylabel('Density')
+            ax.legend()
+            ax.set_xlim(0, np.pi)
+            ax.set_xlabel('Radians')
+            ax.tick_params(labelbottom=True)
+            ax.tick_params(labelleft=False)
+
+        plt.tight_layout()
+
+        if wkdir is not None:
+            plt.savefig(wkdir / f'Agl_{key}_hist.pdf',bbox_inches='tight')
+        plt.show()
+
     return None
 
 

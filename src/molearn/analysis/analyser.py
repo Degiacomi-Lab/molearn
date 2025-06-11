@@ -604,25 +604,6 @@ structure you want, e.g., analyser.scan_error_from_target(key, index=0)"
 
         return dot
 
-    # @staticmethod
-    # def _ca_chirality(N, CA, C, CB):
-    #     """
-    #     Calculate chirality of Cα atom in a protein residue.
-
-    #     :param N: Cartesian coordinates of N atom
-    #     :param CA: Cartesian coordinates of CA atom
-    #     :param C: Cartesian coordinates of C atom
-    #     :param CB: Cartesian coordinates of CB atom
-    #     :return: dot product of normal vector to the plane defined by N, CA, and C
-    #     """
-    #     ca_c = C - CA
-    #     ca_cb = CB - CA
-    #     ca_n = N - CA
-    #     normal = np.cross(ca_n, ca_c)
-    #     dot_product = np.dot(normal, ca_cb)
-    #     # L if dot_product > 0 else D
-    #     return dot_product
-
     @staticmethod
     def _bond_lengths(crds, indices):
         """

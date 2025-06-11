@@ -216,19 +216,13 @@ class PDBData:
         batch_size,
         validation_split=0.1,
         pin_memory=True,
-        dataset_sample_size=-1,
         manual_seed=None,
-        shuffle=True,
-        sampler=None,
     ):
         """
         :param int batch_size: size of the training batches
         :param float validation_split: ratio of data to randomly assigned as validation
         :param bool pin_memory: if True, pin memory for the dataloader
-        :param int dataset_sample_size: if > 0, sample this number of structures from the dataset
         :param int | None manual_seed: 
-        :param bool shuffle: if True, shuffle the dataset before splitting
-        :param None sampler:
         :return: `torch.utils.data.DataLoader` for training set
         :return: `torch.utils.data.DataLoader` for validation set
         """
@@ -330,14 +324,13 @@ class PDBData:
                 _valid_size = validation_split * _train_size
             else:
                 _valid_size = valid_size
-        from torch import randperm
 
         if manual_seed is not None:
-            indices = randperm(
+            indices = torch.randperm(
                 len(self.dataset), generator=torch.Generator().manual_seed(manual_seed)
             )
         else:
-            indices = randperm(len(self.dataset))
+            indices = torch.randperm(len(self.dataset))
 
         self.indices = indices
         train_dataset = dataset[indices[:_train_size]]
