@@ -13,3 +13,4 @@
 from .analyser import MolearnAnalysis, as_numpy
 from .GUI import MolearnGUI
 from .path import oversample, get_path, get_path_aggregate
+from .plot import *
