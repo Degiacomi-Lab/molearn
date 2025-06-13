@@ -53,7 +53,7 @@ class From2D(nn.Module):
         return x
 
 
-class Autoencoder(nn.Module):    
+class AutoEncoder(nn.Module):    
     '''
     This is the autoencoder used in our `Ramaswamy 2021 paper <https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.011052>`_.
     It is largely superseded by :func:`molearn.models.foldingnet.AutoEncoder`.
@@ -68,7 +68,7 @@ class Autoencoder(nn.Module):
         :param float droprate: dropout rate
         '''
         
-        super(Autoencoder, self).__init__()    
+        super(AutoEncoder, self).__init__()    
         # encoder block    
         eb = nn.ModuleList()    
         eb.append(nn.Conv1d(3, init_z, 4, 2, 1, bias=False))    

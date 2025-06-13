@@ -259,16 +259,89 @@ class MolearnAnalysis:
         )
         return ramachandran
 
+    def get_inversions(self, key):
+        """
+        Get the chirality of Cα atoms in a dataset and its decoded counterpart.
+        """
+
+        assert set(["CA", "C", "N", "CB"]).issubset(
+            set(self.atoms)
+        ), "Atom selection shoud at least include CA, C, N, and CB"
+
+        # Get atom indices
+        mol_df = self.mol.data
+        indices = dict()
+        for resid in mol_df.resid.unique():
+            resname = mol_df[mol_df["resid"] == resid].resname.unique()[0]
+            if not resname == "GLY":
+                N_id = mol_df[
+                    (mol_df["resid"] == resid) & (mol_df["name"] == "N")
+                ].index[0]
+                C_id = mol_df[
+                    (mol_df["resid"] == resid) & (mol_df["name"] == "C")
+                ].index[0]
+                CA_id = mol_df[
+                    (mol_df["resid"] == resid) & (mol_df["name"] == "CA")
+                ].index[0]
+                CB_id = mol_df[
+                    (mol_df["resid"] == resid) & (mol_df["name"] == "CB")
+                ].index[0]
+                indices[resname + str(resid)] = (N_id, CA_id, C_id, CB_id)
+        idx = np.asarray(list(indices.values()))
+
+        if key in self._datasets.keys():
+            dataset = self.get_dataset(key) * self.stdval + self.meanval
+            decoded = self.get_decoded(key) * self.stdval + self.meanval
+            results_dataset = []
+            results_decode = []
+            for j in dataset:
+                s = (j.view(1, 3, -1).permute(0, 2, 1) * self.stdval).numpy().squeeze()
+                chir_test = self._ca_chirality(
+                    s[idx[:, 0], :],
+                    s[idx[:, 1], :],
+                    s[idx[:, 2], :],
+                    s[idx[:, 3], :],
+                )
+                wrong_chir = chir_test < 0
+                results_dataset.append(wrong_chir.sum())
+            for j in decoded:
+                s = (j.view(1, 3, -1).permute(0, 2, 1) * self.stdval).numpy().squeeze()
+                chir_test = self._ca_chirality(
+                    s[idx[:, 0], :],
+                    s[idx[:, 1], :],
+                    s[idx[:, 2], :],
+                    s[idx[:, 3], :],
+                )
+                wrong_chir = chir_test < 0
+                results_decode.append(wrong_chir.sum())
+            return dict(dataset_inversions=np.asarray(results_dataset),
+                        decoded_inversions=np.asarray(results_decode))
+
+        elif key in self._encoded.keys():
+            decoded = self.get_decoded(key) * self.stdval + self.meanval
+            results_decode = []
+            for j in decoded:
+                s = (j.view(1, 3, -1).permute(0, 2, 1) * self.stdval).numpy().squeeze()
+                chir_test = self._ca_chirality(
+                    s[idx[:, 0], :],
+                    s[idx[:, 1], :],
+                    s[idx[:, 2], :],
+                    s[idx[:, 3], :],
+                )
+                wrong_chir = chir_test < 0
+                results_decode.append(wrong_chir.sum())
+            return dict(decoded_inversions=np.asarray(results_decode))
+
+
     def get_bondlengths(self, key):
         """
         Get backbone bond lengths of a dataset and its decoded counterpart.
-
         """
         # Get the atomic indices to calculate different types of bond lengths
         if set(["CA", "C", "N", "CB"]).issubset(set(self.atoms)):
-            indices = {"N-Ca": [], "Ca-C": [], "C-N": [], "CA-CB": []}
+            indices = {"N-CA": [], "CA-C": [], "C-N": [], "CA-CB": []}
         elif set(["CA", "C", "N"]).issubset(set(self.atoms)):
-            indices = {"N-Ca": [], "Ca-C": [], "C-N": []}
+            indices = {"N-CA": [], "CA-C": [], "C-N": []}
         else:
             raise ValueError("Selected atoms should contain at least N, CA, and C.")
 
@@ -277,19 +350,17 @@ class MolearnAnalysis:
             resname = mol_df[mol_df["resid"] == resid].resname.unique()[0]
 
             N_id = mol_df[(mol_df["resid"] == resid) & (mol_df["name"] == "N")].index[0]
-            CA_id = mol_df[(mol_df["resid"] == resid) & (mol_df["name"] == "CA")].index[
-                0
-            ]
+            CA_id = mol_df[(mol_df["resid"] == resid) & (mol_df["name"] == "CA")].index[0]
             C_id = mol_df[(mol_df["resid"] == resid) & (mol_df["name"] == "C")].index[0]
-            indices["N-Ca"].append((N_id, CA_id))
-            indices["Ca-C"].append((CA_id, C_id))
+            indices["N-CA"].append((N_id, CA_id))
+            indices["CA-C"].append((CA_id, C_id))
             if resname != "GLY" and "CB" in self.atoms:
                 CB_id = mol_df[
                     (mol_df["resid"] == resid) & (mol_df["name"] == "CB")
                 ].index[0]
-                indices["Ca-Cb"].append((CA_id, CB_id))
+                indices["CA-CB"].append((CA_id, CB_id))
 
-            if resid != len(mol_df.resid.unique()):
+            if resid != max(mol_df.resid.unique()):
                 next_N_id = mol_df[
                     (mol_df["resid"] == (resid + 1)) & (mol_df["name"] == "N")
                 ].index[0]
@@ -515,46 +586,34 @@ structure you want, e.g., analyser.scan_error_from_target(key, index=0)"
 
         return self.dope_score_class.get_score(f * self.stdval, refine=refine, **kwargs)
 
-    def _chirality_whole(
-        self,
-        n: np.ndarray[tuple[int,], np.dtype[np.float64]],
-        ca: np.ndarray[tuple[int,], np.dtype[np.float64]],
-        c: np.ndarray[tuple[int,], np.dtype[np.float64]],
-        cb: np.ndarray[tuple[int,], np.dtype[np.float64]],
-    ):
+    @staticmethod
+    def _ca_chirality(n, ca, c, cb):
         """
-        check chirality for a set o amino acid
+        Compute the chirality of Cα atoms given vectors of coordinates of N, Cα, C, and Cβ atoms.
+
+        :param numpy.array n: Cartesian coordinates of N atom
+        :param numpy.array ca: Cartesian coordinates of CA atom
+        :param numpy.array c: Cartesian coordinates of C atom
+        :param numpy.array cb: Cartesian coordinates of CB atom
         """
         ca_n = n - ca
         ca_c = c - ca
         cb_ca = cb - ca
         normal = np.cross(ca_n, ca_c)
         dot = np.einsum("ij,ij->i", normal, cb_ca)
-        # same but more calculations
-        # dot = np.diagonal(np.matmul(normal, cb_ca.T))
+
         return dot
 
     @staticmethod
-    def _ca_chirality(N, CA, C, CB):
-        """
-        Calculate chirality of Cα atom in a protein residue.
-
-        :param N: Cartesian coordinates of N atom
-        :param CA: Cartesian coordinates of CA atom
-        :param C: Cartesian coordinates of C atom
-        :param CB: Cartesian coordinates of CB atom
-        :return: dot product of normal vector to the plane defined by N, CA, and C
-        """
-        ca_c = C - CA
-        ca_cb = CB - CA
-        ca_n = N - CA
-        normal = np.cross(ca_n, ca_c)
-        dot_product = np.dot(normal, ca_cb)
-        # L if dot_product > 0 else D
-        return dot_product
-
-    @staticmethod
     def _bond_lengths(crds, indices):
+        """
+        Calculate bond lengths between pairs of atoms.
+
+        :param numpy.array crds: Cartesian coordinates of all atoms
+        :param list indices: list of tuples containing pairs of atom indices
+
+        :return numpy.array: bond lengths
+        """
         bond_lengths = [
             np.linalg.norm(crds[:, :, i[0]] - crds[:, :, i[1]], axis=1) for i in indices
         ]
@@ -671,63 +730,32 @@ structure you want, e.g., analyser.scan_error_from_target(key, index=0)"
         """
         Calculate chiralities of Cα atoms on a grid sampling the latent space.
         Requires a grid system to be defined via a prior call to :func:`set_dataset <molearn.analysis.MolearnAnalysis.setup_grid>`.
-        Requires the atom selection includes Cα atoms.
-        Saves a surface in memory, with key 'CA_chirality'.
-
-        :return: Number of CA inversions on the latent space NxN surface
-        :return: x-axis values
-        :return: y-axis values
+        Requires the atom selection to include Cα atoms.
+        Saves a surface in memory, with key 'Chirality'.
         """
-        assert set(["CA", "C", "N", "CB"]).issubset(
-            set(self.atoms)
-        ), "Atom selection shoud at least include CA, C, N, and CB"
 
-        key = "Chirality"
-        if key not in self.surfaces:
-            assert (
-                "grid" in self._encoded
-            ), "make sure to call MolearnAnalysis.setup_grid first"
-            decoded = self.get_decoded("grid")
+        assert (
+            "grid" in self._encoded
+        ), "make sure to call MolearnAnalysis.setup_grid first"
+        inversions = self.get_inversions("grid")['decoded_inversions']
+        self.surfaces["Chirality"] = np.array(inversions).reshape(
+            self.n_samples, self.n_samples
+        )
 
-            mol_df = self.mol.data
+    def scan_bondlength(self):
+        """
+        Calculate bond lengths on a grid sampling the latent space.
+        Requires a grid system to be defined via a prior call to :func:`set_dataset <molearn.analysis.MolearnAnalysis.setup_grid>`.
+        Saves multiple surfaces, depending on atom selection, of bondlengths mean and std in memory. 
+        """
 
-            # Get atom indices
-            indices = dict()
-            for resid in mol_df.resid.unique():
-                resname = mol_df[mol_df["resid"] == resid].resname.unique()[0]
-                if not resname == "GLY":
-                    N_id = mol_df[
-                        (mol_df["resid"] == resid) & (mol_df["name"] == "N")
-                    ].index[0]
-                    C_id = mol_df[
-                        (mol_df["resid"] == resid) & (mol_df["name"] == "C")
-                    ].index[0]
-                    CA_id = mol_df[
-                        (mol_df["resid"] == resid) & (mol_df["name"] == "CA")
-                    ].index[0]
-                    CB_id = mol_df[
-                        (mol_df["resid"] == resid) & (mol_df["name"] == "CB")
-                    ].index[0]
-                    indices[resname + str(resid)] = (N_id, CA_id, C_id, CB_id)
-
-            idx = np.asarray(list(indices.values()))
-            results = []
-            for j in decoded:
-                s = (j.view(1, 3, -1).permute(0, 2, 1) * self.stdval).numpy().squeeze()
-                chir_test = self._chirality_whole(
-                    s[idx[:, 0], :],
-                    s[idx[:, 1], :],
-                    s[idx[:, 2], :],
-                    s[idx[:, 3], :],
-                )
-                wrong_chir = chir_test < 0
-                results.append(wrong_chir.sum())
-            results = np.asarray(results)
-            self.surfaces[key] = np.array(results).reshape(
-                self.n_samples, self.n_samples
-            )
-
-        return self.surfaces[key], self.xvals, self.yvals
+        assert (
+            "grid" in self._encoded
+        ), "make sure to call MolearnAnalysis.setup_grid first"
+        bond_lengths_dict = self.get_bondlengths(key='grid')
+        for k, v in bond_lengths_dict['decoded_bondlen'].items():
+            self.surfaces[k] = v.mean(axis=0).reshape(self.n_samples, self.n_samples)
+            self.surfaces[k+'_std'] = v.std(axis=0).reshape(self.n_samples, self.n_samples)
 
     def scan_custom(self, fct, params, key):
         """
@@ -809,7 +837,7 @@ structure you want, e.g., analyser.scan_error_from_target(key, index=0)"
         pdb_file: str,
     ) -> None:
         """
-        create pdb file for given coordinates
+        Create pdb file for given coordinates
 
         :param np.ndarray[tuple[int, int], np.dtype[np.float64]] prot_coords: coordinates of all atoms of a protein
         :param str pdb_file: path where the pdb file should be stored
@@ -878,3 +906,13 @@ structure you want, e.g., analyser.scan_error_from_target(key, index=0)"
             for key, value in dict(self.__dict__).items()
             if key not in ["dope_score_class", "ramachandran_score_class"]
         }
+
+    @property
+    def datasets(self):
+        for key, value in self._datasets.items():
+            print(key, value.shape)
+    
+    @property
+    def encoded(self):
+        for key, value in self._encoded.items():
+            print(key, value.shape)

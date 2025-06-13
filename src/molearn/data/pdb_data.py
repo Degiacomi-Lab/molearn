@@ -45,9 +45,10 @@ class PDBData:
         """
         Create object enabling the manipulation of multi-PDB files into a dataset suitable for training.
 
-        :param filename: None, str or list of strings. If not None, :func:`import_pdb <molearn.data.PDBData.import_pdb>` is called on each filename provided.
-        :param fix_terminal: if True, calls :func:`fix_terminal <molearn.data.PDBData.fix_terminal>` after import, and before atomselect
-        :param atoms: if not None, calls :func:`atomselect <molearn.data.PDBData.atomselect>`
+        :param None | str | list[str] filename: If not None, :func:`import_pdb <molearn.data.PDBData.import_pdb>` is called on each filename provided.
+        :param None | str topology: If not None, :func:`import_pdb <molearn.data.PDBData.import_pdb>` is called with the topology file.
+        :param bool fix_terminal: If True, calls :func:`fix_terminal <molearn.data.PDBData.fix_terminal>` after import, and before atomselect
+        :param list[str] atoms: If not None, calls :func:`atomselect <molearn.data.PDBData.atomselect>`
         """
 
         self.filename = filename
@@ -70,7 +71,7 @@ class PDBData:
         if isinstance(filename, list) and topology is None:
             first_universe = mda.Universe(filename[0])
             self._mol = mda.Universe(first_universe._topology, filename)
-        if isinstance(filename, list) and topology is not None:
+        elif isinstance(filename, list) and topology is not None:
             first_universe = mda.Universe(topology, filename[0])
             self._mol = mda.Universe(first_universe._topology, filename)
         elif topology is None:
@@ -92,7 +93,7 @@ class PDBData:
 
     def atomselect(self, atoms: str | list[str]):
         """
-        Select atoms of interest
+        Select atoms used for training.
 
         :param str | list[str] atoms: if str then should be used with the MDAnalysis atom selection syntax
                     `https://userguide.mdanalysis.org/1.1.1/selections.html`
@@ -215,19 +216,13 @@ class PDBData:
         batch_size,
         validation_split=0.1,
         pin_memory=True,
-        dataset_sample_size=-1,
         manual_seed=None,
-        shuffle=True,
-        sampler=None,
     ):
         """
-        :param batch_size:
-        :param validation_split:
-        :param pin_memory:
-        :param dataset_sample_size:
-        :param manual_seed:
-        :param shuffle:
-        :param sampler:
+        :param int batch_size: size of the training batches
+        :param float validation_split: ratio of data to randomly assigned as validation
+        :param bool pin_memory: if True, pin memory for the dataloader
+        :param int | None manual_seed: 
         :return: `torch.utils.data.DataLoader` for training set
         :return: `torch.utils.data.DataLoader` for validation set
         """
@@ -293,7 +288,7 @@ class PDBData:
 
     def only_test(self):
         """
-        prepare a datset without spliting it into training and validation dataset
+        Prepare a datset without spliting it into training and validation dataset
         """
         if not hasattr(self, "dataset"):
             self.prepare_dataset()
@@ -329,14 +324,13 @@ class PDBData:
                 _valid_size = validation_split * _train_size
             else:
                 _valid_size = valid_size
-        from torch import randperm
 
         if manual_seed is not None:
-            indices = randperm(
+            indices = torch.randperm(
                 len(self.dataset), generator=torch.Generator().manual_seed(manual_seed)
             )
         else:
-            indices = randperm(len(self.dataset))
+            indices = torch.randperm(len(self.dataset))
 
         self.indices = indices
         train_dataset = dataset[indices[:_train_size]]

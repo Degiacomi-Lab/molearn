@@ -5,27 +5,31 @@ on: [push]
 jobs:
   build-linux:
     runs-on: ubuntu-latest
-    strategy:
-      max-parallel: 5
+    defaults:
+      run:
+        shell: bash -l {0}
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python 3.8
-      uses: actions/setup-python@v3
-      with:
-        python-version: '3.8'
-    - name: Add conda to system path
-      run: |
-        # $CONDA is an environment variable pointing to the root of the miniconda directory
-        echo $CONDA/bin >> $GITHUB_PATH
-    - name: Install dependencies
-      run: |
-        conda install -y python=3.8
-        conda env update --file environment.yml --name base
-    - name: Test
-      run: |
-        cd test
-        python test_openmm_plugin.py
-        python test_pdbdata.py
-        python test_trainer.py
+      - uses: actions/checkout@v4
 
+      - name: Set up conda + mamba
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          python-version: '3.11'
+          activate-environment: base
+          mamba-version: '*'
+          channels: conda-forge,defaults
+          channel-priority: strict
+          auto-update-conda: false
+          remove-profiles: true
+          conda-solver: libmamba
+          clean-patched-environment-file: true
+          environment-file: environment.yml
+          run-post: true
+
+      - name: Test
+        run: |
+          cd test
+          python test_openmm_plugin.py
+          python test_pdbdata.py
+          python test_trainer.py

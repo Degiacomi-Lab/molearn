@@ -32,7 +32,7 @@ class Trainer:
 
     """
 
-    def __init__(self, device=None, log_filename="log_file.dat", json_log=False):
+    def __init__(self, device=None, json_log=False):
         """
         :param torch.Device device: if not given will be determinined automatically based on torch.cuda.is_available()
         :param str log_filename: (default: 'default_log_filename.json') file used to log outputs to
@@ -52,7 +52,7 @@ class Trainer:
         self.epoch = 0
         self.scheduler = None
         self.verbose = True
-        self.log_filename = "default_log_filename.csv"
+        self.log_filename = None
         self.scheduler_key = None
         self.json_log = json_log
 
@@ -224,12 +224,7 @@ class Trainer:
         self.prepare_logs(
             log_filename if log_filename is not None else self.log_filename, log_folder
         )
-        # if log_filename is not None:
-        #    self.log_filename = log_filename
-        #    if log_folder is not None:
-        #        if not os.path.exists(log_folder):
-        #            os.mkdir(log_folder)
-        #        self.log_filename = log_folder+'/'+self.log_filename
+        
         if verbose is not None:
             self.verbose = verbose
 
@@ -237,13 +232,13 @@ class Trainer:
             try:
                 for epoch in range(self.epoch, max_epochs):
                     time1 = time.time()
-                    logs = self.train_epoch(epoch)
+                    logs = self.train_epoch()
                     time2 = time.time()
                     if allow_grad_in_valid:
-                        logs.update(self.valid_epoch(epoch))
+                        logs.update(self.valid_epoch())
                     else:
                         with torch.no_grad():
-                            logs.update(self.valid_epoch(epoch))
+                            logs.update(self.valid_epoch())
                     time3 = time.time()
                     self.scheduler_step(logs)
                     if self.best is None or self.best > logs["valid_loss"]:
@@ -302,6 +297,17 @@ class Trainer:
             self.optimiser.zero_grad()
             train_result = self.train_step(batch)
             train_result["loss"].backward()
+
+            # grad_norms = {}
+            # for name, param in self.autoencoder.named_parameters():
+            #     if param.grad is not None:
+            #         # Calculate the gradient norm for each parameter
+            #         grad_norm = param.grad.norm().item()
+            #         grad_norms[name] = grad_norm
+            # # Write grad_norms to a log file:
+            # with open("gradients_log.txt", "a") as log_file:
+            #     log_file.write(f"Epoch {epoch}, Batch {i}: {grad_norms}\n")
+
             self.optimiser.step()
             if i == 0:
                 results = {
@@ -508,7 +514,7 @@ class Trainer:
             _name = f"{checkpoint_folder}/last.ckpt"
         else:
             _name = f"{checkpoint_folder}/{checkpoint_name}"
-        checkpoint = torch.load(_name, map_location=self.device)
+        checkpoint = torch.load(_name, map_location=self.device, weights_only=False)
         if not hasattr(self, "autoencoder"):
             raise NotImplementedError(
                 "self.autoencoder does not exist, I have no way of knowing what network you want to load checkoint weights into yet, please set the network first"
@@ -526,7 +532,7 @@ class Trainer:
 
     def get_repeat(self, checkpoint_folder):
         if not os.path.exists(checkpoint_folder):
-            os.mkdir(checkpoint_folder)
+            os.makedirs(checkpoint_folder)
         if not hasattr(self, "_repeat"):
             self._repeat = 0
             for i in range(1000):
