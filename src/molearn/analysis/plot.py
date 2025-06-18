@@ -299,7 +299,6 @@ def plot_dope_hist(MA, plot_data=None, fname=None, refine=True, **kwargs):
             data.append([data_pair[1], data_pair[1]])
             palette.extend([decoded_color, decoded_color])
 
-
     fig, ax = plt.subplots(figsize=(10, 6))
     sns.violinplot(data=data,
                    split=True, inner="quart", 

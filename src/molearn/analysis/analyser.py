@@ -63,17 +63,16 @@ warnings.filterwarnings("ignore")
 
 class MolearnAnalysis:
     """
-    This class provides methods dedicated to the quality analysis of a
-    trained model.
+    This class provides methods dedicated to the quality analysis of a trained model.
     """
 
-    def __init__(self):
+    def __init__(self, batch_size=1, processes=1):
         self._datasets = {}
         self._encoded = {}
         self._decoded = {}
         self.surfaces = {}
-        self.batch_size = 1
-        self.processes = 1
+        self.batch_size = batch_size
+        self.processes = processes
 
     def set_network(self, network):
         """
@@ -83,16 +82,10 @@ class MolearnAnalysis:
         self.network.eval()
         self.device = next(network.parameters()).device
 
-    def get_dataset(self, key):
-        """
-        :param str key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
-        """
-        return self._datasets[key]
-
     def set_dataset(self, key, data, atomselect="protein"):
         """
-        :param data: :func:`PDBData <molearn.data.PDBData>` object containing atomic coordinates
         :param str key: label to be associated with data
+        :param data: :func:`PDBData <molearn.data.PDBData>` object containing atomic coordinates
         :param list/str atomselect: list of atom names to load, or 'protein' to indicate that all atoms are loaded.
         """
         if isinstance(data, str) and data.endswith(".pdb"):
@@ -104,30 +97,60 @@ class MolearnAnalysis:
         elif isinstance(data, PDBData):
             _data = data
         else:
-            raise NotImplementedError("data should be an PDBData instance")
+            raise ValueError(
+                "Data should be a PDBData object or a string with the path to a PDB file"
+            )
+        
+        if hasattr(self, "standardize"):
+            assert self.standardize == _data.standardize
+
+        if _data.dataset.shape[2] == 3:
+             _data.dataset.permute(0, 2, 1)
+
         for _key, dataset in self._datasets.items():
             assert (
-                dataset.shape[2] == _data.dataset.shape[2]
-                and dataset.shape[1] == _data.dataset.shape[1]
-            ), f"number of d.o.f differes: {key} has shape {_data.shape} while {_key} has shape {dataset.shape}"
-        self._datasets[key] = _data.dataset.float()
-        if not hasattr(self, "meanval"):
-            self.meanval = _data.mean
+                dataset['dataset'].shape[2] == _data.dataset.shape[2]
+                and dataset['dataset'].shape[1] == _data.dataset.shape[1]
+            ), f"number of d.o.f differes: {key} has shape {_data['dataset'].shape} while {_key} has shape {dataset.shape}"
+        
+        self._datasets[key]['dataset'] = _data.dataset.float()
+        self._datasets[key]['std'] = _data.std
+        self._datasets[key]['mean'] = _data.mean
+
+        if not hasattr(self, "standardize"):
+            self.standardize = _data.standardize
         if not hasattr(self, "stdval"):
-            self.stdval = _data.std
+            self.std = _data.std
+        if not hasattr(self, "meanval"):
+            self.mean = _data.mean
         if not hasattr(self, "atoms"):
             self.atoms = _data.atoms
         if not hasattr(self, "mol"):
             self.mol = _data.frame()
         if not hasattr(self, "shape"):
             self.shape = (_data.dataset.shape[1], _data.dataset.shape[2])
+        if not hasattr(self, "indices"):
+            self.indices = {k:v.numpy() for k, v in _data.indices.items()}
 
-    def get_encoded(self, key):
+    def get_dataset(self, key, unscale=False):
         """
         :param str key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
+        :param bool unscale: if True, return the dataset unscaled (i.e. with mean and std applied)
+        :return: `torch.Tensor` for dataset with the key
+        """
+        if unscale:
+            data = self._datasets[key]['dataset'] * self._datasets[key]['std'] + self._datasets[key]['mean']
+        else:
+            data = self._datasets[key]['dataset']
+        return data
+    
+    def get_encoded(self, key, update=False):
+        """
+        :param str key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
+        :param bool update: if True, re-encode and overwrite the existing data
         :return: array containing the encoding in latent space of dataset associated with key
         """
-        if key not in self._encoded:
+        if key not in self._encoded or update:
             assert key in self._datasets, (
                 f"key {key} does not exist in internal _datasets or in _latent_coords, add it with MolearnAnalysis.set_latent_coords(key, torch.Tensor) "
                 "or add the corresponding dataset with MolearnAnalysis.set_dataset(name, PDBDataset)"
@@ -143,7 +166,7 @@ class MolearnAnalysis:
                         dataset[i : i + batch_size].to(self.device)
                     ).cpu()
                     if encoded is None:
-                        encoded = torch.empty(dataset.shape[0], z.shape[1], z.shape[2])
+                        encoded = torch.empty(dataset.shape[0], z.shape[1])
                     encoded[i : i + batch_size] = z
                 self._encoded[key] = encoded
 
@@ -152,14 +175,18 @@ class MolearnAnalysis:
     def set_encoded(self, key, coords):
         """
         :param str key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
+        :param coords: coordinates in latent space to be associated with the key.
         """
         self._encoded[key] = torch.tensor(coords).float()
 
-    def get_decoded(self, key):
+    def get_decoded(self, key, update=False, unscale=False):
         """
         :param str key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
+        :param bool update: if True, re-decode and overwrite the existing data
+        :param bool unscale: if True, return the dataset unscaled (i.e. with mean and std applied)
+        :return: `torch.Tensor` for decoded dataset with the key
         """
-        if key not in self._decoded:
+        if key not in self._decoded or update:
             with torch.no_grad():
                 batch_size = self.batch_size
                 encoded = self.get_encoded(key)
@@ -169,13 +196,18 @@ class MolearnAnalysis:
                 ):
                     decoded[i : i + batch_size] = self.network.decode(
                         encoded[i : i + batch_size].to(self.device)
-                    )[:, :, : self.shape[1]].cpu()
+                    )[:, : self.shape[0], :].cpu()
                 self._decoded[key] = decoded
-        return self._decoded[key]
+        if unscale:
+            data = self._decoded[key] * self._datasets[key]['std'] + self._datasets[key]['mean']
+        else:
+            data = self._decoded[key]
+        return data
 
     def set_decoded(self, key, structures):
         """
         :param str key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
+        :param structures: `torch.Tensor` containing the decoded structures to be associated with the key.
         """
         self._decoded[key] = structures
 
@@ -193,36 +225,26 @@ class MolearnAnalysis:
         :param bool align: if True, the RMSD will be calculated by finding the optimal alignment between structures
         :return: 1D array containing the RMSD between input structures and their encoded-decoded counterparts
         """
-        dataset = self.get_dataset(key)
-        z = self.get_encoded(key)
-        decoded = self.get_decoded(key)
+        dataset = self.get_dataset(key, unscale=True) # [B, n, 3]
+        decoded = self.get_decoded(key, unscale=True)
 
         err = []
         m = deepcopy(self.mol)
         for i in range(dataset.shape[0]):
-            crd_ref = (
-                as_numpy(dataset[i].permute(1, 0).unsqueeze(0)) * self.stdval
-                + self.meanval
-            )
-            crd_mdl = (
-                as_numpy(decoded[i].permute(1, 0).unsqueeze(0))[:, : dataset.shape[2]]
-                * self.stdval
-                + self.meanval
-            )  # clip the padding of models
-            # use Molecule Biobox class to calculate RMSD
+            crd_dataset = as_numpy(dataset[i].unsqueeze(0))
+            crd_decoded = as_numpy(decoded[i].unsqueeze(0))
             if align:
-                m.coordinates = deepcopy(crd_ref)
+                m.coordinates = deepcopy(crd_dataset)
                 m.set_current(0)
-                m.add_xyz(crd_mdl[0])
+                m.add_xyz(crd_decoded[0])
                 rmsd = m.rmsd(0, 1)
             else:
+                # L2 norm in Cartesian coordinates
                 rmsd = np.sqrt(
-                    np.sum((crd_ref.flatten() - crd_mdl.flatten()) ** 2)
-                    / crd_mdl.shape[1]
-                )  # Cartesian L2 norm
-
+                    np.sum((crd_dataset.flatten() - crd_decoded.flatten()) ** 2)
+                    / crd_decoded.shape[1]
+                )
             err.append(rmsd)
-
         return np.array(err)
 
     def get_dope(self, key, refine=True, **kwargs):
@@ -231,8 +253,8 @@ class MolearnAnalysis:
         :param bool refine: if True, refine structures before calculating DOPE score
         :return: dictionary containing DOPE score of dataset, and its decoded counterpart
         """
-        dataset = self.get_dataset(key)
-        decoded = self.get_decoded(key)
+        dataset = self.get_dataset(key, unscale=True)
+        decoded = self.get_decoded(key, unscale=True)
 
         dataset_dope = self.get_all_dope_score(dataset, refine=refine, **kwargs)
         decoded_dope = self.get_all_dope_score(decoded, refine=refine, **kwargs)
@@ -246,7 +268,6 @@ class MolearnAnalysis:
 
         dataset = self.get_dataset(key)
         decoded = self.get_decoded(key)
-
         ramachandran = {
             f"dataset_{key}": value
             for key, value in self.get_all_ramachandran_score(dataset).items()
@@ -290,12 +311,12 @@ class MolearnAnalysis:
         idx = np.asarray(list(indices.values()))
 
         if key in self._datasets.keys():
-            dataset = self.get_dataset(key) * self.stdval + self.meanval
-            decoded = self.get_decoded(key) * self.stdval + self.meanval
+            dataset = self.get_dataset(key, unscale=True)
+            decoded = self.get_decoded(key, unscale=True)
             results_dataset = []
             results_decode = []
             for j in dataset:
-                s = (j.view(1, 3, -1).permute(0, 2, 1) * self.stdval).numpy().squeeze()
+                s = (j.view(1, -1, 3)).numpy().squeeze()
                 chir_test = self._ca_chirality(
                     s[idx[:, 0], :],
                     s[idx[:, 1], :],
@@ -305,7 +326,7 @@ class MolearnAnalysis:
                 wrong_chir = chir_test < 0
                 results_dataset.append(wrong_chir.sum())
             for j in decoded:
-                s = (j.view(1, 3, -1).permute(0, 2, 1) * self.stdval).numpy().squeeze()
+                s = (j.view(1, -1, 3)).numpy().squeeze()
                 chir_test = self._ca_chirality(
                     s[idx[:, 0], :],
                     s[idx[:, 1], :],
@@ -318,10 +339,10 @@ class MolearnAnalysis:
                         decoded_inversions=np.asarray(results_decode))
 
         elif key in self._encoded.keys():
-            decoded = self.get_decoded(key) * self.stdval + self.meanval
+            decoded = self.get_decoded(key, unscale=True)
             results_decode = []
             for j in decoded:
-                s = (j.view(1, 3, -1).permute(0, 2, 1) * self.stdval).numpy().squeeze()
+                s = (j.view(1, -1, 3)).numpy().squeeze()
                 chir_test = self._ca_chirality(
                     s[idx[:, 0], :],
                     s[idx[:, 1], :],
@@ -368,8 +389,8 @@ class MolearnAnalysis:
 
         # Look for the key in self._datasets and self._encoded
         if key in self._datasets.keys():
-            dataset = self.get_dataset(key) * self.stdval + self.meanval
-            decoded = self.get_decoded(key) * self.stdval + self.meanval
+            dataset = self.get_dataset(key, unscale=True)
+            decoded = self.get_decoded(key, unscale=True)
             dataset_bondlen = {
                 k: MolearnAnalysis._bond_lengths(dataset, v) for k, v in indices.items()
             }
@@ -380,7 +401,7 @@ class MolearnAnalysis:
                 dataset_bondlen=dataset_bondlen, decoded_bondlen=decoded_bondlen
             )
         elif key in self._encoded.keys():
-            decoded = self.get_decoded(key) * self.stdval + self.meanval
+            decoded = self.get_decoded(key, unscale=True)
             decoded_bondlen = {
                 k: MolearnAnalysis._bond_lengths(decoded, v) for k, v in indices.items()
             }
@@ -389,6 +410,99 @@ class MolearnAnalysis:
             raise ValueError(
                 f"Key {key} not found in _datasets or _encoded. Please load the dataset or setup a grid first."
             )
+        
+    def get_dihedrals(self, key):
+        if key in self._datasets.keys():
+            dataset = self.get_dataset(key, unscale=True)
+            decoded = self.get_decoded(key, unscale=True)
+            dataset_dihedrals = self._get_dihedrals(dataset)
+            decoded_dihedrals = self._get_dihedrals(decoded)
+            return dict(dataset_dihedrals=dataset_dihedrals, decoded_dihedrals=decoded_dihedrals)
+        elif key in self._encoded.keys():
+            decoded = self.get_decoded(key, unscale=True)
+            decoded_dihedrals = self._get_dihedrals(decoded)
+            return dict(decoded_dihedrals=decoded_dihedrals)
+        else:
+            raise ValueError(
+                f"Key {key} not found in _datasets or _encoded. Please load the dataset or setup a grid first."
+            )
+
+    def _get_dihedrals(self, data):
+        N = data[:, self.indices['N'], :].numpy()
+        CA = data[:, self.indices['CA'], :].numpy()
+        C = data[:, self.indices['C'], :].numpy()
+        C_prev = np.roll(C, shift=1, axis=1)
+        C_next = np.roll(C, shift=-1, axis=1)
+        N_next = np.roll(N, shift=-1, axis=1)
+
+        # φ: C_{i-1}, N_i, CA_i, C_i
+        phi = self._dihedrals(C_prev[:, 1:], N[:, 1:], CA[:, 1:], C[:, 1:])
+        # ψ: N_i, CA_i, C_i, N_{i+1}
+        psi = self._dihedrals(N[:, :-1], CA[:, :-1], C[:, :-1], N_next[:, :-1])
+        # ω: C_i, N_{i+1}, CA_{i+1}, C_{i+1}
+        omega = self._dihedrals(C[:, :-1], N_next[:, :-1], CA[:, :-1], C_next[:, :-1])
+        dihedrals = {"Phi": phi, "Psi": psi, "Omega": omega}
+
+        if 'CB' in self.atoms:
+            valid = (self.indices['CB'] > 0)
+            CB_atoms = self.indices['CB'][valid]
+            CB = data[:, CB_atoms, :].numpy()
+            N_v  = N[:,  valid, :]
+            CA_v = CA[:, valid, :]
+            C_v  = C[:,  valid, :]
+            imp = self._dihedrals(N_v, CA_v, C_v, CB)
+            dihedrals['Improper Torsion'] = imp
+
+        return dihedrals
+    
+    def get_angles(self, key):
+        if key in self._datasets.keys():
+            dataset = self.get_dataset(key, unscale=True)
+            decoded = self.get_decoded(key, unscale=True)
+            dataset_angles = self._get_angles(dataset)
+            decoded_angles = self._get_angles(decoded)
+            return dict(dataset_angles=dataset_angles, decoded_angles=decoded_angles)
+        elif key in self._encoded.keys():
+            decoded = self.get_decoded(key, unscale=True)
+            decoded_angles = self._get_angles(decoded)
+            return dict(decoded_angles=decoded_angles)
+        else:
+            raise ValueError(
+                f"Key {key} not found in _datasets or _encoded. Please load the dataset or setup a grid first."
+            )
+
+    def _get_angles(self, data):
+        N = data[:, self.indices['N'], :].numpy()
+        CA = data[:, self.indices['CA'], :].numpy()
+        C = data[:, self.indices['C'], :].numpy()
+        O = data[:, self.indices['O'], :].numpy()
+        N_next = np.roll(N, shift=-1, axis=1)
+        CA_next = np.roll(CA, shift=-1, axis=1)
+
+        N_CA_C = self._angles(N, CA, C)
+        CA_C_N_next = self._angles(CA[:, :-1], C[:, :-1], N_next[:, :-1])
+        C_N_next_CA_next = self._angles(C[:, :-1], N_next[:, :-1], CA_next[:, :-1])
+        CA_C_O = self._angles(CA, C, O)
+        O_C_N_next = self._angles(O[:, :-1], C[:, :-1], N_next[:, :-1])
+        angles = {
+            "N-CA-C": N_CA_C,
+            "CA-C-N": CA_C_N_next,
+            "C-N-CA": C_N_next_CA_next,
+            "CA-C-O": CA_C_O,
+            "O-C-N": O_C_N_next,
+        }
+        if 'CB' in self.atoms:
+            valid = (self.indices['CB'] > 0)
+            CB_atoms = self.indices['CB'][valid]
+            CB = data[:, CB_atoms, :].numpy()
+            N_v  = N[:,  valid, :]
+            CA_v = CA[:, valid, :]
+            C_v  = C[:,  valid, :]
+            N_CA_CB = self._angles(N_v, CA_v, CB)
+            CA_CB_C = self._angles(CA_v, CB, C_v)
+            angles['N-CA-CB'] = N_CA_CB
+            angles['CA-CB-C'] = CA_CB_C
+        return angles
 
     def setup_grid(self, samples=64, bounds_from=None, bounds=None, padding=0.1):
         """
@@ -467,9 +581,9 @@ class MolearnAnalysis:
                 "grid" in self._encoded
             ), "make sure to call MolearnAnalysis.setup_grid first"
             target = (
-                self.get_dataset(key)
+                self.get_dataset(key, unscale=True)
                 if index is None
-                else self.get_dataset(key)[index].unsqueeze(0)
+                else self.get_dataset(key, unscale=True)[index].unsqueeze(0)
             )
             if target.shape[0] != 1:
                 msg = f"dataset {key} shape is {target.shape}. \
@@ -480,15 +594,15 @@ structure you want, e.g., analyser.scan_error_from_target(key, index=0)"
 
             decoded = self.get_decoded("grid")
             if align:
-                crd_ref = as_numpy(target.permute(0, 2, 1)) * self.stdval
-                crd_mdl = as_numpy(decoded.permute(0, 2, 1)) * self.stdval
+                crd_ref = as_numpy(target)
+                crd_mdl = as_numpy(decoded)
                 m = deepcopy(self.mol)
                 m.coordinates = np.concatenate([crd_ref, crd_mdl])
                 m.set_current(0)
                 rmsd = np.array([m.rmsd(0, i) for i in range(1, len(m.coordinates))])
             else:
                 rmsd = (
-                    (((decoded - target) * self.stdval) ** 2)
+                    ((decoded - target) ** 2)
                     .sum(axis=1)
                     .mean(axis=-1)
                     .sqrt()
@@ -519,10 +633,9 @@ structure you want, e.g., analyser.scan_error_from_target(key, index=0)"
             ), "make sure to call MolearnAnalysis.setup_grid first"
             decoded = self.get_decoded("grid")  # decode grid
             # self.set_dataset('grid_decoded', decoded)   # add back as dataset w. different name
-            self._datasets["grid_decoded"] = decoded
-            decoded_2 = self.get_decoded(
-                "grid_decoded"
-            )  # encode, and decode a second time
+            self._datasets["grid_decoded"]["dataset"] = decoded
+            # encode, and decode a second time
+            decoded_2 = self.get_decoded("grid_decoded")
             grid = self.get_encoded("grid")  # retrieve original grid
             grid_2 = self.get_encoded("grid_decoded")  # retrieve decoded encoded grid
 
@@ -561,9 +674,7 @@ structure you want, e.g., analyser.scan_error_from_target(key, index=0)"
         if isinstance(f, torch.Tensor):
             f = f.data.cpu().numpy()
 
-        return self.ramachandran_score_class.get_score(f * self.stdval)
-        # nf, na, no, nt = self.ramachandran_score_class.get_score(f*self.stdval)
-        # return {'favored':nf, 'allowed':na, 'outliers':no, 'total':nt}
+        return self.ramachandran_score_class.get_score(f)
 
     def _dope_score(self, frame, refine=True, **kwargs):
         """
@@ -584,8 +695,48 @@ structure you want, e.g., analyser.scan_error_from_target(key, index=0)"
         if isinstance(f, torch.Tensor):
             f = f.data.cpu().numpy()
 
-        return self.dope_score_class.get_score(f * self.stdval, refine=refine, **kwargs)
+        return self.dope_score_class.get_score(f, refine=refine, **kwargs)
+    
+    @staticmethod
+    def _angles(p0: np.ndarray, p1: np.ndarray, p2: np.ndarray) -> np.ndarray:
+        """
+        Calculate the angle between three points in 3D space using NumPy.
+        
+        :param np.ndarray p0: Cartesian coordinates of the first point (shape: (..., 3))
+        :param np.ndarray p1: Cartesian coordinates of the second point (shape: (..., 3))
+        :param np.ndarray p2: Cartesian coordinates of the third point (shape: (..., 3))
+        :return: Bond angle in radians (shape: (...,))
+        """
+        b0 = p0 - p1
+        b1 = p2 - p1
+        b0_norm = b0 / np.linalg.norm(b0, axis=-1, keepdims=True)
+        b1_norm = b1 / np.linalg.norm(b1, axis=-1, keepdims=True)
+        dot_product = np.einsum('...i,...i->...', b0_norm, b1_norm)
+        return np.arccos(dot_product)
 
+    @staticmethod
+    def _dihedrals(p0, p1, p2, p3):
+        """
+        Calculate the dihedral angle between four points in 3D space.
+
+        :param numpy.array p0: Cartesian coordinates of first point
+        :param numpy.array p1: Cartesian coordinates of second point
+        :param numpy.array p2: Cartesian coordinates of third point
+        :param numpy.array p3: Cartesian coordinates of fourth point
+        :return: dihedral angle in radians
+        """
+        b0 = p0 - p1
+        b1 = p2 - p1
+        b2 = p3 - p2
+        b1 /= np.linalg.norm(b1, axis=-1, keepdims=True)
+        v = b0 - np.sum(b0 * b1, axis=-1, keepdims=True) * b1
+        w = b2 - np.sum(b2 * b1, axis=-1, keepdims=True) * b1
+        v /= np.linalg.norm(v, axis=-1, keepdims=True)
+        w /= np.linalg.norm(w, axis=-1, keepdims=True)
+        x = np.sum(v * w, axis=-1)
+        y = np.sum(np.cross(b1, v), axis=-1) * np.sum(w, axis=-1)    
+        return np.arctan2(y, x)
+    
     @staticmethod
     def _ca_chirality(n, ca, c, cb):
         """
@@ -623,7 +774,8 @@ structure you want, e.g., analyser.scan_error_from_target(key, index=0)"
         """
         Calculate Ramachandran score of an ensemble of atomic conrdinates.
 
-        :param tensor:
+        :param tensor: `torch.Tensor` or `numpy.ndarray` with shape [B, N, 3] containing Cartesian coordinates of atoms.
+        :return: dictionary with keys 'favored', 'allowed', 'outliers', and 'total' containing arrays of Ramachandran scores
         """
         rama = dict(favored=[], allowed=[], outliers=[], total=[])
         results = []
@@ -641,7 +793,7 @@ structure you want, e.g., analyser.scan_error_from_target(key, index=0)"
         """
         Calculate DOPE score of an ensemble of atom coordinates.
 
-        :param tensor:
+        :param tensor: `torch.Tensor` or `numpy.ndarray` with shape [B, N, 3] containing Cartesian coordinates of atoms.
         :param bool refine: if True, return DOPE score of input and output structure after refinement
         """
         results = []
@@ -689,7 +841,7 @@ structure you want, e.g., analyser.scan_error_from_target(key, index=0)"
             assert (
                 "grid" in self._encoded
             ), "make sure to call MolearnAnalysis.setup_grid first"
-            decoded = self.get_decoded("grid")
+            decoded = self.get_decoded("grid") * self.stdval
             result = self.get_all_dope_score(decoded, refine=refine, **kwargs)
             if refine == "both":
                 self.surfaces[key] = as_numpy(
@@ -910,7 +1062,7 @@ structure you want, e.g., analyser.scan_error_from_target(key, index=0)"
     @property
     def datasets(self):
         for key, value in self._datasets.items():
-            print(key, value.shape)
+            print(key, value["dataset"].shape)
     
     @property
     def encoded(self):

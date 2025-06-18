@@ -41,18 +41,20 @@ radii = {
 
 
 class PDBData:
-    def __init__(self, filename=None, topology=None, fix_terminal=False, atoms=None):
+    def __init__(self, filename=None, topology=None, fix_terminal=False, atoms=None, standardize=True):
         """
         Create object enabling the manipulation of multi-PDB files into a dataset suitable for training.
 
-        :param None | str | list[str] filename: If not None, :func:`import_pdb <molearn.data.PDBData.import_pdb>` is called on each filename provided.
-        :param None | str topology: If not None, :func:`import_pdb <molearn.data.PDBData.import_pdb>` is called with the topology file.
-        :param bool fix_terminal: If True, calls :func:`fix_terminal <molearn.data.PDBData.fix_terminal>` after import, and before atomselect
-        :param list[str] atoms: If not None, calls :func:`atomselect <molearn.data.PDBData.atomselect>`
+        :param None | str | list[str] filename: if not None, :func:`import_pdb <molearn.data.PDBData.import_pdb>` is called on each filename provided.
+        :param None | str topology: if not None, :func:`import_pdb <molearn.data.PDBData.import_pdb>` is called with the topology file.
+        :param bool fix_terminal: if True, calls :func:`fix_terminal <molearn.data.PDBData.fix_terminal>` after import, and before atomselect
+        :param list[str] atoms: if not None, calls :func:`atomselect <molearn.data.PDBData.atomselect>`
+        :param bool standardize: if True, standardize the dataset by removing the mean and dividing by the standard deviation.
         """
 
         self.filename = filename
         self.topology = topology
+        self.standardize = standardize
         if filename is not None:
             self.import_pdb(filename, topology)
             if fix_terminal:
@@ -111,30 +113,68 @@ class PDBData:
 
     def prepare_dataset(self):
         """
-        Once all datasets have been loaded, normalise data and convert into `torch.Tensor` (ready for training)
+        Prepare dataset from the loaded trajectory data to create a standardized/unstandardized tensor.
         """
         if not hasattr(self, "dataset"):
             assert hasattr(
                 self, "_mol"
             ), "You need to call import_pdb before preparing the dataset"
 
+        # Get coordinates
         self.dataset = np.asarray(
             [self._mol.atoms.positions.astype(float) for _ in self._mol.trajectory]
         )
-        if not hasattr(self, "std"):
-            self.std = self.dataset.std()
-        if not hasattr(self, "mean"):
-            self.mean = self.dataset.mean()
-        self.dataset -= self.mean
-        self.dataset /= self.std
-        self.dataset = torch.from_numpy(self.dataset).float()
-        self.dataset = self.dataset.permute(0, 2, 1)
-        print(f"Dataset shape: {self.dataset.shape}")
-        print(f"mean: {str(self.mean)}\n std: {str(self.std)}")
 
+        # Get indices of atoms
+        n_indices = []
+        ca_indices = []
+        cb_indices = []
+        c_indices = []
+        o_indices = []
+        for i, atom in enumerate(self._mol.atoms):
+            if atom.name == 'N':
+                assert len(n_indices) == len(ca_indices) == len(c_indices) == len(o_indices)
+                if len(cb_indices) < len(n_indices):
+                    cb_indices.append(-1)        
+                n_indices.append(i)
+            elif atom.name == 'CA':
+                ca_indices.append(i)
+            elif atom.name == 'C':
+                c_indices.append(i)
+            elif atom.name == 'O':
+                o_indices.append(i)
+            elif atom.name == 'CB':
+                cb_indices.append(i)
+            else:
+                NameError(f"Unknown atom name: {atom.name}. Check atom selection.")
+        assert len(n_indices) == len(ca_indices) == len(c_indices) == len(o_indices)
+        if len(cb_indices) < len(ca_indices):
+            cb_indices.append(-1)
+        self.indices = {
+            "N": torch.as_tensor(n_indices,  dtype=torch.long),
+            "CA": torch.as_tensor(ca_indices,  dtype=torch.long),
+            "C": torch.as_tensor(c_indices,  dtype=torch.long),
+            "O": torch.as_tensor(o_indices,  dtype=torch.long),
+            "CB": torch.as_tensor(cb_indices,  dtype=torch.long),
+        }
+
+        # For models directly take Cartesian coordinates as input. Remove the mean and std 
+        if self.standardize:
+            if not hasattr(self, "std"):
+                self.std = self.dataset.std()
+            if not hasattr(self, "mean"):
+                self.mean = self.dataset.mean()
+            self.dataset = (self.dataset - self.mean)/self.std
+            self.dataset = torch.from_numpy(self.dataset).float()
+            print(f"mean: {str(self.mean)}\n std: {str(self.std)}")
+        else:
+            self.std = 1.0
+            self.mean = 0.0
+        print(f"Dataset shape: {self.dataset.shape}") # (frames, atoms, 3)
+            
     def get_atominfo(self):
         """
-        generate list of all atoms in dataset, where every line contains [atom name, residue name, resid]
+        Generate list of all atoms in dataset, where every line contains [atom name, residue name, resid]
         """
         if not hasattr(self, "atominfo"):
             assert hasattr(
@@ -149,7 +189,7 @@ class PDBData:
 
     def frame(self):
         """
-        return `biobox.Molecule` object with loaded data
+        Return `biobox.Molecule` object with loaded data
         """
         M = bb.Molecule()
         _ = self._mol.trajectory[0]
@@ -275,7 +315,7 @@ class PDBData:
         :return: :func:`PDBData <molearn.data.PDBData>` object corresponding to train set
         :return: :func:`PDBData <molearn.data.PDBData>` object corresponding to validation set
         """
-        # validation_split=0.1, valid_size=None, train_size=None, manual_seed = None):
+        # Deprecated. You should not use this method.
         train_dataset, valid_dataset = self.get_datasets(*args, **kwargs)
         train = PDBData()
         valid = PDBData()
@@ -286,25 +326,11 @@ class PDBData:
         valid.dataset = valid_dataset
         return train, valid
 
-    def only_test(self):
-        """
-        Prepare a datset without spliting it into training and validation dataset
-        """
-        if not hasattr(self, "dataset"):
-            self.prepare_dataset()
-        dataset = self.dataset.float()
-        self.indices = np.arange(len(dataset))
-        test = PDBData()
-        for key in ["_mol", "std", "mean", "filename"]:
-            setattr(test, key, getattr(self, key))
-        test.dataset = dataset
-        return test
-
     def get_datasets(
         self, validation_split=0.1, valid_size=None, train_size=None, manual_seed=None
     ):
         """
-        Create a training and validation set from the imported data
+        Create a training and validation set from the imported data.
 
         :param validation_split: ratio of data to randomly assigned as validation
         :param valid_size: if not None, specify number of train structures to be returned
