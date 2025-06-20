@@ -23,8 +23,8 @@ class Test_PDBData_Basics(unittest.TestCase):
         self,
     ):
         self.assertTrue(self.data.dataset.shape[0] == 16)
-        self.assertTrue(self.data.dataset.shape[1] == 3)
-        self.assertTrue(self.data.dataset.shape[2] == 3286)
+        self.assertTrue(self.data.dataset.shape[1] == 3286)
+        self.assertTrue(self.data.dataset.shape[2] == 3)
 
     def test_mean(self):
         self.assertIsInstance(self.data.mean, float)
@@ -36,7 +36,7 @@ class Test_PDBData_Basics(unittest.TestCase):
 
     def test_atominfo(self):
         atominfo = self.data.get_atominfo()
-        self.assertTrue(atominfo.shape[0] == self.data.dataset.shape[2])
+        self.assertTrue(atominfo.shape[0] == self.data.dataset.shape[1])
         self.assertTrue(atominfo.shape[1] == 3)
         # Are the types correct (str, str, int)
         self.assertTrue(
@@ -51,7 +51,7 @@ class Test_PDBData_Basics(unittest.TestCase):
     def test_frame(self):
         frame = self.data.frame()
         self.assertTrue(frame.coordinates.shape[0] == 1)
-        self.assertTrue(frame.coordinates.shape[1] == self.data.dataset.shape[2])
+        self.assertTrue(frame.coordinates.shape[1] == self.data.dataset.shape[1])
         self.assertTrue(frame.coordinates.shape[2] == 3)
 
     def test_get_dataloader(self):
@@ -64,10 +64,10 @@ class Test_PDBData_Basics(unittest.TestCase):
 
         self.assertTrue(train_batch[0].shape[0] == bs)
         self.assertTrue(valid_batch[0].shape[0] == bs)
-        self.assertTrue(train_batch[0].shape[1] == 3)
-        self.assertTrue(valid_batch[0].shape[1] == 3)
-        self.assertTrue(train_batch[0].shape[2] == self.data.dataset.shape[2])
-        self.assertTrue(valid_batch[0].shape[2] == self.data.dataset.shape[2])
+        self.assertTrue(train_batch[0].shape[2] == 3)
+        self.assertTrue(valid_batch[0].shape[2] == 3)
+        self.assertTrue(train_batch[0].shape[1] == self.data.dataset.shape[1])
+        self.assertTrue(valid_batch[0].shape[1] == self.data.dataset.shape[1])
 
     def test_split(self):
         train, valid = self.data.split(validation_split=0.5)
@@ -106,8 +106,8 @@ class Test_PDBData_atomselect_bb(Test_PDBData_Basics):
         self,
     ):
         self.assertTrue(self.data.dataset.shape[0] == 16)
-        self.assertTrue(self.data.dataset.shape[1] == 3)
-        self.assertTrue(self.data.dataset.shape[2] == 2145)
+        self.assertTrue(self.data.dataset.shape[1] == 2145)
+        self.assertTrue(self.data.dataset.shape[2] == 3)
 
     def test_atoms(self):
         atoms = self.data.atoms
@@ -126,8 +126,8 @@ class Test_PDBData_atomselect_no_hydrogen(Test_PDBData_Basics):
         self,
     ):
         self.assertTrue(self.data.dataset.shape[0] == 16)
-        self.assertTrue(self.data.dataset.shape[1] == 3)
-        self.assertTrue(self.data.dataset.shape[2] == 3286)
+        self.assertTrue(self.data.dataset.shape[1] == 3286)
+        self.assertTrue(self.data.dataset.shape[2] == 3)
 
     def test_atoms(self):
         atoms = self.data.atoms
