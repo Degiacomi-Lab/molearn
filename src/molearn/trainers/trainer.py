@@ -243,7 +243,7 @@ class Trainer:
 
     def run(
         self,
-        max_epochs=100,
+        epochs=100,
         log_filename="log.dat",
         log_folder="checkpoint_folder",
         checkpoint_folder="checkpoint_folder",
@@ -258,20 +258,19 @@ class Trainer:
         - :func:`Trainer.checkpoint <molearn.trainers.Trainer.checkpoint>`
         - :func:`Trainer.log <molearn.trainers.Trainer.log>`
 
-        :param int max_epochs: (default: 100). run until ``self.epoch`` matches max_epochs
+        :param int epochs: (default: 100). run this many epochs.
         :param str log_filename: (default: None) If log_filename already exists, all logs are appended to the existing file. Else new log file file is created.
         :param str log_folder: (default: None) If not None log_folder directory is created and the log file is saved within this folder
         :param int checkpoint_frequency: (default: 1) The frequency at which last.ckpt is saved. A checkpoint is saved every epoch if ``'valid_loss'`` is lower else when ``self.epoch`` is divisible by checkpoint_frequency.
         :param str checkpoint_folder: (default: 'checkpoint_folder') Where to save checkpoints.
-        :param int allow_n_failures: (default: 10) How many times should training be restarted on error. Each epoch is run in a try except block. If an error is raised training is continued from the best checkpoint.
         :param bool verbose: (default: None) set trainer.verbose. If True, the epoch logs will be printed as well as written to log_filename
-
         """
+        
         self.get_repeat(checkpoint_folder)
         log_file = self.prepare_logs(log_filename, log_folder)
         if verbose is not None:
             self.verbose = verbose
-        for i in range(self.epoch, self.epoch+max_epochs):
+        for i in range(epochs):
             time1 = time.time()
             logs = self.train_epoch()
             time2 = time.time()
@@ -369,7 +368,7 @@ class Trainer:
         """
         Called from :func:`Trainer.train_epoch <molearn.trainers.Trainer.train_epoch>`.
 
-        :param torch.Tensor batch: Tensor of shape [Batch size, 3, Number of Atoms]. A mini-batch of protein frames normalised. To recover original data multiple by ``self.std``.
+        :param torch.Tensor batch: Tensor of shape [Batch size, Number of Atoms, 3]. A mini-batch of protein frames normalised. To recover original data multiple by ``self.std``.
         :returns: Return loss. The dictionary must contain an entry with key ``'loss'`` that :func:`self.train_epoch <molearn.trainers.Trainer.train_epoch>` will call ``result['loss'].backwards()`` to obtain gradients.
         :rtype: dict
         """
@@ -383,14 +382,14 @@ class Trainer:
         Calculates the mean squared error loss for self.autoencoder.
         Encoded and decoded frames are saved in self._internal under keys ``encoded`` and ``decoded`` respectively should you wish to use them elsewhere.
 
-        :param torch.Tensor batch: Tensor of shape [Batch size, 3, Number of Atoms] A mini-batch of protein frames normalised. To recover original data multiple by ``self.std``.
+        :param torch.Tensor batch: Tensor of shape [Batch size, Number of Atoms, 3] A mini-batch of protein frames normalised. To recover original data multiple by ``self.std``.
         :returns: Return calculated mse_loss
         :rtype: dict
         """
         self._internal = {}
         encoded = self.autoencoder.encode(batch)
         self._internal["encoded"] = encoded
-        decoded = self.autoencoder.decode(encoded)[:, :, : batch.size(2)]
+        decoded = self.autoencoder.decode(encoded)[:, : batch.size(1), :]
         self._internal["decoded"] = decoded
         return dict(mse_loss=((batch - decoded) ** 2).mean())
 
@@ -423,6 +422,8 @@ class Trainer:
                 for key in valid_result.keys():
                     results[key] += valid_result[key].item() * len(batch)
             N += len(batch)
+        avg_results = {key: results[key] / N for key in results.keys()}
+        self.results_epoch = avg_results
         return {f"valid_{key}": results[key] / N for key in results.keys()}
 
     def valid_step(self, batch):

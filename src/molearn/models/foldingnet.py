@@ -244,15 +244,15 @@ class AutoEncoder(nn.Module):
         self.decoder = Decoder(*args, **kwargs)
 
     def encode(self, x):
-        return self.encoder(x)
+        return self.encoder(x.permute(0, 2, 1))
 
     def decode(self, x):
-        return self.decoder(x)
+        return self.decoder(x).permute(0, 2, 1)
 
     def forward(self, x):
-        x = self.encoder(x)
-        x = self.decoder(x)
-        return x
+        z = self.encoder(x)
+        x_rec = self.decoder(z)
+        return x_rec
 
 
 if __name__=='__main__':

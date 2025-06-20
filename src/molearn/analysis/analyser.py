@@ -113,6 +113,7 @@ class MolearnAnalysis:
                 and dataset['dataset'].shape[1] == _data.dataset.shape[1]
             ), f"number of d.o.f differes: {key} has shape {_data['dataset'].shape} while {_key} has shape {dataset.shape}"
         
+        self._datasets[key] = {}
         self._datasets[key]['dataset'] = _data.dataset.float()
         self._datasets[key]['std'] = _data.std
         self._datasets[key]['mean'] = _data.mean

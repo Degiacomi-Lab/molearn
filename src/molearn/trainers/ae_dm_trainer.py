@@ -195,8 +195,7 @@ class AE_DM_Trainer(Trainer):
         results.update(self.common_physics_step(batch, self._internal['encoded']))
         with torch.no_grad():
             self.phy_scale = self.physics_inter_weight * (self.dm_weight * results['dm_loss'])/(results['inter_physics_loss'] + 1e5)
-        final_loss = self._get_final_loss(**results)
-        results["loss"] = final_loss
+        results["loss"] = self._get_loss(**results)
         return results
 
     def valid_epoch(self):
@@ -227,13 +226,12 @@ class AE_DM_Trainer(Trainer):
         results["loss"] = final_loss
         return results
     
-    def _get_final_loss(self, **kwargs):
-        
-        final_loss = self.dm_weight * kwargs['dm_loss'] + \
-                     self.dihed_weight * kwargs['dihed_loss'] + \
-                     self.physics_weight * kwargs['physics_loss'] + \
-                     self.phy_scale * kwargs['inter_physics_loss']
-        return final_loss
+    def _get_loss(self, **kwargs):
+        loss = self.dm_weight * kwargs['dm_loss'] + \
+                self.dihed_weight * kwargs['dihed_loss'] + \
+                self.physics_weight * kwargs['physics_loss'] + \
+                self.phy_scale * kwargs['inter_physics_loss']
+        return loss
     
     def _get_dm_loss(self, dm1, dm2):
         """
