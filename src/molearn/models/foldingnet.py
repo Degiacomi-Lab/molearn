@@ -113,7 +113,7 @@ class Encoder(nn.Module):
         x = torch.max(x, dim=-1)[0].unsqueeze(-1)
 
         x = self.conv5(x)
-        return x
+        return x.squeeze(-1)
 
 
 class FoldingLayer(nn.Module):
@@ -250,8 +250,8 @@ class AutoEncoder(nn.Module):
         return self.decoder(x).permute(0, 2, 1)
 
     def forward(self, x):
-        z = self.encoder(x)
-        x_rec = self.decoder(z)
+        z = self.encode(x)
+        x_rec = self.decode(z)
         return x_rec
 
 

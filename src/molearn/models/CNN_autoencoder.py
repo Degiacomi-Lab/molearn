@@ -107,11 +107,28 @@ class AutoEncoder(nn.Module):
         self.decoder = db
         
     def encode(self, x):
+        """Encode coordinates shaped ``(batch, atoms, 3)`` or ``(batch, 3, atoms)``."""
+
+        if x.shape[2] == 3 and x.shape[1] != 3:
+            x = x.permute(0, 2, 1)
+
         for m in self.encoder:
-            x = m(x)
+            if isinstance(m, To2D):
+                x = m(x.unsqueeze(-1))
+            else:
+                x = m(x)
         return x
     
     def decode(self, x):
+        """Decode the latent representation back to ``(batch, atoms, 3)`` coordinates."""
+
         for m in self.decoder:
             x = m(x)
-        return x
+
+        return x.permute(0, 2, 1)
+
+    def forward(self, x):
+        """Full autoencoder pass with input/output shaped ``(batch, atoms, 3)``."""
+
+        z = self.encode(x)
+        return self.decode(z)

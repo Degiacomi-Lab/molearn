@@ -1,10 +1,10 @@
+import os
 import torch
 from molearn.loss_functions import openmm_energy
 from .trainer import Trainer
-import os
 
 
-soft_xml_script = """\
+SOFT_NB_XML = """\
 <ForceField>
  <Script>
 import openmm as mm
@@ -55,31 +55,58 @@ class OpenMM_Physics_Trainer(Trainer):
         :param \*\*kwargs: All aditional kwargs will be passed to :func:`openmm_energy <molearn.loss_functions.openmm_energy>`
 
         """
-        if xml_file is None and soft_NB:
-            print("using soft nonbonded forces by default")
-            from molearn.utils import random_string
+        self.physics_loss = self.setup_openmm_energy(
+            openmm_energy,
+            clamp_threshold=clamp_threshold,
+            clamp=clamp,
+            xml_file=xml_file,
+            soft_NB=soft_NB,
+            **kwargs,
+        )
 
-            tmp_filename = f"soft_nonbonded_{random_string()}.xml"
-            with open(tmp_filename, "w") as f:
-                f.write(soft_xml_script)
-            xml_file = ["amber14-all.xml", tmp_filename]
-            kwargs["remove_NB"] = True
-        elif xml_file is None:
-            xml_file = ["amber14-all.xml"]
-        if clamp:
-            clamp_kwargs = dict(max=clamp_threshold, min=-clamp_threshold)
-        else:
-            clamp_kwargs = None
-        self.physics_loss = openmm_energy(
+    def setup_openmm_energy(
+        self,
+        energy_builder,
+        *,
+        clamp_threshold: float = 1e8,
+        clamp: bool = False,
+        xml_file=None,
+        soft_NB: bool = True,
+        platform: str | None = None,
+        **kwargs,
+    ):
+        if not hasattr(self, "_data"):
+            raise RuntimeError("set_data must be called before configuring physics")
+
+        tmp_filename = None
+        xml_files = xml_file
+        if xml_files is None:
+            if soft_NB:
+                print("using soft nonbonded forces by default")
+                from molearn.utils import random_string
+
+                tmp_filename = f"soft_nonbonded_{random_string()}.xml"
+                with open(tmp_filename, "w") as handle:
+                    handle.write(SOFT_NB_XML)
+                xml_files = ["amber14-all.xml", tmp_filename]
+                kwargs.setdefault("remove_NB", True)
+            else:
+                xml_files = ["amber14-all.xml"]
+
+        clamp_kwargs = dict(max=clamp_threshold, min=-clamp_threshold) if clamp else None
+        energy = energy_builder(
             self.mol,
             self.std,
             clamp=clamp_kwargs,
-            platform="CUDA" if self.device == torch.device("cuda") else "Reference",
+            platform=platform or ("CUDA" if self.device.type == "cuda" else "Reference"),
             atoms=self._data.atoms,
-            xml_file=xml_file,
+            xml_file=xml_files,
             **kwargs,
         )
-        os.remove(tmp_filename)
+
+        if tmp_filename and os.path.exists(tmp_filename):
+            os.remove(tmp_filename)
+        return energy
 
     def common_physics_step(self, batch, latent):
         """

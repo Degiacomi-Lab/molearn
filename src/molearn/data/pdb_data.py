@@ -62,6 +62,140 @@ class PDBData:
             if atoms is not None:
                 self.atomselect(atoms=atoms)
 
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+
+    def _ensure_mol_loaded(self):
+        if not hasattr(self, "_mol"):
+            raise ValueError(
+                "No trajectory loaded. Call import_pdb before requesting data."
+            )
+
+    def _ensure_dataset_prepared(self):
+        if not hasattr(self, "dataset"):
+            self.prepare_dataset()
+        return self.dataset
+
+    def _prepare_coordinates(self) -> np.ndarray:
+        self._ensure_mol_loaded()
+        return np.asarray(
+            [self._mol.atoms.positions.astype(float) for _ in self._mol.trajectory]
+        )
+
+    def _compute_backbone_indices(self):
+        n_indices, ca_indices, cb_indices, c_indices, o_indices = [], [], [], [], []
+        for i, atom in enumerate(self._mol.atoms):
+            if atom.name == 'N':
+                assert len(n_indices) == len(ca_indices) == len(c_indices) == len(o_indices)
+                if len(cb_indices) < len(n_indices):
+                    cb_indices.append(-1)        
+                n_indices.append(i)
+            elif atom.name == 'CA':
+                ca_indices.append(i)
+            elif atom.name == 'C':
+                c_indices.append(i)
+            elif atom.name == 'O':
+                o_indices.append(i)
+            elif atom.name == 'CB':
+                cb_indices.append(i)
+            else:
+                NameError(f"Unknown atom name: {atom.name}. Check atom selection.")
+        assert len(n_indices) == len(ca_indices) == len(c_indices) == len(o_indices)
+        if len(cb_indices) < len(ca_indices):
+            cb_indices.append(-1)
+        self.indices = {
+            "N": torch.as_tensor(n_indices,  dtype=torch.long),
+            "CA": torch.as_tensor(ca_indices,  dtype=torch.long),
+            "C": torch.as_tensor(c_indices,  dtype=torch.long),
+            "O": torch.as_tensor(o_indices,  dtype=torch.long),
+            "CB": torch.as_tensor(cb_indices,  dtype=torch.long),
+        }
+        self.cb_valid_idx = self.indices["CB"][self.indices["CB"] >= 0]
+
+    def _standardise_coordinates(self, coords: np.ndarray) -> np.ndarray:
+        if self.standardize:
+            if not hasattr(self, "std"):
+                self.std = coords.std()
+            if not hasattr(self, "mean"):
+                self.mean = coords.mean()
+            return (coords - self.mean) / self.std
+        self.std = 1.0
+        self.mean = 0.0
+        return coords
+
+    def _resolve_split_sizes(
+        self,
+        total: int,
+        validation_split: float,
+        valid_size: int | None,
+        train_size: int | None,
+    ) -> tuple[int, int]:
+        if total <= 1:
+            raise ValueError("Dataset must contain at least two frames to split.")
+
+        if train_size is None and valid_size is None:
+            valid_size = max(1, int(round(total * validation_split)))
+            train_size = total - valid_size
+        elif train_size is None:
+            train_size = total - valid_size
+        elif valid_size is None:
+            valid_size = total - train_size
+
+        if train_size <= 0 or valid_size <= 0:
+            raise ValueError("Train and validation sizes must be positive.")
+        if train_size + valid_size > total:
+            raise ValueError("Requested split sizes exceed dataset length.")
+
+        return train_size, valid_size
+
+    def _get_split_indices(
+        self,
+        validation_split=0.1,
+        valid_size=None,
+        train_size=None,
+        manual_seed=None,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        dataset = self._ensure_dataset_prepared()
+        total = len(dataset)
+        train_size, valid_size = self._resolve_split_sizes(
+            total, validation_split, valid_size, train_size
+        )
+        generator = (
+            torch.Generator().manual_seed(manual_seed)
+            if manual_seed is not None
+            else None
+        )
+        indices = torch.randperm(total, generator=generator)
+        train_idx = indices[:train_size]
+        valid_idx = indices[train_size : train_size + valid_size]
+
+        self.train_indices = train_idx
+        self.valid_indices = valid_idx
+        self._split_permutation = indices
+        return train_idx, valid_idx
+
+    def analysis_bundle(self) -> dict:
+        """Convenience accessor used by analysis utilities."""
+
+        bundle = self.metadata().copy()
+        bundle.update({
+            "dataset": self._ensure_dataset_prepared(),
+            "mol": self.mol,
+        })
+        return bundle
+
+    def metadata(self) -> dict:
+        """Return a lightweight metadata dictionary for trainers and analysis tools."""
+
+        self._ensure_dataset_prepared()
+        return {
+            "mean": self.mean,
+            "std": self.std,
+            "atoms": self.atoms,
+            "indices": self.indices,
+        }
+
     def import_pdb(self, filename: str | list[str], topology: str | None = None):
         """
         Load one or multiple trajectory files
@@ -115,62 +249,15 @@ class PDBData:
         """
         Prepare dataset from the loaded trajectory data to create a standardized/unstandardized tensor.
         """
-        if not hasattr(self, "dataset"):
-            assert hasattr(
-                self, "_mol"
-            ), "You need to call import_pdb before preparing the dataset"
-
-        # Get coordinates
-        self.dataset = np.asarray(
-            [self._mol.atoms.positions.astype(float) for _ in self._mol.trajectory]
-        )
-
-        # Get indices of atoms
-        n_indices = []
-        ca_indices = []
-        cb_indices = []
-        c_indices = []
-        o_indices = []
-        for i, atom in enumerate(self._mol.atoms):
-            if atom.name == 'N':
-                assert len(n_indices) == len(ca_indices) == len(c_indices) == len(o_indices)
-                if len(cb_indices) < len(n_indices):
-                    cb_indices.append(-1)        
-                n_indices.append(i)
-            elif atom.name == 'CA':
-                ca_indices.append(i)
-            elif atom.name == 'C':
-                c_indices.append(i)
-            elif atom.name == 'O':
-                o_indices.append(i)
-            elif atom.name == 'CB':
-                cb_indices.append(i)
-            else:
-                NameError(f"Unknown atom name: {atom.name}. Check atom selection.")
-        assert len(n_indices) == len(ca_indices) == len(c_indices) == len(o_indices)
-        if len(cb_indices) < len(ca_indices):
-            cb_indices.append(-1)
-        self.indices = {
-            "N": torch.as_tensor(n_indices,  dtype=torch.long),
-            "CA": torch.as_tensor(ca_indices,  dtype=torch.long),
-            "C": torch.as_tensor(c_indices,  dtype=torch.long),
-            "O": torch.as_tensor(o_indices,  dtype=torch.long),
-            "CB": torch.as_tensor(cb_indices,  dtype=torch.long),
-        }
-
-        # For models directly take Cartesian coordinates as input. Remove the mean and std 
-        if self.standardize:
-            if not hasattr(self, "std"):
-                self.std = self.dataset.std()
-            if not hasattr(self, "mean"):
-                self.mean = self.dataset.mean()
-            self.dataset = (self.dataset - self.mean)/self.std
-            self.dataset = torch.from_numpy(self.dataset).float()
-            print(f"mean: {str(self.mean)}\n std: {str(self.std)}")
-        else:
-            self.std = 1.0
-            self.mean = 0.0
+        self._ensure_mol_loaded()
+        coords = self._prepare_coordinates()
+        self._compute_backbone_indices()
+        coords = self._standardise_coordinates(coords)
+        self.dataset = torch.from_numpy(coords).float()
+        self._atom_names = list(np.unique(self._mol.atoms.names))
+        print(f"mean: {self.mean}\n std: {self.std}")
         print(f"Dataset shape: {self.dataset.shape}") # (frames, atoms, 3)
+        return self.dataset
             
     def get_atominfo(self):
         """
@@ -266,41 +353,33 @@ class PDBData:
         :return: `torch.utils.data.DataLoader` for training set
         :return: `torch.utils.data.DataLoader` for validation set
         """
-        if not hasattr(self, "dataset"):
-            self.prepare_dataset()
-        valid_size = int(len(self.dataset) * validation_split)
-        train_size = len(self.dataset) - valid_size
-        dataset = torch.utils.data.TensorDataset(self.dataset.float())
-        if manual_seed is not None:
-            self.train_dataset, self.valid_dataset = torch.utils.data.random_split(
-                dataset,
-                [train_size, valid_size],
-                generator=torch.Generator().manual_seed(manual_seed),
-            )
-            self.train_dataloader = torch.utils.data.DataLoader(
-                self.train_dataset,
-                batch_size=batch_size,
-                pin_memory=pin_memory,
-                sampler=torch.utils.data.RandomSampler(
-                    self.train_dataset,
-                    generator=torch.Generator().manual_seed(manual_seed),
-                ),
-            )
-        else:
-            self.train_dataset, self.valid_dataset = torch.utils.data.random_split(
-                dataset, [train_size, valid_size]
-            )
-            self.train_dataloader = torch.utils.data.DataLoader(
-                self.train_dataset,
-                batch_size=batch_size,
-                pin_memory=pin_memory,
-                shuffle=True,
-            )
-        self.valid_dataloader = torch.utils.data.DataLoader(
-            self.valid_dataset,
+        dataset = self._ensure_dataset_prepared()
+        train_idx, valid_idx = self._get_split_indices(
+            validation_split=validation_split,
+            valid_size=None,
+            train_size=None,
+            manual_seed=manual_seed,
+        )
+
+        tensor_dataset = torch.utils.data.TensorDataset(dataset)
+        train_subset = torch.utils.data.Subset(tensor_dataset, train_idx.tolist())
+        valid_subset = torch.utils.data.Subset(tensor_dataset, valid_idx.tolist())
+
+        shuffle_train = manual_seed is None
+        self.train_dataset = dataset[train_idx]
+        self.valid_dataset = dataset[valid_idx]
+
+        self.train_dataloader = torch.utils.data.DataLoader(
+            train_subset,
             batch_size=batch_size,
             pin_memory=pin_memory,
-            shuffle=True,
+            shuffle=shuffle_train,
+        )
+        self.valid_dataloader = torch.utils.data.DataLoader(
+            valid_subset,
+            batch_size=batch_size,
+            pin_memory=pin_memory,
+            shuffle=False,
         )
         return self.train_dataloader, self.valid_dataloader
 
@@ -338,33 +417,22 @@ class PDBData:
         :param manual_seed: seed to initialise the random number generator used for splitting the dataset. Useful to replicate a specific split.
         :return: two `torch.Tensor`, for training and validation structures.
         """
-        if not hasattr(self, "dataset"):
-            self.prepare_dataset()
-        dataset = self.dataset.float()
-        if train_size is None:
-            _valid_size = int(len(self.dataset) * validation_split)
-            _train_size = len(self.dataset) - _valid_size
-        else:
-            _train_size = train_size
-            if valid_size is None:
-                _valid_size = validation_split * _train_size
-            else:
-                _valid_size = valid_size
-
-        if manual_seed is not None:
-            indices = torch.randperm(
-                len(self.dataset), generator=torch.Generator().manual_seed(manual_seed)
-            )
-        else:
-            indices = torch.randperm(len(self.dataset))
-
-        self.indices = indices
-        train_dataset = dataset[indices[:_train_size]]
-        valid_dataset = dataset[indices[_train_size : _train_size + _valid_size]]
+        dataset = self._ensure_dataset_prepared()
+        train_idx, valid_idx = self._get_split_indices(
+            validation_split=validation_split,
+            valid_size=valid_size,
+            train_size=train_size,
+            manual_seed=manual_seed,
+        )
+        train_dataset = dataset[train_idx]
+        valid_dataset = dataset[valid_idx]
         return train_dataset, valid_dataset
 
     @property
     def atoms(self):
+        self._ensure_dataset_prepared()
+        if hasattr(self, "_atom_names"):
+            return self._atom_names
         return list(np.unique(self.frame().data["name"].values))  # all the atoms
 
     @property

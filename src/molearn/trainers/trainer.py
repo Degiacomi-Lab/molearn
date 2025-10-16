@@ -5,8 +5,29 @@ import math
 import numpy as np
 import time
 import torch
+from dataclasses import dataclass, field
+from typing import Any, Callable, Dict, Optional, Tuple
 from molearn.data import PDBData
 import json
+
+
+@dataclass
+class TrainerProgress:
+    best_loss: Optional[float] = None
+    best_checkpoint: Optional[str] = None
+    epochs_since_improve: int = 0
+    converged: bool = False
+    repeat_index: int = 0
+
+
+@dataclass
+class FitResult:
+    epochs_run: int
+    best_loss: Optional[float]
+    best_checkpoint: Optional[str]
+    last_checkpoint: Optional[str]
+    log_file: Optional[str]
+    final_metrics: Dict[str, float] = field(default_factory=dict)
 
 
 class TrainingFailure(Exception):
@@ -22,14 +43,12 @@ class Trainer:
     :ivar torch.optim.optimiser optimiser: pytorch optimiser with access to self.autoencoder.parameters()
     :ivar torch.Device device: The device used for all operations.
     :ivar int epoch: the current epoch
-    :ivar float best: The best validation score corresponding to the current best checkpoint
-    :ivar float best_name: the filename corresponding to self.best
+    :ivar TrainerProgress progress: Tracks best validation loss, checkpoint metadata, and convergence state.
     :ivar float std: Standard deviation of the training dataset. Can be used to unscale structures produced by the network.
     :ivar float mol: Biobox molecule containing a single example frame of the protein being trained on. This can be used to save examples during training. It is also used to save a temporary pdb that may be used to initialise thirdparty packages.
     :ivar torch.Dataloader train_dataloader: Training data
     :ivar torch.Dataloader valid_dataloader: Validation data
-    :ivar _data: (:func:`molearn.data <molearn.data.PDBata>` Data object given to :func:`set_data <molearn.trainers.Trainer.set_data>`
-
+    :ivar _data: (:func:`molearn.data <molearn.data.PDData>` Data object given to :func:`set_data <molearn.trainers.Trainer.set_data>`
     """
 
     def __init__(self, device=None, json_log=False):
@@ -47,18 +66,231 @@ class Trainer:
         else:
             self.device = device
         print(f"device: {self.device}")
-        self.best = None
-        self.best_name = None
+        self.progress = TrainerProgress()
         self.epoch = 0
         self.verbose = True
         self.json_log = json_log
 
-        self.log_folder = 'fn_checkpoints'
-        self.log_filename = 'log.dat'
-        self.checkpoint_folder = 'fn_checkpoints'
+        self.log_folder = "fn_checkpoints"
+        self.log_filename = "log.dat"
+        self.checkpoint_folder = "fn_checkpoints"
 
-        self.has_converged = False
-        self._converge_counter = 0 
+        self._last_log_file = None
+        self._last_checkpoint = None
+
+    # ------------------------------------------------------------------
+    # Internal state helpers
+    # ------------------------------------------------------------------
+
+    def _reset_progress(self) -> None:
+        """Reset convergence tracking without touching the global epoch."""
+
+        self.progress.best_loss = None
+        self.progress.best_checkpoint = None
+        self.progress.epochs_since_improve = 0
+        self.progress.converged = False
+
+    def _ensure_setup(self) -> None:
+        """Validate that the trainer has all prerequisites before fitting."""
+
+        missing = []
+        if not hasattr(self, "autoencoder"):
+            missing.append("autoencoder")
+        if not hasattr(self, "optimiser"):
+            missing.append("optimiser")
+        if not hasattr(self, "train_dataloader"):
+            missing.append("train_dataloader")
+        if not hasattr(self, "valid_dataloader"):
+            missing.append("valid_dataloader")
+        if missing:
+            raise RuntimeError(
+                "Trainer is missing required attributes: " + ", ".join(missing)
+            )
+
+    def _run_phase(
+        self,
+        dataloader,
+        step_fn: Callable[[torch.Tensor], Dict[str, torch.Tensor]],
+        prefix: str,
+        *,
+        backward: bool,
+        dry_run: bool = False,
+    ) -> Tuple[Dict[str, float], Dict[str, float]]:
+        """Shared mini-batch loop for training/validation phases."""
+
+        totals: Dict[str, float] = {}
+        count = 0
+        for batch in dataloader:
+            batch = batch[0].to(self.device)
+            batch_size = batch.shape[0]
+            if backward and not dry_run:
+                self.optimiser.zero_grad()
+                outputs = step_fn(batch)
+                outputs["loss"].backward()
+                self.optimiser.step()
+            else:
+                with torch.no_grad():
+                    outputs = step_fn(batch)
+
+            for key, value in outputs.items():
+                totals[key] = totals.get(key, 0.0) + value.item() * batch_size
+            count += batch_size
+
+        if count == 0:
+            return {}, {}
+
+        averaged = {key: totals[key] / count for key in totals}
+        prefixed = {f"{prefix}_{key}": averaged[key] for key in averaged}
+        return prefixed, averaged
+
+    def _update_progress(self, loss: float, patience: Optional[int]) -> bool:
+        """Update best checkpoint tracking and convergence status."""
+
+        patience = patience if patience is not None else math.inf
+        if self.progress.best_loss is None or loss < self.progress.best_loss:
+            self.progress.best_loss = float(loss)
+            self.progress.epochs_since_improve = 0
+            is_best = True
+        else:
+            self.progress.epochs_since_improve += 1
+            if self.progress.epochs_since_improve > patience:
+                self.progress.converged = True
+            is_best = False
+        return is_best
+
+    def _train_loop(
+        self,
+        *,
+        max_epochs: Optional[int],
+        patience: Optional[int],
+        log_filename: str,
+        log_folder: str,
+        checkpoint_folder: str,
+        verbose: Optional[bool],
+    ) -> FitResult:
+        """Core optimisation loop used by all public run methods."""
+
+        if max_epochs is None and patience is None:
+            raise ValueError("Provide at least one stopping criterion (epochs or patience)")
+
+        self._ensure_setup()
+        self._reset_progress()
+        self.get_repeat(checkpoint_folder)
+        log_file = self.prepare_logs(log_filename, log_folder)
+        if verbose is not None:
+            self.verbose = verbose
+
+        epochs_run = 0
+        max_epochs = max_epochs if max_epochs is not None else math.inf
+        logs: Dict[str, float] = {}
+
+        while epochs_run < max_epochs and not self.progress.converged:
+            time1 = time.time()
+            train_logs, _ = self._run_phase(
+                self.train_dataloader,
+                self.train_step,
+                "train",
+                backward=True,
+                dry_run=False,
+            )
+            time2 = time.time()
+            valid_logs, raw_valid = self._run_phase(
+                self.valid_dataloader,
+                self.valid_step,
+                "valid",
+                backward=False,
+                dry_run=False,
+            )
+            time3 = time.time()
+
+            logs = {**train_logs, **valid_logs}
+            logs.update(
+                epoch=self.epoch,
+                train_seconds=time2 - time1,
+                valid_seconds=time3 - time2,
+            )
+
+            valid_loss = logs.get("valid_loss")
+            if valid_loss is None:
+                raise ValueError("valid_step must return a 'loss' entry")
+            is_best = self._update_progress(valid_loss, patience)
+
+            self.checkpoint(
+                self.epoch,
+                logs,
+                checkpoint_folder,
+                is_best,
+                has_converged=self.progress.converged,
+            )
+            time4 = time.time()
+
+            logs.update(
+                checkpoint_seconds=time4 - time3,
+                total_seconds=time4 - time1,
+            )
+            self.log(log_file, logs)
+
+            if np.isnan(logs["valid_loss"]) or np.isnan(logs["train_loss"]):
+                raise TrainingFailure("nan received, failing")
+
+            self.epoch += 1
+            epochs_run += 1
+            self.results_epoch = raw_valid
+
+            if max_epochs is math.inf and patience is None and epochs_run >= 1:
+                break  # safety valve when neither stopping criterion is provided
+
+        return FitResult(
+            epochs_run=epochs_run,
+            best_loss=self.progress.best_loss,
+            best_checkpoint=self.progress.best_checkpoint,
+            last_checkpoint=self._last_checkpoint,
+            log_file=log_file,
+            final_metrics=logs if "logs" in locals() else {},
+        )
+
+    # ------------------------------------------------------------------
+    # Public convenience API
+    # ------------------------------------------------------------------
+
+    def fit(
+        self,
+        data: PDBData,
+        autoencoder,
+        *,
+        autoencoder_kwargs: Optional[Dict[str, Any]] = None,
+        optimiser_kwargs: Optional[Dict[str, Any]] = None,
+        data_kwargs: Optional[Dict[str, Any]] = None,
+        epochs: Optional[int] = None,
+        patience: Optional[int] = None,
+        log_filename: str = "log.dat",
+        log_folder: str = "checkpoint_folder",
+        checkpoint_folder: str = "checkpoint_folder",
+        verbose: Optional[bool] = None,
+    ) -> FitResult:
+        """End-to-end helper that wires data, model, optimiser, and training.
+
+        :returns: :class:`FitResult` describing the executed training procedure.
+        """
+
+        if autoencoder_kwargs is None:
+            autoencoder_kwargs = {}
+        if optimiser_kwargs is None:
+            optimiser_kwargs = {}
+        if data_kwargs is None:
+            data_kwargs = {}
+
+        self.set_autoencoder(autoencoder, **autoencoder_kwargs)
+        self.set_data(data, **data_kwargs)
+        self.prepare_optimiser(**optimiser_kwargs)
+        return self._train_loop(
+            max_epochs=epochs,
+            patience=patience,
+            log_filename=log_filename,
+            log_folder=log_folder,
+            checkpoint_folder=checkpoint_folder,
+            verbose=verbose,
+        )
 
     def get_network_summary(self):
         """
@@ -193,6 +425,7 @@ class Trainer:
             log_filename = f"{log_folder}/{self.log_filename}_{self._repeat}"
         else:
             log_filename = f"{log_folder}/{self.log_filename}"
+        self._last_log_file = log_filename
         return log_filename
 
     def run_until_converge(
@@ -212,34 +445,16 @@ class Trainer:
         :param str log_folder: the folder in which the log file will be saved.
         :param str checkpoint_folder: the folder in which the checkpoint will be saved.
         :param bool verbose: if True, the epoch logs will be printed as well as written to log_filename
+    :returns: :class:`FitResult` with information about the training run.
         """
-
-        self.get_repeat(checkpoint_folder)
-        log_file = self.prepare_logs(log_filename, log_folder)
-        if verbose is not None:
-            self.verbose = verbose
-        while not self.has_converged:
-            time1 = time.time()
-            logs = self.train_epoch()
-            time2 = time.time()
-            with torch.no_grad():
-                logs.update(self.valid_epoch())
-            time3 = time.time()
-            valid_loss = logs['valid_loss']
-            is_best = self._get_train_status(patience, valid_loss)            
-            self.checkpoint(self.epoch, logs, checkpoint_folder, is_best, self.has_converged)
-            time4 = time.time()
-            logs.update(
-                epoch=self.epoch,
-                train_seconds=time2 - time1,
-                valid_seconds=time3 - time2,
-                checkpoint_seconds=time4 - time3,
-                total_seconds=time4 - time1,
-            )
-            self.log(log_file, logs)
-            if np.isnan(logs["valid_loss"]) or np.isnan(logs["train_loss"]):
-                raise TrainingFailure("nan received, failing")
-            self.epoch += 1
+        return self._train_loop(
+            max_epochs=None,
+            patience=patience,
+            log_filename=log_filename,
+            log_folder=log_folder,
+            checkpoint_folder=checkpoint_folder,
+            verbose=verbose,
+        )
 
     def run(
         self,
@@ -264,34 +479,16 @@ class Trainer:
         :param int checkpoint_frequency: (default: 1) The frequency at which last.ckpt is saved. A checkpoint is saved every epoch if ``'valid_loss'`` is lower else when ``self.epoch`` is divisible by checkpoint_frequency.
         :param str checkpoint_folder: (default: 'checkpoint_folder') Where to save checkpoints.
         :param bool verbose: (default: None) set trainer.verbose. If True, the epoch logs will be printed as well as written to log_filename
+    :returns: :class:`FitResult` with information about the training run.
         """
-        
-        self.get_repeat(checkpoint_folder)
-        log_file = self.prepare_logs(log_filename, log_folder)
-        if verbose is not None:
-            self.verbose = verbose
-        for i in range(epochs):
-            time1 = time.time()
-            logs = self.train_epoch()
-            time2 = time.time()
-            with torch.no_grad():
-                logs.update(self.valid_epoch())
-            time3 = time.time()
-            valid_loss = logs['valid_loss']
-            is_best = self._get_train_status(10**5, valid_loss)            
-            self.checkpoint(self.epoch, logs, checkpoint_folder, is_best, False)
-            time4 = time.time()
-            logs.update(
-                epoch=self.epoch,
-                train_seconds=time2 - time1,
-                valid_seconds=time3 - time2,
-                checkpoint_seconds=time4 - time3,
-                total_seconds=time4 - time1,
-            )
-            self.log(log_file, logs)
-            if np.isnan(logs["valid_loss"]) or np.isnan(logs["train_loss"]):
-                raise TrainingFailure("nan received, failing")
-            self.epoch += 1
+        return self._train_loop(
+            max_epochs=epochs,
+            patience=None,
+            log_filename=log_filename,
+            log_folder=log_folder,
+            checkpoint_folder=checkpoint_folder,
+            verbose=verbose,
+        )
 
     def dry_run(self,
                 log_filename="dry_run.dat",
@@ -303,7 +500,6 @@ class Trainer:
         :param str log_filename: the name of the log file.
         :param str log_folder: the folder in which the log file will be saved.
         """
-
         self.verbose = True
         self.autoencoder.eval()
         log_file = self.prepare_logs(log_filename, log_folder)
@@ -343,26 +539,14 @@ class Trainer:
         :rtype: dict
         """
         self.autoencoder.train()
-        N = 0
-        results = {}
-        for i, batch in enumerate(self.train_dataloader):
-            batch = batch[0].to(self.device)
-            if not dry_run:
-                self.optimiser.zero_grad()
-            train_result = self.train_step(batch)
-            if not dry_run:
-                train_result["loss"].backward()
-                self.optimiser.step()
-            if i == 0:
-                results = {
-                    key: value.item() * len(batch)
-                    for key, value in train_result.items()
-                }
-            else:
-                for key in train_result.keys():
-                    results[key] += train_result[key].item() * len(batch)
-            N += len(batch)
-        return {f"train_{key}": results[key] / N for key in results.keys()}
+        prefixed, _ = self._run_phase(
+            self.train_dataloader,
+            self.train_step,
+            "train",
+            backward=True,
+            dry_run=dry_run,
+        )
+        return prefixed
 
     def train_step(self, batch):
         """
@@ -408,23 +592,14 @@ class Trainer:
         :rtype: dict
         """
         self.autoencoder.eval()
-        N = 0
-        results = {}
-        for i, batch in enumerate(self.valid_dataloader):
-            batch = batch[0].to(self.device)
-            valid_result = self.valid_step(batch)
-            if i == 0:
-                results = {
-                    key: value.item() * len(batch)
-                    for key, value in valid_result.items()
-                }
-            else:
-                for key in valid_result.keys():
-                    results[key] += valid_result[key].item() * len(batch)
-            N += len(batch)
-        avg_results = {key: results[key] / N for key in results.keys()}
-        self.results_epoch = avg_results
-        return {f"valid_{key}": results[key] / N for key in results.keys()}
+        prefixed, averaged = self._run_phase(
+            self.valid_dataloader,
+            self.valid_step,
+            "valid",
+            backward=False,
+        )
+        self.results_epoch = averaged
+        return prefixed
 
     def valid_step(self, batch):
         """
@@ -444,9 +619,7 @@ class Trainer:
                 setattr(self, key, value)
             else:
                 raise ValueError(f"Trainer has no attribute {key}")
-        self.best = None
-        self._converge_counter = 0
-        self.has_converged = False
+        self._reset_progress()
 
     def update_optimiser_hyperparameters(self, **kwargs):
         """
@@ -457,22 +630,8 @@ class Trainer:
         for g in self.optimiser.param_groups:
             for key, value in kwargs.items():
                 g[key] = value
-        self.best = None
-        self._plauteu_counter = 0
-        self.has_plauteued = False
+        self._reset_progress()
 
-    def _get_train_status(self, patience, valid_loss):
-        if self.best is None or self.best > valid_loss:
-            self.best = valid_loss
-            self._converge_counter = 0
-            is_best = True
-        else:
-            self._converge_counter += 1
-            if self._converge_counter > patience:
-                self.has_converged = True
-            is_best = False 
-        return is_best
-    
     def checkpoint(self, epoch, valid_logs, checkpoint_folder, is_best, has_converged=False):
         """
         Checkpoint the current network. The checkpoint will be saved as ``'last.ckpt'``.
@@ -486,6 +645,7 @@ class Trainer:
         """
 
         valid_loss = valid_logs["valid_loss"]
+        last_checkpoint_path = f'{checkpoint_folder}/last{f"_{self._repeat}" if self._repeat > 0 else ""}.ckpt'
         torch.save(
             {
                 "epoch": epoch,
@@ -497,25 +657,25 @@ class Trainer:
                 "std": self.std,
                 "mean": self.mean,
             },
-            f'{checkpoint_folder}/last{f"_{self._repeat}" if self._repeat > 0 else ""}.ckpt',
+            last_checkpoint_path,
         )
+        self._last_checkpoint = last_checkpoint_path
 
         if is_best:
             filename = f'{checkpoint_folder}/checkpoint{f"_{self._repeat}" if self._repeat>0 else ""}_epoch{epoch}_loss{valid_loss}.ckpt'
             shutil.copyfile(
-                f'{checkpoint_folder}/last{f"_{self._repeat}" if self._repeat>0 else ""}.ckpt',
+                last_checkpoint_path,
                 filename,
             )
-            if self.best_name is not None:
+            if self.best_name is not None and os.path.exists(self.best_name):
                 os.remove(self.best_name)
             self.best_name = filename
 
         if has_converged:
             filename = f'{checkpoint_folder}/checkpoint_converged.ckpt'
-            shutil.copyfile(
-                self.best_name,
-                filename,
-            )
+            if self.best_name is None:
+                raise RuntimeError("No best checkpoint available to mark as converged")
+            shutil.copyfile(self.best_name, filename)
 
     def load_checkpoint(
         self, checkpoint_name="best", checkpoint_folder="", load_optimiser=True
@@ -573,6 +733,7 @@ class Trainer:
                 raise Exception(
                     "Something went wrong, you surely havnt done 1000 repeats?"
                 )
+        self.progress.repeat_index = self._repeat
 
     def get_scale(
         self, ref_loss: float, tar_loss: float, scale_scale: float = 1.0
@@ -589,6 +750,42 @@ class Trainer:
             mag_ref = math.floor(math.log10(abs(ref_loss)))
             mag_new = math.floor(math.log10(abs(tar_loss)))
         return 10 ** (mag_ref - mag_new) * scale_scale
+
+    # ------------------------------------------------------------------
+    # Backwards compatibility shims
+    # ------------------------------------------------------------------
+
+    @property
+    def best(self) -> Optional[float]:
+        return self.progress.best_loss
+
+    @best.setter
+    def best(self, value: Optional[float]) -> None:
+        self.progress.best_loss = value
+
+    @property
+    def best_name(self) -> Optional[str]:
+        return self.progress.best_checkpoint
+
+    @best_name.setter
+    def best_name(self, value: Optional[str]) -> None:
+        self.progress.best_checkpoint = value
+
+    @property
+    def has_converged(self) -> bool:
+        return self.progress.converged
+
+    @has_converged.setter
+    def has_converged(self, value: bool) -> None:
+        self.progress.converged = value
+
+    @property
+    def _converge_counter(self) -> int:
+        return self.progress.epochs_since_improve
+
+    @_converge_counter.setter
+    def _converge_counter(self, value: int) -> None:
+        self.progress.epochs_since_improve = value
 
 
 if __name__ == "__main__":

@@ -11,16 +11,12 @@ import torch
 def main():
     ##### Load Data #####
     data = PDBData()
-    # data.import_pdb(
-    #     "./clustered/MurD_open_selection_CLUSTER_aggl_train.dcd",
-    #     "./clustered/MurD_open_selection_NEW_TOPO.pdb",
-    # )
     data.import_pdb(
         ["./data/MurD_open.pdb", "./data/MurD_closed.pdb"]
-
     )
     data.fix_terminal()
-    data.atomselect(atoms=["CA", "C", "N", "CB", "O"])
+    data.atomselect(atoms=["N", "CA", "CB", "C", "O"])
+    dataset = data.prepare_dataset()
 
     ##### Prepare Trainer #####
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -29,25 +25,20 @@ def main():
     trainer.set_data(data, batch_size=8, validation_split=0.1, manual_seed=25)
     trainer.prepare_physics(remove_NB=True)
 
-    trainer.set_autoencoder(AutoEncoder, out_points=data.dataset.shape[-1])
+    trainer.set_autoencoder(AutoEncoder, out_points=data.dataset.shape[1])
     trainer.prepare_optimiser()
 
     ##### Training Loop #####
     # Keep training until loss does not improve for 32 consecutive epochs
 
-    runkwargs = dict(
-        log_filename="log_file.dat",
-        log_folder="xbb_foldingnet_checkpoints",
-        checkpoint_folder="xbb_foldingnet_checkpoints",
+    fit_results = trainer.run_until_converge(
+        patience=32,
+        log_filename="log.dat",
+        log_folder="foldingnet_checkpoints",
+        checkpoint_folder="foldingnet_checkpoints",
+        verbose=True,
     )
-
-    best = 1e24
-    while True:
-        trainer.run(max_epochs=32 + trainer.epoch, **runkwargs)
-        if not best > trainer.best:
-            break
-        best = trainer.best
-    print(f"best {trainer.best}, best_filename {trainer.best_name}")
+    print(fit_results)
 
 
 if __name__ == "__main__":
