@@ -14,10 +14,12 @@
 from __future__ import annotations
 import os
 from copy import deepcopy
+from dataclasses import dataclass
 import numpy as np
+import torch
 import torch.optim
 from pathlib import Path
-from typing import Union
+from typing import Dict, Iterable, Tuple, Union
 
 try:
     # from modeller import *
@@ -61,18 +63,106 @@ from openmm.unit import picoseconds
 warnings.filterwarnings("ignore")
 
 
+@dataclass
+class DatasetBundle:
+    dataset: torch.Tensor
+    std: torch.Tensor | float
+    mean: torch.Tensor | float
+    standardize: bool
+
+    def unscaled(self) -> torch.Tensor:
+        return self.dataset * self.std + self.mean
+
+    @property
+    def shape(self) -> Tuple[int, int]:
+        return self.dataset.shape[1], self.dataset.shape[2]
+
+
 class MolearnAnalysis:
     """
     This class provides methods dedicated to the quality analysis of a trained model.
     """
 
     def __init__(self, batch_size=1, processes=1):
-        self._datasets = {}
+        self._datasets: Dict[str, DatasetBundle] = {}
         self._encoded = {}
         self._decoded = {}
         self.surfaces = {}
         self.batch_size = batch_size
         self.processes = processes
+
+    def _resolve_dataset(
+        self, data: Union[str, PDBData], atomselect: str | Iterable[str]
+    ) -> PDBData:
+        if isinstance(data, str) and data.endswith(".pdb"):
+            pdb_data = PDBData()
+            pdb_data.import_pdb(data)
+            pdb_data.atomselect(atomselect)
+            pdb_data.prepare_dataset()
+            return pdb_data
+        if isinstance(data, PDBData):
+            if not hasattr(data, "dataset"):
+                data.prepare_dataset()
+            return data
+        raise ValueError(
+            "Data should be a PDBData object or a string with the path to a PDB file"
+        )
+
+    def _ensure_dataset_shape(self, key: str, bundle: DatasetBundle) -> None:
+        if not self._datasets:
+            return
+        ref_key, ref_bundle = next(iter(self._datasets.items()))
+        if ref_bundle.shape != bundle.shape:
+            raise ValueError(
+                f"number of d.o.f differs: {key} has shape {bundle.dataset.shape} while {ref_key} has shape {ref_bundle.dataset.shape}"
+            )
+        if ref_bundle.standardize != bundle.standardize:
+            raise ValueError(
+                f"Standardisation mismatch between dataset {key} and reference dataset {ref_key}"
+            )
+
+    def _capture_reference_metadata(self, data: PDBData, bundle: DatasetBundle) -> None:
+        if not hasattr(self, "standardize"):
+            self.standardize = bundle.standardize
+        if not hasattr(self, "stdval"):
+            self.stdval = bundle.std
+        if not hasattr(self, "meanval"):
+            self.meanval = bundle.mean
+        if not hasattr(self, "atoms"):
+            self.atoms = data.atoms
+        if not hasattr(self, "mol"):
+            self.mol = data.frame()
+        if not hasattr(self, "shape"):
+            self.shape = bundle.shape
+        if not hasattr(self, "indices"):
+            self.indices = {k: v.numpy() for k, v in data.indices.items()}
+
+    def _prepare_bundle(self, data: PDBData) -> DatasetBundle:
+        dataset = data.dataset
+        if dataset.ndim != 3:
+            raise ValueError(
+                f"Expected dataset to have 3 dimensions (batch, atoms, coords). Got {dataset.shape}"
+            )
+        if dataset.shape[-1] == 3:
+            normalized = dataset.float()
+        elif dataset.shape[1] == 3:
+            normalized = dataset.permute(0, 2, 1).contiguous().float()
+        else:
+            raise ValueError(
+                "Dataset must encode Cartesian coordinates in either the last or second dimension."
+            )
+        return DatasetBundle(
+            dataset=normalized,
+            std=data.std,
+            mean=data.mean,
+            standardize=data.standardize,
+        )
+
+    def _batch_slices(self, total: int, batch_size: int) -> Iterable[slice]:
+        if batch_size <= 0:
+            raise ValueError("batch_size must be a positive integer")
+        for start in range(0, total, batch_size):
+            yield slice(start, min(start + batch_size, total))
 
     def set_network(self, network):
         """
@@ -88,50 +178,11 @@ class MolearnAnalysis:
         :param data: :func:`PDBData <molearn.data.PDBData>` object containing atomic coordinates
         :param list/str atomselect: list of atom names to load, or 'protein' to indicate that all atoms are loaded.
         """
-        if isinstance(data, str) and data.endswith(".pdb"):
-            d = PDBData()
-            d.import_pdb(data)
-            d.atomselect(atomselect)
-            d.prepare_dataset()
-            _data = d
-        elif isinstance(data, PDBData):
-            _data = data
-        else:
-            raise ValueError(
-                "Data should be a PDBData object or a string with the path to a PDB file"
-            )
-        
-        if hasattr(self, "standardize"):
-            assert self.standardize == _data.standardize
-
-        if _data.dataset.shape[2] == 3:
-             _data.dataset.permute(0, 2, 1)
-
-        for _key, dataset in self._datasets.items():
-            assert (
-                dataset['dataset'].shape[2] == _data.dataset.shape[2]
-                and dataset['dataset'].shape[1] == _data.dataset.shape[1]
-            ), f"number of d.o.f differes: {key} has shape {_data['dataset'].shape} while {_key} has shape {dataset.shape}"
-        
-        self._datasets[key] = {}
-        self._datasets[key]['dataset'] = _data.dataset.float()
-        self._datasets[key]['std'] = _data.std
-        self._datasets[key]['mean'] = _data.mean
-
-        if not hasattr(self, "standardize"):
-            self.standardize = _data.standardize
-        if not hasattr(self, "stdval"):
-            self.std = _data.std
-        if not hasattr(self, "meanval"):
-            self.mean = _data.mean
-        if not hasattr(self, "atoms"):
-            self.atoms = _data.atoms
-        if not hasattr(self, "mol"):
-            self.mol = _data.frame()
-        if not hasattr(self, "shape"):
-            self.shape = (_data.dataset.shape[1], _data.dataset.shape[2])
-        if not hasattr(self, "indices"):
-            self.indices = {k:v.numpy() for k, v in _data.indices.items()}
+        pdb_data = self._resolve_dataset(data, atomselect)
+        bundle = self._prepare_bundle(pdb_data)
+        self._ensure_dataset_shape(key, bundle)
+        self._datasets[key] = bundle
+        self._capture_reference_metadata(pdb_data, bundle)
 
     def get_dataset(self, key, unscale=False):
         """
@@ -139,11 +190,8 @@ class MolearnAnalysis:
         :param bool unscale: if True, return the dataset unscaled (i.e. with mean and std applied)
         :return: `torch.Tensor` for dataset with the key
         """
-        if unscale:
-            data = self._datasets[key]['dataset'] * self._datasets[key]['std'] + self._datasets[key]['mean']
-        else:
-            data = self._datasets[key]['dataset']
-        return data
+        bundle = self._datasets[key]
+        return bundle.unscaled() if unscale else bundle.dataset
     
     def get_encoded(self, key, update=False):
         """
@@ -152,23 +200,23 @@ class MolearnAnalysis:
         :return: array containing the encoding in latent space of dataset associated with key
         """
         if key not in self._encoded or update:
-            assert key in self._datasets, (
-                f"key {key} does not exist in internal _datasets or in _latent_coords, add it with MolearnAnalysis.set_latent_coords(key, torch.Tensor) "
-                "or add the corresponding dataset with MolearnAnalysis.set_dataset(name, PDBDataset)"
-            )
+            if key not in self._datasets:
+                raise KeyError(
+                    f"key {key} does not exist in internal datasets; call set_dataset or set_encoded first"
+                )
             with torch.no_grad():
                 dataset = self.get_dataset(key)
-                batch_size = self.batch_size
                 encoded = None
-                for i in tqdm(
-                    range(0, dataset.shape[0], batch_size), desc=f"encoding {key}"
+                for slc in tqdm(
+                    self._batch_slices(dataset.shape[0], self.batch_size),
+                    desc=f"encoding {key}",
                 ):
-                    z = self.network.encode(
-                        dataset[i : i + batch_size].to(self.device)
-                    ).cpu()
+                    z = self.network.encode(dataset[slc].to(self.device)).cpu()
                     if encoded is None:
-                        encoded = torch.empty(dataset.shape[0], z.shape[1])
-                    encoded[i : i + batch_size] = z
+                        encoded = torch.empty(
+                            dataset.shape[0], z.shape[1], dtype=z.dtype
+                        )
+                    encoded[slc] = z
                 self._encoded[key] = encoded
 
         return self._encoded[key]
@@ -189,21 +237,31 @@ class MolearnAnalysis:
         """
         if key not in self._decoded or update:
             with torch.no_grad():
-                batch_size = self.batch_size
                 encoded = self.get_encoded(key)
-                decoded = torch.empty(encoded.shape[0], *self.shape).float()
-                for i in tqdm(
-                    range(0, encoded.shape[0], batch_size), desc=f"Decoding {key}"
+                decoded = None
+                for slc in tqdm(
+                    self._batch_slices(encoded.shape[0], self.batch_size),
+                    desc=f"Decoding {key}",
                 ):
-                    decoded[i : i + batch_size] = self.network.decode(
-                        encoded[i : i + batch_size].to(self.device)
-                    )[:, : self.shape[0], :].cpu()
+                    batch = self.network.decode(encoded[slc].to(self.device))
+                    batch = batch[:, : self.shape[0], :].cpu()
+                    if decoded is None:
+                        decoded = torch.empty(
+                            encoded.shape[0], *batch.shape[1:], dtype=batch.dtype
+                        )
+                    decoded[slc] = batch
                 self._decoded[key] = decoded
-        if unscale:
-            data = self._decoded[key] * self._datasets[key]['std'] + self._datasets[key]['mean']
-        else:
-            data = self._decoded[key]
-        return data
+        if not unscale:
+            return self._decoded[key]
+
+        if key in self._datasets:
+            bundle = self._datasets[key]
+            return self._decoded[key] * bundle.std + bundle.mean
+
+        if hasattr(self, "stdval") and hasattr(self, "meanval"):
+            return self._decoded[key] * self.stdval + self.meanval
+
+        raise ValueError("Set a dataset to get mean and std for datasets")
 
     def set_decoded(self, key, structures):
         """
@@ -286,9 +344,13 @@ class MolearnAnalysis:
         Get the chirality of Cα atoms in a dataset and its decoded counterpart.
         """
 
-        assert set(["CA", "C", "N", "CB"]).issubset(
-            set(self.atoms)
-        ), "Atom selection shoud at least include CA, C, N, and CB"
+        required_atoms = {"CA", "C", "N", "CB"}
+        if not required_atoms.issubset(set(self.atoms)):
+            missing = ", ".join(sorted(required_atoms.difference(self.atoms)))
+            raise ValueError(
+                "Atom selection should include CA, C, N, and CB (missing: %s)"
+                % missing
+            )
 
         # Get atom indices
         mol_df = self.mol.data
@@ -564,23 +626,31 @@ class MolearnAnalysis:
         return xmin, xmax, ymin, ymax
 
     def scan_error_from_target(self, key, index=None, align=True):
-        """
-        Calculate landscape of RMSD vs single target structure. Target should be previously loaded datset containing a single conformation.
+        """Compute an RMSD surface against a specific target structure.
 
-        :param str key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
-        :param int index: index of conformation to be selected from dataset containing multiple conformations.
-        :param bool align: if True, structures generated from the grid are aligned to target prior RMSD calculation.
-        :return: RMSD latent space NxN surface
-        :return: x-axis values
-        :return: y-axis values
+        A dataset must already be registered under ``key`` and a latent space grid
+        generated via :meth:`setup_grid`. The method decodes the grid, compares each
+        structure against the selected target, and caches the resulting surface in
+        :attr:`surfaces` under an autogenerated key.
+
+        :param key: Dataset label previously registered with :meth:`set_dataset`.
+        :param index: Optional index selecting a single structure from a dataset
+            containing multiple conformations. If omitted, the dataset is expected
+            to contain exactly one frame.
+        :param align: Whether to superimpose decoded structures onto the target
+            prior to RMSD evaluation.
+        :returns: Tuple ``(surface, xvals, yvals)`` where ``surface`` is a
+            ``(samples, samples)`` NumPy array containing RMSD values and
+            ``xvals``/``yvals`` are the latent grid axes.
+        :raises ValueError: If the latent grid has not been initialised or the
+            target dataset does not contain exactly one conformation.
         """
         s_key = (
             f"RMSD_from_{key}" if index is None else f"RMSD_from_{key}_index_{index}"
         )
         if s_key not in self.surfaces:
-            assert (
-                "grid" in self._encoded
-            ), "make sure to call MolearnAnalysis.setup_grid first"
+            if "grid" not in self._encoded:
+                raise ValueError("Call MolearnAnalysis.setup_grid before scanning errors")
             target = (
                 self.get_dataset(key, unscale=True)
                 if index is None
@@ -588,9 +658,9 @@ class MolearnAnalysis:
             )
             if target.shape[0] != 1:
                 msg = f"dataset {key} shape is {target.shape}. \
-A dataset with a single conformation is expected.\
-Either pass a key that points to a single structure or pass the index of the \
-structure you want, e.g., analyser.scan_error_from_target(key, index=0)"
+                A dataset with a single conformation is expected.\
+                Either pass a key that points to a single structure or pass the index of the \
+                structure you want, e.g., analyser.scan_error_from_target(key, index=0)"
                 raise Exception(msg)
 
             decoded = self.get_decoded("grid")
@@ -615,26 +685,39 @@ structure you want, e.g., analyser.scan_error_from_target(key, index=0)"
         return self.surfaces[s_key], self.xvals, self.yvals
 
     def scan_error(self, s_key="Network_RMSD", z_key="Network_z_drift"):
-        """
-        Calculate RMSD and z-drift on a grid sampling the latent space.
-        Requires a grid system to be defined via a prior call to :func:`set_dataset <molearn.analysis.MolearnAnalysis.setup_grid>`.
+        """Evaluate autoencoder consistency over the latent grid.
 
-        :param str s_key: label for RMSD dataset
-        :param str z_key: label for z-drift dataset
-        :return: input-to-decoded RMSD latent space NxN surface
-        :return: z-drift latent space NxN surface
-        :return: x-axis values
-        :return: y-axis values
+        The method decodes the latent grid, re-encodes the resulting structures and
+        performs a second decode to estimate reconstruction drift. Two surfaces are
+        produced: RMSD between first- and second-pass decodes, and the latent space
+        drift between original and re-encoded grid coordinates. Results are cached
+        in :attr:`surfaces` using the provided keys.
+
+        :param s_key: Cache key for the RMSD surface (overwritten internally to the
+            default value in order to maintain backwards compatibility).
+        :param z_key: Cache key for the latent drift surface (also overwritten to
+            the default value).
+        :returns: Tuple ``(rmsd_surface, z_surface, xvals, yvals)`` where each
+            surface is shaped ``(samples, samples)``.
+        :raises ValueError: If a latent grid has not been initialised via
+            :meth:`setup_grid`.
         """
         s_key = "Network_RMSD"
         z_key = "Network_z_drift"
         if s_key not in self.surfaces:
-            assert (
-                "grid" in self._encoded
-            ), "make sure to call MolearnAnalysis.setup_grid first"
+            if "grid" not in self._encoded:
+                raise ValueError("Call MolearnAnalysis.setup_grid before scanning errors")
             decoded = self.get_decoded("grid")  # decode grid
-            # self.set_dataset('grid_decoded', decoded)   # add back as dataset w. different name
-            self._datasets["grid_decoded"]["dataset"] = decoded
+            std = getattr(self, "stdval", 1.0)
+            mean = getattr(self, "meanval", 0.0)
+            bundle = DatasetBundle(
+                dataset=decoded,
+                std=std,
+                mean=mean,
+                standardize=getattr(self, "standardize", True),
+            )
+            self._ensure_dataset_shape("grid_decoded", bundle)
+            self._datasets["grid_decoded"] = bundle
             # encode, and decode a second time
             decoded_2 = self.get_decoded("grid_decoded")
             grid = self.get_encoded("grid")  # retrieve original grid
@@ -664,14 +747,18 @@ structure you want, e.g., analyser.scan_error_from_target(key, index=0)"
             self.ramachandran_score_class = Parallel_Ramachandran_Score(
                 self.mol, self.processes
             )
-        assert (
-            len(frame.shape) == 2
-        ), f"We wanted 2D data but got {len(frame.shape)} dimensions"
+        if len(frame.shape) != 2:
+            raise ValueError(
+                f"Expected 2D data for Ramachandran score, received {len(frame.shape)}D"
+            )
         if frame.shape[0] == 3:
             f = frame.permute(1, 0)
-        else:
-            assert frame.shape[1] == 3
+        elif frame.shape[1] == 3:
             f = frame
+        else:
+            raise ValueError(
+                "Ramachandran score expects coordinate arrays with dimension 3 along either axis 0 or axis 1"
+            )
         if isinstance(f, torch.Tensor):
             f = f.data.cpu().numpy()
 
@@ -685,14 +772,18 @@ structure you want, e.g., analyser.scan_error_from_target(key, index=0)"
         if not hasattr(self, "dope_score_class"):
             self.dope_score_class = Parallel_DOPE_Score(self.mol, self.processes)
 
-        assert (
-            len(frame.shape) == 2
-        ), f"We wanted 2D data but got {len(frame.shape)} dimensions"
+        if len(frame.shape) != 2:
+            raise ValueError(
+                f"Expected 2D data for DOPE score, received {len(frame.shape)}D"
+            )
         if frame.shape[0] == 3:
             f = frame.permute(1, 0)
-        else:
-            assert frame.shape[1] == 3
+        elif frame.shape[1] == 3:
             f = frame
+        else:
+            raise ValueError(
+                "DOPE score expects coordinate arrays with dimension 3 along either axis 0 or axis 1"
+            )
         if isinstance(f, torch.Tensor):
             f = f.data.cpu().numpy()
 
@@ -767,7 +858,7 @@ structure you want, e.g., analyser.scan_error_from_target(key, index=0)"
         :return numpy.array: bond lengths
         """
         bond_lengths = [
-            np.linalg.norm(crds[:, :, i[0]] - crds[:, :, i[1]], axis=1) for i in indices
+        np.linalg.norm(crds[:, i[0], :] - crds[:, i[1], :], axis=1) for i in indices
         ]
         return np.array(bond_lengths)
 
@@ -819,15 +910,24 @@ structure you want, e.g., analyser.scan_error_from_target(key, index=0)"
         return score
 
     def scan_dope(self, key=None, refine=True, **kwargs):
-        """
-        Calculate DOPE score on a grid sampling the latent space.
-        Requires a grid system to be defined via a prior call to :func:`set_dataset <molearn.analysis.MolearnAnalysis.setup_grid>`.
+        """Score decoded structures with DOPE over the latent grid.
 
-        :param str key: label for unrefined DOPE score surface (default is DOPE_unrefined or DOPE_refined)
-        :param bool refine: if True, structures generated will be energy minimised before DOPE scoring
-        :return: DOPE score latent space NxN surface
-        :return: x-axis values
-        :return: y-axis values
+        Each point on the latent grid is decoded, optionally refined, and assessed
+        using the DOPE potential. The resulting surface is cached under ``key`` for
+        reuse. When ``refine == "both"`` the returned array contains two channels:
+        the raw DOPE score and the score after refinement.
+
+        :param key: Optional cache key. When omitted a descriptive key based on the
+            ``refine`` option is generated.
+        :param refine: If ``True`` (default) the decoded coordinates are minimised
+            prior to scoring. When set to ``"both"`` raw and refined scores are
+            computed.
+        :param kwargs: Extra keyword arguments forwarded to
+            :meth:`get_all_dope_score` (e.g. Modeller configuration).
+        :returns: Tuple ``(surface, xvals, yvals)`` where ``surface`` is of shape
+            ``(samples, samples)`` or ``(samples, samples, 2)`` when ``refine`` is
+            ``"both"``.
+        :raises ValueError: If the latent grid has not been initialised.
         """
 
         if key is None:
@@ -839,9 +939,8 @@ structure you want, e.g., analyser.scan_error_from_target(key, index=0)"
                 key = "DOPE_unrefined"
 
         if key not in self.surfaces:
-            assert (
-                "grid" in self._encoded
-            ), "make sure to call MolearnAnalysis.setup_grid first"
+            if "grid" not in self._encoded:
+                raise ValueError("Call MolearnAnalysis.setup_grid before scanning DOPE scores")
             decoded = self.get_decoded("grid") * self.stdval
             result = self.get_all_dope_score(decoded, refine=refine, **kwargs)
             if refine == "both":
@@ -856,22 +955,23 @@ structure you want, e.g., analyser.scan_error_from_target(key, index=0)"
         return self.surfaces[key], self.xvals, self.yvals
 
     def scan_ramachandran(self):
-        """
-        Calculate Ramachandran scores on a grid sampling the latent space.
-        Requires a grid system to be defined via a prior call to :func:`set_dataset <molearn.analysis.MolearnAnalysis.setup_grid>`.
-        Saves four surfaces in memory, with keys 'Ramachandran_favored', 'Ramachandran_allowed', 'Ramachandran_outliers', and 'Ramachandran_total'.
+        """Evaluate Ramachandran statistics for each decoded grid structure.
 
-        :return: Ramachandran_favoured latent space NxN surface (ratio of residues in favourable conformation)
-        :return: x-axis values
-        :return: y-axis values
+        The method decodes the latent grid, executes Ramachandran scoring for every
+        structure, and stores four resulting surfaces (favoured/allowed/outliers/
+        total) in :attr:`surfaces` with keys prefixed by ``"Ramachandran_"``.
+
+        :returns: Tuple ``(favoured_surface, xvals, yvals)`` with the preferred
+            surface for convenience. The remaining surfaces can be retrieved from
+            :attr:`surfaces` using their respective keys.
+        :raises ValueError: If the latent grid has not been initialised.
         """
         keys = {
             i: f"Ramachandran_{i}" for i in ("favored", "allowed", "outliers", "total")
         }
         if list(keys.values())[0] not in self.surfaces:
-            assert (
-                "grid" in self._encoded
-            ), "make sure to call MolearnAnalysis.setup_grid first"
+            if "grid" not in self._encoded:
+                raise ValueError("Call MolearnAnalysis.setup_grid before scanning Ramachandran")
             decoded = self.get_decoded("grid")
             rama = self.get_all_ramachandran_score(decoded)
             for key, value in rama.items():
@@ -880,47 +980,57 @@ structure you want, e.g., analyser.scan_error_from_target(key, index=0)"
         return self.surfaces["Ramachandran_favored"], self.xvals, self.yvals
 
     def scan_ca_chirality(self):
-        """
-        Calculate chiralities of Cα atoms on a grid sampling the latent space.
-        Requires a grid system to be defined via a prior call to :func:`set_dataset <molearn.analysis.MolearnAnalysis.setup_grid>`.
-        Requires the atom selection to include Cα atoms.
-        Saves a surface in memory, with key 'Chirality'.
+        """Populate a surface describing Cα chirality inversions.
+
+        Decodes the latent grid and counts the number of chirality inversions per
+        structure (i.e. negative triple products for Cα neighbourhoods). The
+        resulting surface is cached under the ``"Chirality"`` key within
+        :attr:`surfaces`.
+
+        :raises ValueError: If the latent grid has not been initialised prior to
+            invocation.
         """
 
-        assert (
-            "grid" in self._encoded
-        ), "make sure to call MolearnAnalysis.setup_grid first"
+        if "grid" not in self._encoded:
+            raise ValueError("Call MolearnAnalysis.setup_grid before scanning chirality")
         inversions = self.get_inversions("grid")['decoded_inversions']
         self.surfaces["Chirality"] = np.array(inversions).reshape(
             self.n_samples, self.n_samples
         )
 
     def scan_bondlength(self):
-        """
-        Calculate bond lengths on a grid sampling the latent space.
-        Requires a grid system to be defined via a prior call to :func:`set_dataset <molearn.analysis.MolearnAnalysis.setup_grid>`.
-        Saves multiple surfaces, depending on atom selection, of bondlengths mean and std in memory. 
+        """Derive bond-length statistics across the latent grid.
+
+        Each grid structure is analysed for backbone bond lengths, and the mean and
+        standard deviation for every bond type are cached in :attr:`surfaces` using
+        descriptive keys (e.g. ``"N-CA"`` and ``"N-CA_std"``).
+
+        :raises ValueError: If the latent grid has not been initialised.
         """
 
-        assert (
-            "grid" in self._encoded
-        ), "make sure to call MolearnAnalysis.setup_grid first"
+        if "grid" not in self._encoded:
+            raise ValueError("Call MolearnAnalysis.setup_grid before scanning bond lengths")
         bond_lengths_dict = self.get_bondlengths(key='grid')
         for k, v in bond_lengths_dict['decoded_bondlen'].items():
             self.surfaces[k] = v.mean(axis=0).reshape(self.n_samples, self.n_samples)
             self.surfaces[k+'_std'] = v.std(axis=0).reshape(self.n_samples, self.n_samples)
 
     def scan_custom(self, fct, params, key):
-        """
-        Generate a surface coloured as a function of a user-defined function.
+        """Evaluate a user-defined metric over the latent grid.
 
-        :param fct: function taking atomic coordinates as input, an optional list of parameters, and returning a single value.
-        :param list params: parameters to be passed to function f. If no parameter is needed, pass an empty list.
-        :param str key: name of the dataset generated by this function scan
-        :return: latent space NxN surface, evaluated according to input function
-        :return: x-axis values
-        :return: y-axis values
+        Decodes the latent grid, applies ``fct`` to each structure, and stores the
+        resulting surface under ``key`` within :attr:`surfaces`.
+
+        :param fct: Callable accepting coordinates shaped ``(1, N, 3)`` (after
+            rescaling) and returning a scalar.
+        :param params: Iterable of additional parameters forwarded to ``fct``.
+        :param key: Cache key for the resulting surface.
+        :returns: Tuple ``(surface, xvals, yvals)`` with ``surface`` shaped
+            ``(samples, samples)``.
+        :raises ValueError: If the latent grid has not been initialised.
         """
+        if "grid" not in self._encoded:
+            raise ValueError("Call MolearnAnalysis.setup_grid before running custom scans")
         decoded = self.get_decoded("grid")
         results = []
         for i, j in enumerate(decoded):
@@ -1022,18 +1132,19 @@ structure you want, e.g., analyser.scan_error_from_target(key, index=0)"
         """
         with torch.no_grad():
             key = list(self._datasets)[0]
+            bundle = self._datasets[key]
             # if not on cpu transfer data back to cpu before converting it to numpy array
             if self.device == "cpu":
                 z = torch.tensor(crd.transpose(1, 2, 0)).float()
                 s = (
-                    self.network.decode(z)[:, :, : self._datasets[key].shape[2]]
+                    self.network.decode(z)[:, :, : bundle.dataset.shape[2]]
                     .numpy()
                     .transpose(0, 2, 1)
                 )
             else:
                 z = torch.tensor(crd.transpose(1, 2, 0)).float().to(self.device)
                 s = (
-                    self.network.decode(z)[:, :, : self._datasets[key].shape[2]]
+                    self.network.decode(z)[:, :, : bundle.dataset.shape[2]]
                     .cpu()
                     .numpy()
                     .transpose(0, 2, 1)
@@ -1062,10 +1173,8 @@ structure you want, e.g., analyser.scan_error_from_target(key, index=0)"
 
     @property
     def datasets(self):
-        for key, value in self._datasets.items():
-            print(key, value["dataset"].shape)
+        return {key: bundle.dataset for key, bundle in self._datasets.items()}
     
     @property
     def encoded(self):
-        for key, value in self._encoded.items():
-            print(key, value.shape)
+        return dict(self._encoded)

@@ -1,8 +1,12 @@
+from __future__ import annotations
+
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import seaborn as sns
+from pathlib import Path
+from typing import Callable, Dict, Iterable, List, Optional, Sequence, Tuple
 
 plt.rcParams.update({
     "axes.titlesize": 16,    # Figure title
@@ -13,177 +17,245 @@ plt.rcParams.update({
 })
 
 
-def plot_bondlength_hist(MA, plot_data=None, bins=100, wkdir=None, **kwargs):
+def _ensure_path(path: Optional[Path | str]) -> Optional[Path]:
+    if path is None:
+        return None
+    return path if isinstance(path, Path) else Path(path)
+
+
+def _flatten(values: np.ndarray) -> np.ndarray:
+    return np.asarray(values).reshape(-1)
+
+
+def _to_numpy(values):
+    if isinstance(values, np.ndarray):
+        return values
+    if hasattr(values, "detach"):
+        values = values.detach()
+    if hasattr(values, "cpu"):
+        values = values.cpu()
+    return np.asarray(values)
+
+
+def _collect_metric_entries(
+    MA,
+    plot_data: Sequence[Tuple[str, str, str]],
+    metric_fetcher: Callable[[str], Dict[str, Dict[str, np.ndarray]]],
+    dataset_key: str,
+    decoded_key: str,
+) -> Tuple[List[Dict[str, object]], List[str]]:
+    """Resolve metric dictionaries for datasets and decodes to a unified format.
+
+    Parameters
+    ----------
+    MA : MolearnAnalysis
+        Analysis object used to resolve metric data for the requested keys.
+    plot_data : Sequence[Tuple[str, str, str]]
+        Iterable of ``(key, label, colour)`` tuples describing which datasets to plot,
+        the legend label to apply, and the colour associated with decoded structures.
+    metric_fetcher : Callable[[str], Dict[str, Dict[str, np.ndarray]]]
+        Callback returning a mapping of metric group names (e.g. ``dataset_bondlen``)
+        to dictionaries of metric arrays for the provided ``key``.
+    dataset_key : str
+        Dictionary key under each metric group corresponding to the original dataset values.
+    decoded_key : str
+        Dictionary key under each metric group corresponding to decoded structure values.
+
+    Returns
+    -------
+    entries : list of dict
+        Normalised entries, one per dataset, containing dataset/decoded metric dictionaries
+        and legend metadata for downstream plotting.
+    metric_names : list of str
+        Ordered list of metric names present in the decoded metric dictionary.
+
+    Raises
+    ------
+    ValueError
+        If the decoded metric dictionary is missing for a requested key.
     """
-    Plot distributions of bond lengths of the chosen datasets.
-
-    :param MolearnAnalysis MA: A MolearnAnalysis object with datasets loaded.
-    :param list plot_data: A list of tuples containing the data to plot. Each tuple should contain
-                           the key to a original/encoded dataset in the MolearnAnalysis object, a label for the legend,
-                           and a colour for the decoded data plot.
-                           Format: [(key, label, colour), ...]
-    :param Path wkdir: The directory to save the plots.
-    :param bool refine: if True, refine structures before calculating DOPE score
-    :param dict kwargs: Additional keyword arguments to pass to plt.savefig.
-
-    :return: None
-    """
-
-    data_pairs = []
-    labels = []
-    colors = []
-    
+    entries: List[Dict[str, object]] = []
+    metric_keys: Optional[Iterable[str]] = None
     for key, label, decoded_color in plot_data:
-        dataset_color = "gray"  # Set dataset distribution as gray
-        if key in MA._datasets.keys():
-            dataset_bondlen = MA.get_bondlengths(key)['dataset_bondlen']
-            decoded_bondlen = MA.get_bondlengths(key)['decoded_bondlen']
-        elif key in MA._encoded.keys():
-            decoded_bondlen = MA.get_bondlengths(key)['decoded_bondlen']
-            dataset_bondlen, dataset_color = None, None
-        else:
-            raise ValueError(f"{key} not found in datasets or encoded data")
-        data_pairs.append((dataset_bondlen, decoded_bondlen))
-        labels.append(label)
-        colors.append((dataset_color, decoded_color))
+        metric = metric_fetcher(key)
+        dataset_metric = metric.get(dataset_key)
+        decoded_metric = metric.get(decoded_key)
+        if decoded_metric is None:
+            raise ValueError(f"Decoded metric '{decoded_key}' missing for key '{key}'.")
+        if metric_keys is None:
+            metric_keys = decoded_metric.keys()
+        entries.append(
+            {
+                "label": label,
+                "dataset": dataset_metric,
+                "decoded": decoded_metric,
+                "colors": ("gray" if dataset_metric is not None else None, decoded_color),
+            }
+        )
+    return entries, list(metric_keys or [])
 
-    num_plots = len(data_pairs)
-    
-    for key in data_pairs[0][1].keys():
-        fig, axes = plt.subplots(num_plots, 1, figsize=(8, 4 * num_plots), sharex=True)
-        
-        if num_plots == 1:
-            axes = [axes]  # Ensure axes is iterable if there’s only one plot
-        
-        for ax, (dataset_data, decoded_data), label, (dataset_color, decoded_color) in zip(axes, data_pairs, labels, colors):
-            
-            if dataset_data is not None:
-                ax.hist(dataset_data[key].flatten(), bins=bins, color=dataset_color, label=f'{label} Dataset', alpha=0.5, density=True, hatch='//')
-            
-            ax.hist(decoded_data[key].flatten(), bins=bins, color=decoded_color, label=f'{label} Decoded', alpha=0.5, density=True)
-            
-            ax.set_title(f'{label} - {key} bond lengths')
-            ax.set_ylabel('Density')
+
+def _plot_metric_histograms(
+    entries: Sequence[Dict[str, object]],
+    metric_names: Sequence[str],
+    bins: int,
+    wkdir: Optional[Path],
+    filename_prefix: str,
+    xlabel: str,
+    xlim: Optional[Tuple[float, float]] | Dict[str, Tuple[float, float]] = None,
+    density: bool = True,
+    legend_suffix: str = "",
+    save_kwargs: Optional[Dict] = None,
+):
+    save_kwargs = save_kwargs or {}
+    figures = []
+    for metric_name in metric_names:
+        fig, axes = plt.subplots(len(entries), 1, figsize=(8, 4 * len(entries)), sharex=True)
+        figures.append(fig)
+        axes = np.atleast_1d(axes)
+        for ax, entry in zip(axes, entries):
+            dataset_metric = entry["dataset"]
+            decoded_metric = entry["decoded"]
+            dataset_color, decoded_color = entry["colors"]
+            label = entry["label"]
+            if dataset_metric is not None:
+                ax.hist(
+                    _flatten(dataset_metric[metric_name]),
+                    bins=bins,
+                    color=dataset_color,
+                    alpha=0.5,
+                    density=density,
+                    hatch="//",
+                    label=f"{label} Dataset{legend_suffix}",
+                )
+            ax.hist(
+                _flatten(decoded_metric[metric_name]),
+                bins=bins,
+                color=decoded_color,
+                alpha=0.5,
+                density=density,
+                label=f"{label} Decoded{legend_suffix}",
+            )
+            ax.set_title(f"{label} - {metric_name}")
+            ax.set_ylabel("Density" if density else "Count")
+            if isinstance(xlim, dict):
+                limits = xlim.get(metric_name)
+            else:
+                limits = xlim
+            if limits is not None:
+                ax.set_xlim(*limits)
+            ax.set_xlabel(xlabel)
             ax.legend()
-            ax.set_xlim(0, 2.5)
-            ax.set_xlabel('Bond length (Å)')
-            ax.tick_params(labelbottom=True)
-            ax.tick_params(labelleft=False)
-
+            ax.tick_params(labelbottom=True, labelleft=False)
         plt.tight_layout()
-        
         if wkdir is not None:
-            plt.savefig(wkdir / f'BL_{key}_hist.pdf', bbox_inches='tight')
+            plt.savefig(wkdir / f"{filename_prefix}_{metric_name}.pdf", bbox_inches="tight", **save_kwargs)
         plt.show()
-        
-    return None
+    return figures
 
 
-def plot_dihedral_hist(MA, plot_data=None, bins=100, wkdir=None, **kwargs):
+def _latent_edge(values: np.ndarray) -> np.ndarray:
+    return np.append(values, (2 * values[-1] - values[-2]))
 
-    data_pairs = []
-    labels = []
-    colors = []
-    
-    for key, label, decoded_color in plot_data:
-        dataset_color = "gray"  # Set dataset distribution as gray
-        if key in MA._datasets.keys():
-            dataset_dihedrals = MA.get_dihedrals(key)['dataset_dihedrals']
-            decoded_dihedrals = MA.get_dihedrals(key)['decoded_dihedrals']
-        elif key in MA._encoded.keys():
-            decoded_dihedrals = MA.get_dihedrals(key)['decoded_dihedrals']
-            dataset_dihedrals, dataset_color = None, None
+
+def _overlay_latent_points(ax, MA, plot_data):
+    if not plot_data:
+        return []
+    legend_handles = []
+    for key, label, colour, plot_type in plot_data:
+        coords = _to_numpy(MA.get_encoded(key)).squeeze()
+        if coords.ndim != 2 or coords.shape[1] < 2:
+            raise ValueError(f"Encoded coordinates for '{key}' must be of shape (N, 2)")
+        x, y = coords[:, 0], coords[:, 1]
+        if plot_type == "scatter":
+            ax.scatter(x=x, y=y, marker="o", s=1, c=colour, label=label)
+            legend_handles.append(mpl.lines.Line2D([0], [0], color=colour, linestyle="", marker="o", markersize=8, label=label))
+        elif plot_type == "kde":
+            sns.kdeplot(x=x, y=y, levels=7, color=colour, ax=ax, label=label)
+            legend_handles.append(mpl.lines.Line2D([0], [0], color=colour, lw=2, label=label))
         else:
-            raise ValueError(f"{key} not found in datasets or encoded data")
-        data_pairs.append((dataset_dihedrals, decoded_dihedrals))
-        labels.append(label)
-        colors.append((dataset_color, decoded_color))
-
-    num_plots = len(data_pairs)
-    
-    for key in data_pairs[0][1].keys():
-        fig, axes = plt.subplots(num_plots, 1, figsize=(8, 4 * num_plots), sharex=True)
-        
-        if num_plots == 1:
-            axes = [axes]  # Ensure axes is iterable if there’s only one plot
-        
-        for ax, (dataset_data, decoded_data), label, (dataset_color, decoded_color) in zip(axes, data_pairs, labels, colors):
-            
-            if dataset_data is not None:
-                ax.hist(dataset_data[key].flatten(), bins=bins, color=dataset_color, label=f'{label} Dataset', alpha=0.5, density=True, hatch='//')
-            
-            ax.hist(decoded_data[key].flatten(), bins=bins, color=decoded_color, label=f'{label} Decoded', alpha=0.5, density=True)
-            
-            ax.set_title(f'{label} - {key}')
-            ax.set_ylabel('Density')
-            ax.legend()
-            ax.set_xlim(-np.pi, np.pi)
-            ax.set_xlabel('Radians')
-            ax.tick_params(labelbottom=True)
-            ax.tick_params(labelleft=False)
-
-        plt.tight_layout()
-
-        if wkdir is not None:
-            plt.savefig(wkdir / f'Dihed_{key}_hist.pdf',bbox_inches='tight')
-        plt.show()
-
-    return None
+            raise ValueError(f"Unknown plot_type '{plot_type}' for key '{key}'.")
+    return legend_handles
 
 
-def plot_angle_hist(MA, plot_data=None, bins=100, wkdir=None, **kwargs):
+def plot_bondlength_hist(MA, plot_data=None, bins: int = 100, wkdir=None, **kwargs):
+    """Plot bond-length distributions for original and decoded structures."""
 
-    data_pairs = []
-    labels = []
-    colors = []
-    
-    for key, label, decoded_color in plot_data:
-        dataset_color = "gray"  # Set dataset distribution as gray
-        if key in MA._datasets.keys():
-            dataset_angles = MA.get_angles(key)['dataset_angles']
-            decoded_angles = MA.get_angles(key)['decoded_angles']
-        elif key in MA._encoded.keys():
-            decoded_angles = MA.get_angles(key)['decoded_angles']
-            dataset_angles, dataset_color = None, None
-        else:
-            raise ValueError(f"{key} not found in datasets or encoded data")
-        data_pairs.append((dataset_angles, decoded_angles))
-        labels.append(label)
-        colors.append((dataset_color, decoded_color))
+    if plot_data is None:
+        raise ValueError("plot_data must be provided.")
 
-    num_plots = len(data_pairs)
-    
-    for key in data_pairs[0][1].keys():
-        fig, axes = plt.subplots(num_plots, 1, figsize=(8, 4 * num_plots))
-        
-        if num_plots == 1:
-            axes = [axes]  # Ensure axes is iterable if there’s only one plot
-        
-        for ax, (dataset_data, decoded_data), label, (dataset_color, decoded_color) in zip(axes, data_pairs, labels, colors):
-            
-            if dataset_data is not None:
-                ax.hist(dataset_data[key].flatten(), bins=bins, color=dataset_color, label=f'{label} Dataset', alpha=0.5, density=True, hatch='//')
-            
-            ax.hist(decoded_data[key].flatten(), bins=bins, color=decoded_color, label=f'{label} Decoded', alpha=0.5, density=True)
-            
-            ax.set_title(f'{label} - {key}')
-            ax.set_ylabel('Density')
-            ax.legend()
-            ax.set_xlim(0, np.pi)
-            ax.set_xlabel('Radians')
-            ax.tick_params(labelbottom=True)
-            ax.tick_params(labelleft=False)
+    wkdir = _ensure_path(wkdir)
+    entries, metric_names = _collect_metric_entries(
+        MA,
+        plot_data,
+        MA.get_bondlengths,
+        dataset_key="dataset_bondlen",
+        decoded_key="decoded_bondlen",
+    )
+    _plot_metric_histograms(
+        entries,
+        metric_names,
+        bins=bins,
+        wkdir=wkdir,
+        filename_prefix="BL",
+        xlabel="Bond length (Å)",
+        xlim=(0.0, 2.5),
+        save_kwargs=kwargs,
+    )
 
-        plt.tight_layout()
+def plot_dihedral_hist(MA, plot_data=None, bins: int = 100, wkdir=None, **kwargs):
+    """Plot backbone dihedral distributions for dataset and decoded structures."""
 
-        if wkdir is not None:
-            plt.savefig(wkdir / f'Agl_{key}_hist.pdf',bbox_inches='tight')
-        plt.show()
+    if plot_data is None:
+        raise ValueError("plot_data must be provided.")
 
-    return None
+    wkdir = _ensure_path(wkdir)
+    entries, metric_names = _collect_metric_entries(
+        MA,
+        plot_data,
+        MA.get_dihedrals,
+        dataset_key="dataset_dihedrals",
+        decoded_key="decoded_dihedrals",
+    )
+    _plot_metric_histograms(
+        entries,
+        metric_names,
+        bins=bins,
+        wkdir=wkdir,
+        filename_prefix="Dihed",
+        xlabel="Radians",
+        xlim=(-np.pi, np.pi),
+        save_kwargs=kwargs,
+    )
 
 
-def plot_inversion_hist(MA, plot_data=None, fname=None, **kwargs):
+def plot_angle_hist(MA, plot_data=None, bins: int = 100, wkdir=None, **kwargs):
+    """Plot bond-angle distributions for original and decoded structures."""
+
+    if plot_data is None:
+        raise ValueError("plot_data must be provided.")
+
+    wkdir = _ensure_path(wkdir)
+    entries, metric_names = _collect_metric_entries(
+        MA,
+        plot_data,
+        MA.get_angles,
+        dataset_key="dataset_angles",
+        decoded_key="decoded_angles",
+    )
+    _plot_metric_histograms(
+        entries,
+        metric_names,
+        bins=bins,
+        wkdir=wkdir,
+        filename_prefix="Agl",
+        xlabel="Radians",
+        xlim=(0.0, np.pi),
+        save_kwargs=kwargs,
+    )
+
+
+def plot_inversion_hist(MA, plot_data, fname=None, **kwargs):
     """
     Plot distributions of number of D-amino acids in each structure in datasets as bar plots
 
@@ -208,20 +280,14 @@ def plot_inversion_hist(MA, plot_data=None, fname=None, **kwargs):
     dataset_color = "gray"  # Set dataset bars to gray
     
     for key, label, decoded_color in plot_data:
-        
-        if key in MA._datasets.keys():
-            dataset_inversions = MA.get_inversions(key)['dataset_inversions']
-            decoded_inversions = MA.get_inversions(key)['decoded_inversions']
-            data_pairs.append((dataset_inversions, decoded_inversions))
-            labels.append(label)
-            colors.append((dataset_color, decoded_color))
-        elif key in MA._encoded.keys():
-            decoded_inversions = MA.get_inversions(key)['decoded_inversions']
-            data_pairs.append((None, decoded_inversions))
-            labels.append(label)
-            colors.append((None, decoded_color))
-        else:
-            raise ValueError(f"{key} not found in datasets or encoded data")
+        result = MA.get_inversions(key)
+        dataset_inversions = result.get('dataset_inversions')
+        decoded_inversions = result.get('decoded_inversions')
+        if decoded_inversions is None:
+            raise ValueError(f"Decoded inversions unavailable for key '{key}'")
+        data_pairs.append((dataset_inversions, decoded_inversions))
+        labels.append(label)
+        colors.append((dataset_color if dataset_inversions is not None else None, decoded_color))
     
     num_plots = len(data_pairs)
     fig, axes = plt.subplots(num_plots, 1, figsize=(8, 3 * num_plots), sharex=True)
@@ -250,76 +316,74 @@ def plot_inversion_hist(MA, plot_data=None, fname=None, **kwargs):
         plt.savefig(fname, **kwargs)
     plt.show()
     
-    return None
 
+def plot_dope_hist(MA, plot_data=None, fname=None, refine=True, *, bins: int = 50, **kwargs):
+    """Plot DOPE score distributions for datasets and decoded structures."""
 
-def plot_dope_hist(MA, plot_data=None, fname=None, refine=True, **kwargs):
-    """
-    Plot distributions of DOPE scores of the chosen datasets.
+    if plot_data is None:
+        raise ValueError("plot_data must be provided.")
 
-    :param MolearnAnalysis MA: A MolearnAnalysis object with datasets loaded.
-    :param list plot_data: A list of tuples containing the data to plot. Each tuple should contain
-                           the key to a original/encoded dataset in the MolearnAnalysis object, a label for the legend,
-                           and a colour for the decoded data plot.
-                           Format: [(key, label, colour), ...]
-    :param Path fname: The directory to save the plots.
-    :param bool refine: if True, refine structures before calculating DOPE score
-    :param dict kwargs: Additional keyword arguments to pass to plt.savefig.
+    if refine not in (True, False, "both"):
+        raise ValueError("refine must be True, False, or 'both'.")
 
-    :return: None
-    """
-    
-    data_pairs = []
-    labels = []
-    color_pairs = []
-    
-    for key, label, decoded_color in plot_data:
-        dataset_color = "gray"  # Set dataset distribution as gray
-        if key in MA._datasets.keys():
-            dataset_dope = MA.get_all_dope_score(MA.get_dataset(key), refine=refine)
-            decoded_dope = MA.get_all_dope_score(MA.get_decoded(key), refine=refine)
-        elif key in MA._encoded.keys():
-            dataset_dope, dataset_color = None, None        
-            decoded_dope = MA.get_all_dope_score(MA.get_decoded(key), refine=refine)
+    def _score_dict(values):
+        arr = np.asarray(values)
+        if refine == "both" and arr.ndim == 2 and arr.shape[1] == 2:
+            return {"Raw": _flatten(arr[:, 0]), "Refined": _flatten(arr[:, 1])}
+        return {"DOPE": _flatten(arr)}
+
+    def _fetch(key: str):
+        metrics: Dict[str, Dict[str, np.ndarray]] = {}
+        decoded_scores = MA.get_all_dope_score(MA.get_decoded(key, unscale=True), refine=refine)
+        metrics["decoded"] = _score_dict(decoded_scores)
+        if key in MA._datasets:
+            dataset_scores = MA.get_all_dope_score(MA.get_dataset(key, unscale=True), refine=refine)
+            metrics["dataset"] = _score_dict(dataset_scores)
+        return metrics
+
+    entries, metric_names = _collect_metric_entries(
+        MA,
+        plot_data,
+        _fetch,
+        dataset_key="dataset",
+        decoded_key="decoded",
+    )
+
+    # Determine per-metric axis limits from the aggregated values.
+    limits: Dict[str, Tuple[float, float]] = {}
+    for metric_name in metric_names:
+        values = []
+        for entry in entries:
+            values.append(_flatten(entry["decoded"][metric_name]))
+            if entry["dataset"] is not None:
+                values.append(_flatten(entry["dataset"][metric_name]))
+        merged = np.concatenate(values)
+        limits[metric_name] = (merged.min(), merged.max())
+
+    figures = _plot_metric_histograms(
+        entries,
+        metric_names,
+        bins=bins,
+        wkdir=None,
+        filename_prefix="DOPE",
+        xlabel="DOPE score",
+        xlim=limits,
+        density=True,
+        legend_suffix="",
+        save_kwargs={},
+    )
+    if fname is not None:
+        target = _ensure_path(fname)
+        if target.suffix == "":
+            target = target.with_suffix(".pdf")
+        if len(figures) == 1:
+            figures[0].savefig(target, bbox_inches="tight", **kwargs)
         else:
-            raise ValueError(f"Dataset with key {key} not found in MolearnAnalysis object.")
-        
-        data_pairs.append((dataset_dope, decoded_dope))
-        labels.append(label)
-        color_pairs.append((dataset_color, decoded_color))
-
-    # Plotting
-    data = []
-    palette = []    
-    for i, (data_pair, label, color_pair) in enumerate(zip(data_pairs, labels, color_pairs)):
-        if data_pair[0] is not None:
-            data.extend([data_pair[0], data_pair[1]])
-            palette.extend(color_pair)
-        else:
-            data.append([data_pair[1], data_pair[1]])
-            palette.extend([decoded_color, decoded_color])
-
-    fig, ax = plt.subplots(figsize=(10, 6))
-    sns.violinplot(data=data,
-                   split=True, inner="quart", 
-                   palette=palette, 
-                   ax=ax, gap=-0.05, cut=0, width=0.9, bw=0.2,
-                   native_scale=True, dodge=False)
-        
-    legend_patches = [mpatches.Patch(color=dataset_color, label="Dataset")]
-    ax.legend(handles=legend_patches, loc='upper right')
-
-    ax.set_ylabel("DOPE score")
-    ax.set_xticks(np.arange(len(labels))*2+0.5)
-    ax.set_xticklabels(labels, rotation=0)
-    ax.set_title('Distribution of DOPE Scores')
-    ax.grid(True, linestyle='--', alpha=0.6)
-    
-    if fname:
-        plt.savefig(fname, bbox_inches='tight', **kwargs)
-    plt.show()
-
-    return None
+            for fig, metric_name in zip(figures, metric_names):
+                fig.savefig(
+                    target.parent / f"{target.stem}_{metric_name}{target.suffix}",
+                    **kwargs,
+                )
 
 
 def plot_rmsd_hist(MA, plot_data=None, fname=None, **kwargs):
@@ -380,60 +444,48 @@ def plot_rmsd_hist(MA, plot_data=None, fname=None, **kwargs):
         plt.savefig(fname, bbox_inches='tight', **kwargs)
     plt.show()
 
-    return None
 
 
 def plot_network_rmsd_surface(MA, plot_data=None, cmap='gist_heat_r', fname=None, **kwargs):
-    """
-    Plot the latent landscape colored by the network RMSD, the RMSD between 
-    the decoded grid and the grid encoded and decoded again. 
+    """Plot the latent grid coloured by reconstruction RMSD.
 
     Parameters
     ----------
     MA : MolearnAnalysis
-        A MolearnAnalysis object containing the latent grid and chirality surface.
-    plot_data : list of tuple
-        A list of tuples specifying the data to plot. Each tuple should contain:
-        - key (str): The key to the data in the MolearnAnalysis object.
-        - label (str): A label for the legend.
-        - colour (str): The color for the plot.
-        - plot_type (str): The type of plot ('scatter' or 'kde').
-    cmap : str
-        The name of the Matplotlib colormap to use.
-    fname : str
-        The filename to save the plots.
+        Analysis instance with latent grid axes and a precomputed
+        ``surfaces['Network_RMSD']`` entry (produced by :meth:`MolearnAnalysis.scan_error`).
+    plot_data : list[tuple], optional
+        Optional overlays given as ``(key, label, colour, plot_type)`` tuples. ``plot_type``
+        must be either ``'scatter'`` or ``'kde'`` and each ``key`` must correspond to an
+        encoded dataset available through :meth:`MolearnAnalysis.get_encoded`.
+    cmap : str, default 'gist_heat_r'
+        Matplotlib colormap name for the background surface.
+    fname : str or Path, optional
+        Destination path for the saved figure. When omitted the plot is displayed only.
     **kwargs : dict
-        Additional keyword arguments to pass to plt.savefig
+        Additional keyword arguments forwarded to
+        :meth:`matplotlib.figure.Figure.savefig`.
+
+    Raises
+    ------
+    ValueError
+        If the RMSD surface has not been computed on ``MA``.
     """
 
-    assert 'Network_RMSD' in MA.surfaces.keys(), "Run MA.scan_error first"
+    if 'Network_RMSD' not in MA.surfaces:
+        raise ValueError("Run MA.scan_error before plotting the network RMSD surface.")
 
-    cmap = mpl.cm.get_cmap(name=cmap)
+    cmap_obj = mpl.cm.get_cmap(name=cmap)
     data = MA.surfaces['Network_RMSD']
-    xvals = np.append(MA.xvals, (2*MA.xvals[-1] - MA.xvals[-2]))
-    yvals = np.append(MA.yvals, (2*MA.yvals[-1] - MA.yvals[-2]))
+    xvals = _latent_edge(MA.xvals)
+    yvals = _latent_edge(MA.yvals)
 
     fig, ax = plt.subplots(figsize=(10, 6))
-    mesh = ax.pcolormesh(xvals, yvals, data, cmap=cmap) 
+    mesh = ax.pcolormesh(xvals, yvals, data, cmap=cmap_obj, shading='auto')
 
-    legend_handles = []
-    if plot_data is not None:
-        for key, label, colour, plot_type in plot_data:
-            if plot_type == 'scatter':
-                ax.scatter(x=MA._encoded[key].squeeze()[:,0],
-                        y=MA._encoded[key].squeeze()[:,1],
-                        marker='o', s=1,
-                        c=colour, label=label)
-                legend_handles.append(mpl.lines.Line2D([0], [0], color=colour, linestyle='', marker='o', markersize=10, label=label))
-            elif plot_type == 'kde':
-                sns.kdeplot(x=MA._encoded[key].squeeze()[:,0],
-                            y=MA._encoded[key].squeeze()[:,1],
-                            levels=7, color=colour,
-                            ax=ax, label=label)
-                legend_handles.append(mpl.lines.Line2D([0], [0], color=colour, lw=2, label=label))
-            else:
-                pass
-        ax.legend(handles=legend_handles, loc='upper right')
+    handles = _overlay_latent_points(ax, MA, plot_data or [])
+    if handles:
+        ax.legend(handles=handles, loc='upper right')
 
     ax.set_xlim(MA.xvals.min(), MA.xvals.max())
     ax.set_ylim(MA.yvals.min(), MA.yvals.max())
@@ -441,84 +493,78 @@ def plot_network_rmsd_surface(MA, plot_data=None, cmap='gist_heat_r', fname=None
     ax.set_ylabel('Latent dim 2')
     ax.grid(False)
     ax.set_aspect('equal')
-    
-    cbar_ax = fig.add_axes([ax.get_position().x1+0.02,
-                            ax.get_position().y0,
-                            0.02,
-                            ax.get_position().height])
-    cb = fig.colorbar(mesh, cax=cbar_ax)
 
+    cbar_ax = fig.add_axes([
+        ax.get_position().x1 + 0.02,
+        ax.get_position().y0,
+        0.02,
+        ax.get_position().height,
+    ])
+    cb = fig.colorbar(mesh, cax=cbar_ax)
     cb.ax.tick_params(left=False, right=True)
     cb.ax.set_ylabel('RMSD (Å)')
 
     if fname is not None:
-        plt.savefig(fname, **kwargs)
+        fig.savefig(fname, bbox_inches='tight', **kwargs)
     plt.show()
-
-    return None
 
 
 def plot_dope_surface(MA, refine=True, truncate_at=None, plot_data=None, cmap='gist_heat_r', fname=None, **kwargs):
-    """
-    Plot the latent landscape colored by decoded DOPE scores.
+    """Plot the latent grid coloured by decoded DOPE scores.
 
     Parameters
     ----------
     MA : MolearnAnalysis
-        A MolearnAnalysis object containing the latent grid and chirality surface.
-    refine : bool
-        Whether to plot the refined or unrefined DOPE scores.
-    truncate_at : float
-        The maximum value to plot in the color map.
-    plot_data : list of tuple
-        A list of tuples specifying the data to plot. Each tuple should contain:
-        - key (str): The key to the data in the MolearnAnalysis object.
-        - label (str): A label for the legend.
-        - colour (str): The color for the plot.
-        - plot_type (str): The type of plot ('scatter' or 'kde').
-    cmap : str
-        The name of the Matplotlib colormap to use.
-    fname : str
-        The filename to save the plots.
+        Analysis instance containing latent grid axes and precomputed DOPE surfaces
+        via :meth:`MolearnAnalysis.scan_dope`.
+    refine : bool, default True
+        When ``True`` the refined DOPE surface (``'DOPE_refined'``) is rendered; otherwise
+        the unrefined surface (``'DOPE_unrefined'``) is used.
+    truncate_at : float, optional
+        Upper bound for the colour scale. Defaults to the maximum value in the selected surface.
+    plot_data : list[tuple], optional
+        Optional overlays given as ``(key, label, colour, plot_type)`` tuples, matching the
+        semantics described for :func:`plot_network_rmsd_surface`.
+    cmap : str, default 'gist_heat_r'
+        Matplotlib colormap name applied to the surface.
+    fname : str or Path, optional
+        Destination path for the saved figure. When omitted the plot is displayed only.
     **kwargs : dict
-        Additional keyword arguments to pass to plt.savefig
-    """
-    if refine==True:
-        key='DOPE_refined'
-    elif refine==False:
-        key='DOPE_unrefined'
-    assert key in MA.surfaces.keys(), "Run MA.scan_dope() first"
+        Additional keyword arguments forwarded to
+        :meth:`matplotlib.figure.Figure.savefig`.
 
-    cmap = mpl.cm.get_cmap(name=cmap)
-    data = MA.surfaces[key]
-    xvals = np.append(MA.xvals, (2*MA.xvals[-1] - MA.xvals[-2]))
-    yvals = np.append(MA.yvals, (2*MA.yvals[-1] - MA.yvals[-2]))
-    cmap.set_over(cmap(1.0))
+    Raises
+    ------
+    ValueError
+        If the requested DOPE surface has not been computed on ``MA``.
+    """
+    surface_key = 'DOPE_refined' if refine else 'DOPE_unrefined'
+    if surface_key not in MA.surfaces:
+        raise ValueError("Run MA.scan_dope() before plotting the DOPE surface.")
+
+    cmap_obj = mpl.cm.get_cmap(name=cmap)
+    cmap_obj.set_over(cmap_obj(1.0))
+    data = MA.surfaces[surface_key]
+    xvals = _latent_edge(MA.xvals)
+    yvals = _latent_edge(MA.yvals)
 
     if truncate_at is None:
         truncate_at = data.max()
 
     fig, ax = plt.subplots(figsize=(10, 6))
-    mesh = ax.pcolormesh(xvals, yvals, data, vmin=data.min(), vmax=truncate_at, cmap=cmap) 
+    mesh = ax.pcolormesh(
+        xvals,
+        yvals,
+        data,
+        vmin=data.min(),
+        vmax=truncate_at,
+        cmap=cmap_obj,
+        shading='auto',
+    )
 
-    legend_handles = []
-    if plot_data is not None:
-        for key, label, colour, plot_type in plot_data:
-            if plot_type == 'scatter':
-                ax.scatter(x=MA._encoded[key].squeeze()[:,0],
-                        y=MA._encoded[key].squeeze()[:,1],
-                        marker='o', s=1,
-                        c=colour, label=label)
-                legend_handles.append(mpl.lines.Line2D([0], [0], color=colour, linestyle='', marker='o', markersize=10, label=label))
-            elif plot_type == 'kde':
-                sns.kdeplot(x=MA._encoded[key].squeeze()[:,0],
-                            y=MA._encoded[key].squeeze()[:,1],
-                            levels=7, color=colour,
-                            ax=ax, label=label)
-                legend_handles.append(mpl.lines.Line2D([0], [0], color=colour, lw=2, label=label))
-            else:
-                pass
-        ax.legend(handles=legend_handles, loc='upper right')
+    handles = _overlay_latent_points(ax, MA, plot_data or [])
+    if handles:
+        ax.legend(handles=handles, loc='upper right')
 
     ax.set_xlim(MA.xvals.min(), MA.xvals.max())
     ax.set_ylim(MA.yvals.min(), MA.yvals.max())
@@ -526,85 +572,82 @@ def plot_dope_surface(MA, refine=True, truncate_at=None, plot_data=None, cmap='g
     ax.set_ylabel('Latent dim 2')
     ax.grid(False)
     ax.set_aspect('equal')
-    
-    cbar_ax = fig.add_axes([ax.get_position().x1+0.02,
-                            ax.get_position().y0,
-                            0.02,
-                            ax.get_position().height])
+
+    cbar_ax = fig.add_axes([
+        ax.get_position().x1 + 0.02,
+        ax.get_position().y0,
+        0.02,
+        ax.get_position().height,
+    ])
     cb = fig.colorbar(mesh, cax=cbar_ax)
 
     cb.ax.tick_params(left=False, right=True)
     cb.ax.set_ylabel('DOPE score')
 
     if fname is not None:
-        plt.savefig(fname, **kwargs)
+        fig.savefig(fname, bbox_inches='tight', **kwargs)
     plt.show()
-
-    return None
 
 
 def plot_inversion_surface(MA, plot_data=None, levels=10, cmap='gist_heat_r', fname=None, **kwargs):
-    """
-    Plot the latent landscape colored by the number of D-amino acids.
-
-    .. note::
-        The colorbar tick labels are incorrect when ``levels`` is odd.
+    """Plot the latent grid coloured by predicted D-amino acid counts.
 
     Parameters
     ----------
     MA : MolearnAnalysis
-        A MolearnAnalysis object containing the latent grid and chirality surface.
-    plot_data : list of tuple
-        A list of tuples specifying the data to plot. Each tuple should contain:
-        
-        - key (str): The key to the data in the MolearnAnalysis object.
-        - label (str): A label for the legend.
-        - colour (str): The color for the plot.
-        - plot_type (str): The type of plot ('scatter' or 'kde').
-
-    levels : int
-        The number of levels to plot in the colormap.
-    cmap : str
-        The name of the Matplotlib colormap to use.
-    fname : str
-        The filename to save the plots.
+        Analysis instance with latent grid axes and chirality surface data produced by
+        :meth:`MolearnAnalysis.scan_ca_chirality`.
+    plot_data : list[tuple], optional
+        Optional overlays given as ``(key, label, colour, plot_type)`` tuples, matching the
+        semantics described for :func:`plot_network_rmsd_surface`.
+    levels : int, default 10
+        Number of discrete contour levels used for the colour map.
+    cmap : str, default 'gist_heat_r'
+        Matplotlib colormap name applied to the surface.
+    fname : str or Path, optional
+        Destination path for the saved figure. When omitted the plot is displayed only.
     **kwargs : dict
-        Additional keyword arguments to pass to plt.savefig
+        Additional keyword arguments forwarded to
+        :meth:`matplotlib.figure.Figure.savefig`.
+
+    Raises
+    ------
+    ValueError
+        If the chirality surface has not been computed on ``MA``.
+
+    Notes
+    -----
+    Colorbar tick labels can become misaligned when ``levels`` is odd because of the way
+    discrete bins are centred.
     """
 
-    assert 'Chirality' in MA.surfaces.keys(), "Run scan_ca_chirality first"
+    if 'Chirality' not in MA.surfaces:
+        raise ValueError("Run MA.scan_ca_chirality before plotting the inversion surface.")
 
-    cmap = mpl.cm.get_cmap(name=cmap, lut=levels+1)
-    cmap.set_under(cmap(0))
-    cmap.set_bad(cmap(0))
-    cmap.set_over(cmap(levels))
+    cmap_obj = mpl.cm.get_cmap(name=cmap, lut=levels + 1)
+    cmap_obj.set_under(cmap_obj(0))
+    cmap_obj.set_bad(cmap_obj(0))
+    cmap_obj.set_over(cmap_obj(levels))
 
     data = MA.surfaces['Chirality']
     masked_data = np.ma.masked_where(data == 0, data)
-    xvals = np.append(MA.xvals, (2*MA.xvals[-1] - MA.xvals[-2]))
-    yvals = np.append(MA.yvals, (2*MA.yvals[-1] - MA.yvals[-2]))
+    xvals = _latent_edge(MA.xvals)
+    yvals = _latent_edge(MA.yvals)
 
     fig, ax = plt.subplots(figsize=(10, 6))
-    mesh = ax.pcolormesh(xvals, yvals, masked_data, vmin=0, vmax=levels+1, cmap=cmap)
+    mesh = ax.pcolormesh(
+        xvals,
+        yvals,
+        masked_data,
+        vmin=0,
+        vmax=levels + 1,
+        cmap=cmap_obj,
+        shading='auto',
+    )
 
-    legend_handles = []
-    if plot_data is not None:
-        for key, label, colour, plot_type in plot_data:
-            if plot_type == 'scatter':
-                ax.scatter(x=MA._encoded[key].squeeze()[:,0],
-                        y=MA._encoded[key].squeeze()[:,1],
-                        marker='o', s=1,
-                        c=colour, label=label)
-                legend_handles.append(mpl.lines.Line2D([0], [0], color=colour, linestyle='', marker='o', markersize=10, label=label))
-            elif plot_type == 'kde':
-                sns.kdeplot(x=MA._encoded[key].squeeze()[:,0],
-                            y=MA._encoded[key].squeeze()[:,1],
-                            levels=7, color=colour,
-                            ax=ax, label=label)
-                legend_handles.append(mpl.lines.Line2D([0], [0], color=colour, lw=2, label=label))
-            else:
-                pass
-        ax.legend(handles=legend_handles, loc='upper right')
+    handles = _overlay_latent_points(ax, MA, plot_data or [])
+    if handles:
+        ax.legend(handles=handles, loc='upper right')
 
     ax.set_xlim(MA.xvals.min(), MA.xvals.max())
     ax.set_ylim(MA.yvals.min(), MA.yvals.max())
@@ -613,10 +656,12 @@ def plot_inversion_surface(MA, plot_data=None, levels=10, cmap='gist_heat_r', fn
     ax.grid(False)
     ax.set_aspect('equal')
 
-    cbar_ax = fig.add_axes([ax.get_position().x1+0.02,
-                            ax.get_position().y0,
-                            0.02,
-                            ax.get_position().height])
+    cbar_ax = fig.add_axes([
+        ax.get_position().x1 + 0.02,
+        ax.get_position().y0,
+        0.02,
+        ax.get_position().height,
+    ])
     cb = fig.colorbar(mesh, cax=cbar_ax)
 
     cb.ax.tick_params(left=False, right=True)
@@ -625,11 +670,76 @@ def plot_inversion_surface(MA, plot_data=None, levels=10, cmap='gist_heat_r', fn
     tick_labels[-2].set_text(rf'$\geq${levels}')
     cb.ax.yaxis.set_ticklabels(tick_labels)
     ticks = cb.ax.get_yticks()
-    ticks = [t + 0.5 for t in ticks[:-1]] 
+    ticks = [t + 0.5 for t in ticks[:-1]]
     cb.ax.yaxis.set_ticks(ticks)
 
     if fname is not None:
-        plt.savefig(fname, **kwargs)
+        fig.savefig(fname, bbox_inches='tight', **kwargs)
     plt.show()
 
-    return None
+
+def plot_analysis_surface(MA, dataset, cmap='gist_heat_r', fname=None, **kwargs):
+    """Plot a specific dataset overlayed on its analysis surface.
+
+    Parameters
+    ----------
+    MA : MolearnAnalysis
+        Analysis instance containing latent grid axes and the requested surface entry.
+    dataset : str
+        Key identifying the surface to render. Use :meth:`MolearnAnalysis.scan_dataset`
+        (or similar) to populate ``MA.surfaces[dataset]`` beforehand.
+    cmap : str, default 'gist_heat_r'
+        Matplotlib colormap name applied to the surface.
+    fname : str or Path, optional
+        Destination path for the saved figure. When omitted the plot is displayed only.
+    **kwargs : dict
+        Additional keyword arguments forwarded to
+        :meth:`matplotlib.figure.Figure.savefig`.
+
+    Raises
+    ------
+    ValueError
+        If the requested surface is missing from ``MA.surfaces``.
+    """
+
+    if dataset not in MA.surfaces:
+        raise ValueError(
+            f"Dataset {dataset} not present in surfaces. Run MA.scan_dataset('{dataset}') first."
+        )
+
+    cmap_obj = mpl.cm.get_cmap(name=cmap)
+    data = MA.surfaces[dataset]
+    xvals = _latent_edge(MA.xvals)
+    yvals = _latent_edge(MA.yvals)
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    mesh = ax.pcolormesh(xvals, yvals, data, cmap=cmap_obj, shading='auto')
+
+    for encoded in MA._encoded.values():
+        coords = _to_numpy(encoded).squeeze()
+        ax.scatter(x=coords[:, 0], y=coords[:, 1], marker='o', s=0.5, c='white')
+
+    focal = _to_numpy(MA.get_encoded(dataset)).squeeze()
+    ax.scatter(x=focal[:, 0], y=focal[:, 1], marker='o', s=1, c='black', label=dataset)
+    ax.legend()
+
+    ax.set_xlim(MA.xvals.min(), MA.xvals.max())
+    ax.set_ylim(MA.yvals.min(), MA.yvals.max())
+    ax.set_xlabel('Latent dim 1')
+    ax.set_ylabel('Latent dim 2')
+    ax.grid(False)
+    ax.set_aspect('equal')
+
+    cbar_ax = fig.add_axes([
+        ax.get_position().x1 + 0.02,
+        ax.get_position().y0,
+        0.02,
+        ax.get_position().height,
+    ])
+    cb = fig.colorbar(mesh, cax=cbar_ax)
+    cb.ax.tick_params(left=False, right=True)
+    cb.ax.set_ylabel('RMSD (Å)')
+
+    if fname is not None:
+        fig.savefig(fname, bbox_inches='tight', **kwargs)
+    plt.show()
