@@ -149,7 +149,7 @@ def _plot_metric_histograms(
             ax.tick_params(labelbottom=True, labelleft=False)
         plt.tight_layout()
         if wkdir is not None:
-            plt.savefig(wkdir / f"{filename_prefix}_{metric_name}.pdf", bbox_inches="tight", **save_kwargs)
+            plt.savefig(wkdir / f"{filename_prefix}_{metric_name}.pdf", **save_kwargs)
         plt.show()
     return figures
 
@@ -377,7 +377,7 @@ def plot_dope_hist(MA, plot_data=None, fname=None, refine=True, *, bins: int = 5
         if target.suffix == "":
             target = target.with_suffix(".pdf")
         if len(figures) == 1:
-            figures[0].savefig(target, bbox_inches="tight", **kwargs)
+            figures[0].savefig(target, **kwargs)
         else:
             for fig, metric_name in zip(figures, metric_names):
                 fig.savefig(
@@ -441,7 +441,7 @@ def plot_rmsd_hist(MA, plot_data=None, fname=None, **kwargs):
     
     # Save the plot if fname is provided
     if fname:
-        plt.savefig(fname, bbox_inches='tight', **kwargs)
+        plt.savefig(fname, **kwargs)
     plt.show()
 
 
@@ -505,7 +505,7 @@ def plot_network_rmsd_surface(MA, plot_data=None, cmap='gist_heat_r', fname=None
     cb.ax.set_ylabel('RMSD (Å)')
 
     if fname is not None:
-        fig.savefig(fname, bbox_inches='tight', **kwargs)
+        plt.savefig(fname, **kwargs)
     plt.show()
 
 
@@ -585,7 +585,7 @@ def plot_dope_surface(MA, refine=True, truncate_at=None, plot_data=None, cmap='g
     cb.ax.set_ylabel('DOPE score')
 
     if fname is not None:
-        fig.savefig(fname, bbox_inches='tight', **kwargs)
+        plt.savefig(fname, **kwargs)
     plt.show()
 
 
@@ -674,7 +674,7 @@ def plot_inversion_surface(MA, plot_data=None, levels=10, cmap='gist_heat_r', fn
     cb.ax.yaxis.set_ticks(ticks)
 
     if fname is not None:
-        fig.savefig(fname, bbox_inches='tight', **kwargs)
+        plt.savefig(fname, **kwargs)
     plt.show()
 
 
@@ -741,5 +741,5 @@ def plot_analysis_surface(MA, dataset, cmap='gist_heat_r', fname=None, **kwargs)
     cb.ax.set_ylabel('RMSD (Å)')
 
     if fname is not None:
-        fig.savefig(fname, bbox_inches='tight', **kwargs)
+        plt.savefig(fname, **kwargs)
     plt.show()
