@@ -268,8 +268,10 @@ wop*
 mp*
 nop*
 examples/data
-examples/xbb_foldingnet_checkpoints
-*ipynb
+examples/analysis_foldingnet_basic
+examples/astar_interpolation_path
+examples/linear_interpolation_path
+examples/foldingnet_checkpoints
 *__pycache__
 ERROR*
 LOG*

@@ -1112,12 +1112,14 @@ class MolearnAnalysis:
         ) as cfile:
             for ck, k in enumerate(prot_coords):
                 cfile.write(
-                    f"{str(pdb_data['atom'][ck]):6s}{int(pdb_data['index'][ck]):5d} {str(pdb_data['name'][ck]):^4s}{'':1s}{str(pdb_data['resname'][ck]):3s} {str(pdb_data['chain'][ck]):1s}{int(pdb_data['resid'][ck]):4d}{'':1s}   {k[0]:8.3f}{k[1]:8.3f}{k[2]:8.3f}{float(pdb_data['occupancy'][ck]):6.2f}{float(pdb_data['beta'][ck]):6.2f}          {str(pdb_data['atomtype'][ck]):>2s}{str(pdb_data['charge'][ck]):2s}\n"
+                    # The charge output is incorrect. It's optional in pdb so I leave it blank.
+                    # f"{str(pdb_data['atom'][ck]):6s}{int(pdb_data['index'][ck]):5d} {str(pdb_data['name'][ck]):^4s}{'':1s}{str(pdb_data['resname'][ck]):3s} {str(pdb_data['chain'][ck]):1s}{int(pdb_data['resid'][ck]):4d}{'':1s}   {k[0]:8.3f}{k[1]:8.3f}{k[2]:8.3f}{float(pdb_data['occupancy'][ck]):6.2f}{float(pdb_data['beta'][ck]):6.2f}          {str(pdb_data['atomtype'][ck]):>2s}{str(pdb_data['charge'][ck]):2s}\n"
+                    f"{str(pdb_data['atom'][ck]):6s}{int(pdb_data['index'][ck]):5d} {str(pdb_data['name'][ck]):^4s}{'':1s}{str(pdb_data['resname'][ck]):3s} {str(pdb_data['chain'][ck]):1s}{int(pdb_data['resid'][ck]):4d}{'':1s}   {k[0]:8.3f}{k[1]:8.3f}{k[2]:8.3f}{float(pdb_data['occupancy'][ck]):6.2f}{float(pdb_data['beta'][ck]):6.2f}          {str(pdb_data['atomtype'][ck]):>2s}\n"
                 )
 
     def generate(
         self,
-        crd: np.ndarray[tuple[int, int, int], np.dtype[np.float64]],
+        crd: np.ndarray[tuple[int, int], np.dtype[np.float64]],
         pdb_path: str | None = None,
         relax: bool = False,
     ) -> np.ndarray[tuple[int, int, int], np.dtype[np.float64]]:
@@ -1125,8 +1127,8 @@ class MolearnAnalysis:
         Generate a collection of protein conformations, given coordinates in the latent space.
 
         :param numpy.array crd: coordinates in the latent space, as a (Nx2) array
-        :param str pdb_path: path where to pdb_files should be stored as files named sN.pdb where N is the index in the crd array
-        :param bool relax: whether relaxed structures should be generated in a sN_relaxed.pdb file
+        :param str pdb_path: path where to pdb_files should be stored as files named s_i.pdb where i is the index in the crd array
+        :param bool relax: Relax generated structures with energy minimisation. s_i_relaxed.pdb file
 
         :return: collection of protein conformations in the Cartesian space (NxMx3, where M is the number of atoms in the protein)
         """
@@ -1135,34 +1137,31 @@ class MolearnAnalysis:
             bundle = self._datasets[key]
             # if not on cpu transfer data back to cpu before converting it to numpy array
             if self.device == "cpu":
-                z = torch.tensor(crd.transpose(1, 2, 0)).float()
+                z = torch.tensor(crd).float()
                 s = (
-                    self.network.decode(z)[:, :, : bundle.dataset.shape[2]]
+                    self.network.decode(z)[:, :bundle.dataset.shape[1], : ]
                     .numpy()
-                    .transpose(0, 2, 1)
                 )
             else:
-                z = torch.tensor(crd.transpose(1, 2, 0)).float().to(self.device)
+                z = torch.tensor(crd).float().to(self.device)
                 s = (
-                    self.network.decode(z)[:, :, : bundle.dataset.shape[2]]
+                    self.network.decode(z)[:, :bundle.dataset.shape[1], : ]
                     .cpu()
                     .numpy()
-                    .transpose(0, 2, 1)
                 )
-
         gen_prot_coords = s * self.stdval + self.meanval
-        # create pdb file
+
+        # create pdb files
         if pdb_path is not None:
             for i, coord in enumerate(
                 tqdm(gen_prot_coords, desc="Generating pdb files")
             ):
-                struct_path = os.path.join(pdb_path, f"s{i}.pdb")
+                struct_path = os.path.join(pdb_path, f"s_{i}.pdb")
                 self._pdb_file(coord, struct_path)
+
                 # relax and save as new file
                 if relax:
                     self._relax(struct_path, pdb_path, maxIterations=1000)
-
-        return gen_prot_coords
 
     def __getstate__(self):
         return {
