@@ -179,7 +179,19 @@ def _overlay_latent_points(ax, MA, plot_data):
 
 
 def plot_bondlength_hist(MA, plot_data=None, bins: int = 100, wkdir=None, **kwargs):
-    """Plot bond-length distributions for original and decoded structures."""
+    """
+    Plot bond-length distributions for original and decoded structures.
+    
+    :param MolearnAnalysis MA: A MolearnAnalysis object with datasets loaded.
+    :param list plot_data: A list of tuples containing the data to plot. Each tuple should contain
+                           the key to a original/encoded dataset in the MolearnAnalysis object, a label for the legend,
+                           and a colour for the decoded data plot.
+                           Format: [(key, label, colour), ...]
+    :param int bins: No of bins in the histogram.
+    :param Path wkdir: A directory where figures are saved.
+
+    :return: None
+    """
 
     if plot_data is None:
         raise ValueError("plot_data must be provided.")
@@ -204,7 +216,19 @@ def plot_bondlength_hist(MA, plot_data=None, bins: int = 100, wkdir=None, **kwar
     )
 
 def plot_dihedral_hist(MA, plot_data=None, bins: int = 100, wkdir=None, **kwargs):
-    """Plot backbone dihedral distributions for dataset and decoded structures."""
+    """
+    Plot backbone dihedral distributions for dataset and decoded structures.
+    
+    :param MolearnAnalysis MA: A MolearnAnalysis object with datasets loaded.
+    :param list plot_data: A list of tuples containing the data to plot. Each tuple should contain
+                           the key to a original/encoded dataset in the MolearnAnalysis object, a label for the legend,
+                           and a colour for the decoded data plot.
+                           Format: [(key, label, colour), ...]
+    :param int bins: No of bins in the histogram.
+    :param Path wkdir: A directory where figures are saved.
+
+    :return: None
+    """
 
     if plot_data is None:
         raise ValueError("plot_data must be provided.")
@@ -230,7 +254,19 @@ def plot_dihedral_hist(MA, plot_data=None, bins: int = 100, wkdir=None, **kwargs
 
 
 def plot_angle_hist(MA, plot_data=None, bins: int = 100, wkdir=None, **kwargs):
-    """Plot bond-angle distributions for original and decoded structures."""
+    """
+    Plot bond-angle distributions for original and decoded structures.
+    
+    :param MolearnAnalysis MA: A MolearnAnalysis object with datasets loaded.
+    :param list plot_data: A list of tuples containing the data to plot. Each tuple should contain
+                           the key to a original/encoded dataset in the MolearnAnalysis object, a label for the legend,
+                           and a colour for the decoded data plot.
+                           Format: [(key, label, colour), ...]
+    :param int bins: No of bins in the histogram.
+    :param Path wkdir: A directory where figures are saved.
+
+    :return: None
+    """
 
     if plot_data is None:
         raise ValueError("plot_data must be provided.")
