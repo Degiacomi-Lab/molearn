@@ -70,7 +70,7 @@ class DatasetBundle:
     mean: torch.Tensor | float
     standardize: bool
 
-    def unscaled(self) -> torch.Tensor:
+    def scale(self) -> torch.Tensor:
         return self.dataset * self.std + self.mean
 
     @property
@@ -80,7 +80,7 @@ class DatasetBundle:
 
 class MolearnAnalysis:
     """
-    This class provides methods dedicated to the quality analysis of a trained model.
+    This class provides methods dedicated to the quality analysis and structure generation with a trained model.
     """
 
     def __init__(self, batch_size=1, processes=1):
@@ -121,7 +121,7 @@ class MolearnAnalysis:
                 f"Standardisation mismatch between dataset {key} and reference dataset {ref_key}"
             )
 
-    def _capture_reference_metadata(self, data: PDBData, bundle: DatasetBundle) -> None:
+    def _set_metadata(self, data: PDBData, bundle: DatasetBundle) -> None:
         if not hasattr(self, "standardize"):
             self.standardize = bundle.standardize
         if not hasattr(self, "stdval"):
@@ -132,10 +132,15 @@ class MolearnAnalysis:
             self.atoms = data.atoms
         if not hasattr(self, "mol"):
             self.mol = data.frame()
-        if not hasattr(self, "shape"):
-            self.shape = bundle.shape
+        if not hasattr(self, "n_atoms"):
+            self.n_atoms = bundle.dataset.shape[1]
         if not hasattr(self, "indices"):
             self.indices = {k: v.numpy() for k, v in data.indices.items()}
+        
+        statistic_check = (self.stdval == bundle.std and self.meanval == bundle.mean)
+        assert statistic_check, "Datasets have different mean or standard deviation. Have you set correct mean and std to the PDBData?"
+        system_check = (self.n_atoms == bundle.dataset.shape[1] and self.atoms == data.atoms)
+        assert system_check, "Datasets have different number of atoms or atom types. Have you selected the same atoms?"
 
     def _prepare_bundle(self, data: PDBData) -> DatasetBundle:
         dataset = data.dataset
@@ -182,16 +187,16 @@ class MolearnAnalysis:
         bundle = self._prepare_bundle(pdb_data)
         self._ensure_dataset_shape(key, bundle)
         self._datasets[key] = bundle
-        self._capture_reference_metadata(pdb_data, bundle)
+        self._set_metadata(pdb_data, bundle)
 
-    def get_dataset(self, key, unscale=False):
+    def get_dataset(self, key, scale=False):
         """
         :param str key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
-        :param bool unscale: if True, return the dataset unscaled (i.e. with mean and std applied)
+        :param bool scale: if True, return the dataset scaled (i.e. with mean and std applied)
         :return: `torch.Tensor` for dataset with the key
         """
         bundle = self._datasets[key]
-        return bundle.unscaled() if unscale else bundle.dataset
+        return bundle.scale() if scale else bundle.dataset
     
     def get_encoded(self, key, update=False):
         """
@@ -228,11 +233,11 @@ class MolearnAnalysis:
         """
         self._encoded[key] = torch.tensor(coords).float()
 
-    def get_decoded(self, key, update=False, unscale=False):
+    def get_decoded(self, key, update=False, scale=False):
         """
         :param str key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
         :param bool update: if True, re-decode and overwrite the existing data
-        :param bool unscale: if True, return the dataset unscaled (i.e. with mean and std applied)
+        :param bool scale: if True, return the dataset scaled (i.e. with mean and std applied)
         :return: `torch.Tensor` for decoded dataset with the key
         """
         if key not in self._decoded or update:
@@ -244,24 +249,17 @@ class MolearnAnalysis:
                     desc=f"Decoding {key}",
                 ):
                     batch = self.network.decode(encoded[slc].to(self.device))
-                    batch = batch[:, : self.shape[0], :].cpu()
+                    batch = batch[:, : self.n_atoms, :].cpu()
                     if decoded is None:
                         decoded = torch.empty(
                             encoded.shape[0], *batch.shape[1:], dtype=batch.dtype
                         )
                     decoded[slc] = batch
                 self._decoded[key] = decoded
-        if not unscale:
+        if not scale:
             return self._decoded[key]
-
-        if key in self._datasets:
-            bundle = self._datasets[key]
-            return self._decoded[key] * bundle.std + bundle.mean
-
-        if hasattr(self, "stdval") and hasattr(self, "meanval"):
+        else:
             return self._decoded[key] * self.stdval + self.meanval
-
-        raise ValueError("Set a dataset to get mean and std for datasets")
 
     def set_decoded(self, key, structures):
         """
@@ -284,8 +282,8 @@ class MolearnAnalysis:
         :param bool align: if True, the RMSD will be calculated by finding the optimal alignment between structures
         :return: 1D array containing the RMSD between input structures and their encoded-decoded counterparts
         """
-        dataset = self.get_dataset(key, unscale=True) # [B, n, 3]
-        decoded = self.get_decoded(key, unscale=True)
+        dataset = self.get_dataset(key, scale=True) # [B, n, 3]
+        decoded = self.get_decoded(key, scale=True)
 
         err = []
         m = deepcopy(self.mol)
@@ -312,8 +310,8 @@ class MolearnAnalysis:
         :param bool refine: if True, refine structures before calculating DOPE score
         :return: dictionary containing DOPE score of dataset, and its decoded counterpart
         """
-        dataset = self.get_dataset(key, unscale=True)
-        decoded = self.get_decoded(key, unscale=True)
+        dataset = self.get_dataset(key, scale=True)
+        decoded = self.get_decoded(key, scale=True)
 
         dataset_dope = self.get_all_dope_score(dataset, refine=refine, **kwargs)
         decoded_dope = self.get_all_dope_score(decoded, refine=refine, **kwargs)
@@ -374,8 +372,8 @@ class MolearnAnalysis:
         idx = np.asarray(list(indices.values()))
 
         if key in self._datasets.keys():
-            dataset = self.get_dataset(key, unscale=True)
-            decoded = self.get_decoded(key, unscale=True)
+            dataset = self.get_dataset(key, scale=True)
+            decoded = self.get_decoded(key, scale=True)
             results_dataset = []
             results_decode = []
             for j in dataset:
@@ -402,7 +400,7 @@ class MolearnAnalysis:
                         decoded_inversions=np.asarray(results_decode))
 
         elif key in self._encoded.keys():
-            decoded = self.get_decoded(key, unscale=True)
+            decoded = self.get_decoded(key, scale=True)
             results_decode = []
             for j in decoded:
                 s = (j.view(1, -1, 3)).numpy().squeeze()
@@ -452,8 +450,8 @@ class MolearnAnalysis:
 
         # Look for the key in self._datasets and self._encoded
         if key in self._datasets.keys():
-            dataset = self.get_dataset(key, unscale=True)
-            decoded = self.get_decoded(key, unscale=True)
+            dataset = self.get_dataset(key, scale=True)
+            decoded = self.get_decoded(key, scale=True)
             dataset_bondlen = {
                 k: MolearnAnalysis._bond_lengths(dataset, v) for k, v in indices.items()
             }
@@ -464,7 +462,7 @@ class MolearnAnalysis:
                 dataset_bondlen=dataset_bondlen, decoded_bondlen=decoded_bondlen
             )
         elif key in self._encoded.keys():
-            decoded = self.get_decoded(key, unscale=True)
+            decoded = self.get_decoded(key, scale=True)
             decoded_bondlen = {
                 k: MolearnAnalysis._bond_lengths(decoded, v) for k, v in indices.items()
             }
@@ -476,13 +474,13 @@ class MolearnAnalysis:
         
     def get_dihedrals(self, key):
         if key in self._datasets.keys():
-            dataset = self.get_dataset(key, unscale=True)
-            decoded = self.get_decoded(key, unscale=True)
+            dataset = self.get_dataset(key, scale=True)
+            decoded = self.get_decoded(key, scale=True)
             dataset_dihedrals = self._get_dihedrals(dataset)
             decoded_dihedrals = self._get_dihedrals(decoded)
             return dict(dataset_dihedrals=dataset_dihedrals, decoded_dihedrals=decoded_dihedrals)
         elif key in self._encoded.keys():
-            decoded = self.get_decoded(key, unscale=True)
+            decoded = self.get_decoded(key, scale=True)
             decoded_dihedrals = self._get_dihedrals(decoded)
             return dict(decoded_dihedrals=decoded_dihedrals)
         else:
@@ -520,13 +518,13 @@ class MolearnAnalysis:
     
     def get_angles(self, key):
         if key in self._datasets.keys():
-            dataset = self.get_dataset(key, unscale=True)
-            decoded = self.get_decoded(key, unscale=True)
+            dataset = self.get_dataset(key, scale=True)
+            decoded = self.get_decoded(key, scale=True)
             dataset_angles = self._get_angles(dataset)
             decoded_angles = self._get_angles(decoded)
             return dict(dataset_angles=dataset_angles, decoded_angles=decoded_angles)
         elif key in self._encoded.keys():
-            decoded = self.get_decoded(key, unscale=True)
+            decoded = self.get_decoded(key, scale=True)
             decoded_angles = self._get_angles(decoded)
             return dict(decoded_angles=decoded_angles)
         else:
@@ -652,9 +650,9 @@ class MolearnAnalysis:
             if "grid" not in self._encoded:
                 raise ValueError("Call MolearnAnalysis.setup_grid before scanning errors")
             target = (
-                self.get_dataset(key, unscale=True)
+                self.get_dataset(key, scale=True)
                 if index is None
-                else self.get_dataset(key, unscale=True)[index].unsqueeze(0)
+                else self.get_dataset(key, scale=True)[index].unsqueeze(0)
             )
             if target.shape[0] != 1:
                 msg = f"dataset {key} shape is {target.shape}. \
@@ -708,8 +706,8 @@ class MolearnAnalysis:
             if "grid" not in self._encoded:
                 raise ValueError("Call MolearnAnalysis.setup_grid before scanning errors")
             decoded = self.get_decoded("grid")  # decode grid
-            std = getattr(self, "stdval", 1.0)
-            mean = getattr(self, "meanval", 0.0)
+            std = getattr(self, "stdval")
+            mean = getattr(self, "meanval")
             bundle = DatasetBundle(
                 dataset=decoded,
                 std=std,
@@ -1162,6 +1160,8 @@ class MolearnAnalysis:
                 # relax and save as new file
                 if relax:
                     self._relax(struct_path, pdb_path, maxIterations=1000)
+
+        return gen_prot_coords
 
     def __getstate__(self):
         return {

@@ -17,12 +17,18 @@ def main():
     data.fix_terminal()
     data.atomselect(atoms=["N", "CA", "CB", "C", "O"])
     dataset = data.prepare_dataset()
+    data.write_statistics("data_statistics.json") # Save mean and std for analysis later
 
     ##### Prepare Trainer #####
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     trainer = OpenMM_Physics_Trainer(device=device)
 
-    trainer.set_data(data, batch_size=8, validation_split=0.1, manual_seed=25)
+    trainer.set_data(data, 
+                     batch_size=16, 
+                     validation_split=0.1, 
+                     manual_seed=25,
+                     save_indices=False     # If True, the training/validation split indices will be saved to disk
+                     )
     trainer.prepare_physics(remove_NB=True)
 
     trainer.set_autoencoder(AutoEncoder, out_points=data.dataset.shape[1])
@@ -32,7 +38,7 @@ def main():
     # Keep training until loss does not improve for 32 consecutive epochs
 
     fit_results = trainer.run_until_converge(
-        patience=32,
+        patience=16,
         log_filename="log.dat",
         log_folder="foldingnet_checkpoints",
         checkpoint_folder="foldingnet_checkpoints",

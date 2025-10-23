@@ -751,6 +751,7 @@ class Trainer:
             mag_new = math.floor(math.log10(abs(tar_loss)))
         return 10 ** (mag_ref - mag_new) * scale_scale
 
+    # Delete these?
     # ------------------------------------------------------------------
     # Backwards compatibility shims
     # ------------------------------------------------------------------

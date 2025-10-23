@@ -279,3 +279,4 @@ LOG*
 *.swo
 
 archive/
+.ipynb_checkpoints/

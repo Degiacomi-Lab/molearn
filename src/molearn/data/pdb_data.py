@@ -1,5 +1,6 @@
 from __future__ import annotations
 from copy import deepcopy
+import json
 import biobox as bb
 import os
 import sys
@@ -62,10 +63,6 @@ class PDBData:
             if atoms is not None:
                 self.atomselect(atoms=atoms)
 
-    # ------------------------------------------------------------------
-    # Internal helpers
-    # ------------------------------------------------------------------
-
     def _ensure_mol_loaded(self):
         if not hasattr(self, "_mol"):
             raise ValueError(
@@ -115,14 +112,17 @@ class PDBData:
 
     def _standardise_coordinates(self, coords: np.ndarray) -> np.ndarray:
         if self.standardize:
-            if not hasattr(self, "std"):
+            if not hasattr(self, "std") or not hasattr(self, "mean"):
                 self.std = coords.std()
-            if not hasattr(self, "mean"):
                 self.mean = coords.mean()
-            return (coords - self.mean) / self.std
-        self.std = 1.0
-        self.mean = 0.0
-        return coords
+                print(f"Computed mean: {self.mean}, std: {self.std}")
+            else:
+                print(f"Using pre-computed mean: {self.mean}, std: {self.std}")
+        else:
+            self.std = 1.0
+            self.mean = 0.0
+            print("Not standardizing the dataset.")
+        return (coords - self.mean) / self.std
 
     def _resolve_split_sizes(
         self,
@@ -155,6 +155,7 @@ class PDBData:
         valid_size=None,
         train_size=None,
         manual_seed=None,
+        save_indices=False
     ) -> tuple[torch.Tensor, torch.Tensor]:
         dataset = self._ensure_dataset_prepared()
         total = len(dataset)
@@ -169,6 +170,10 @@ class PDBData:
         indices = torch.randperm(total, generator=generator)
         train_idx = indices[:train_size]
         valid_idx = indices[train_size : train_size + valid_size]
+
+        if save_indices:
+            np.savetxt("train_indices.txt", train_idx.numpy(), fmt="%d")
+            np.savetxt("valid_indices.txt", valid_idx.numpy(), fmt="%d")
 
         self.train_indices = train_idx
         self.valid_indices = valid_idx
@@ -186,7 +191,7 @@ class PDBData:
         return bundle
 
     def metadata(self) -> dict:
-        """Return a lightweight metadata dictionary for trainers and analysis tools."""
+        """Return a metadata dictionary for trainers and analysis tools."""
 
         self._ensure_dataset_prepared()
         return {
@@ -198,7 +203,7 @@ class PDBData:
 
     def import_pdb(self, filename: str | list[str], topology: str | None = None):
         """
-        Load one or multiple trajectory files
+        Load one or multiple trajectory files as MDAnalysis Universe.
 
         :param str | list[str] filename: the path the trajectory as a str or a list of filepaths to multiple trajectories
         :param str | None topology: the path the topology file for the trajector(y)ies
@@ -245,17 +250,20 @@ class PDBData:
             raise ValueError("Unsuported atom selection")
         self._mol.atoms = self._mol.select_atoms(selection_string)
 
-    def prepare_dataset(self):
+    def prepare_dataset(self, std=None, mean=None):
         """
         Prepare dataset from the loaded trajectory data to create a standardized/unstandardized tensor.
         """
+        if std is not None and mean is not None:
+            self.std = std
+            self.mean = mean
+
         self._ensure_mol_loaded()
         coords = self._prepare_coordinates()
         self._compute_backbone_indices()
         coords = self._standardise_coordinates(coords)
         self.dataset = torch.from_numpy(coords).float()
         self._atom_names = list(np.unique(self._mol.atoms.names))
-        print(f"mean: {self.mean}\n std: {self.std}")
         print(f"Dataset shape: {self.dataset.shape}") # (frames, atoms, 3)
         return self.dataset
             
@@ -344,12 +352,14 @@ class PDBData:
         validation_split=0.1,
         pin_memory=True,
         manual_seed=None,
+        save_indices=False
     ):
         """
         :param int batch_size: size of the training batches
         :param float validation_split: ratio of data to randomly assigned as validation
         :param bool pin_memory: if True, pin memory for the dataloader
         :param int | None manual_seed: 
+        :param bool save_indices: if True, save train and valid indices to "train_indices.txt" and "valid_indices.txt"
         :return: `torch.utils.data.DataLoader` for training set
         :return: `torch.utils.data.DataLoader` for validation set
         """
@@ -359,6 +369,7 @@ class PDBData:
             valid_size=None,
             train_size=None,
             manual_seed=manual_seed,
+            save_indices=save_indices
         )
 
         tensor_dataset = torch.utils.data.TensorDataset(dataset)
@@ -383,34 +394,18 @@ class PDBData:
         )
         return self.train_dataloader, self.valid_dataloader
 
-    def split(self, *args, **kwargs):
-        """
-        Split :func:`PDBData <molearn.data.PDBData>` into two other :func:`PDBData <molearn.data.PDBData>` objects corresponding to train and valid sets.
-
-        :param manual_seed: manual seed used to split dataset
-        :param validation_split: ratio of data to randomly assigned as validation
-        :param train_size: if not None, specify number of train structures to be returned
-        :param valid_size: if not None, speficy number of valid structures to be returned
-        :return: :func:`PDBData <molearn.data.PDBData>` object corresponding to train set
-        :return: :func:`PDBData <molearn.data.PDBData>` object corresponding to validation set
-        """
-        # Deprecated. You should not use this method.
-        train_dataset, valid_dataset = self.get_datasets(*args, **kwargs)
-        train = PDBData()
-        valid = PDBData()
-        for data in [train, valid]:
-            for key in ["_mol", "std", "mean", "filename"]:
-                setattr(data, key, getattr(self, key))
-        train.dataset = train_dataset
-        valid.dataset = valid_dataset
-        return train, valid
-
     def get_datasets(
-        self, validation_split=0.1, valid_size=None, train_size=None, manual_seed=None
+        self, 
+        validation_split=0.1, 
+        valid_size=None, 
+        train_size=None, 
+        manual_seed=None, 
+        save_indices=False
     ):
         """
         Create a training and validation set from the imported data.
-
+        This is deprecated. Use `get_dataloader` instead.
+        
         :param validation_split: ratio of data to randomly assigned as validation
         :param valid_size: if not None, specify number of train structures to be returned
         :param train_size: if not None, speficy number of valid structures to be returned
@@ -423,11 +418,23 @@ class PDBData:
             valid_size=valid_size,
             train_size=train_size,
             manual_seed=manual_seed,
+            save_indices=save_indices
         )
         train_dataset = dataset[train_idx]
         valid_dataset = dataset[valid_idx]
         return train_dataset, valid_dataset
 
+    def write_statistics(self, filename: str):
+        """
+        Write mean and standard deviation to a JSON file.
+
+        :param str filename: path to the output JSON file
+        """
+        self._ensure_dataset_prepared()
+        stats = {"mean": float(self.mean), "std": float(self.std)}
+        with open(filename, "w") as f:
+            json.dump(stats, f)
+            
     @property
     def atoms(self):
         self._ensure_dataset_prepared()

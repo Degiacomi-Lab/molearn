@@ -9,3 +9,6 @@ Analysis
 
 .. automodule:: molearn.analysis.path
    :members:
+
+.. automodule:: molearn.analysis.plot
+   :members:

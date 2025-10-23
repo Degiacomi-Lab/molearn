@@ -100,7 +100,7 @@ class AutoEncoder(nn.Module):
         z = z.reshape(z.shape[0],1, self.latent_dimensions)
         encoding = self.encoding.repeat(z.shape[0],1,1)
         z_rep = z.repeat(1, encoding.size(1), 1)
-        return self.decoder(torch.cat((encoding, z_rep), dim=-1)).permute(0,2,1)
+        return self.decoder(torch.cat((encoding, z_rep), dim=-1))
     
 
     def refine_encoding(self, latent, structure):
