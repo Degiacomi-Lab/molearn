@@ -44,35 +44,19 @@ def _collect_metric_entries(
     dataset_key: str,
     decoded_key: str,
 ) -> Tuple[List[Dict[str, object]], List[str]]:
-    """Resolve metric dictionaries for datasets and decodes to a unified format.
+    """
+    Resolve metric dictionaries for datasets and decodes to a unified format.
 
-    Parameters
-    ----------
-    MA : MolearnAnalysis
-        Analysis object used to resolve metric data for the requested keys.
-    plot_data : Sequence[Tuple[str, str, str]]
-        Iterable of ``(key, label, colour)`` tuples describing which datasets to plot,
-        the legend label to apply, and the colour associated with decoded structures.
-    metric_fetcher : Callable[[str], Dict[str, Dict[str, np.ndarray]]]
-        Callback returning a mapping of metric group names (e.g. ``dataset_bondlen``)
-        to dictionaries of metric arrays for the provided ``key``.
-    dataset_key : str
-        Dictionary key under each metric group corresponding to the original dataset values.
-    decoded_key : str
-        Dictionary key under each metric group corresponding to decoded structure values.
+    :param MolearnAnalysis MA: Analysis object used to resolve metric data for the requested keys.
+    :param Sequence[Tuple[str, str, str]] plot_data: Iterable of ``(key, label, colour)`` tuples describing which datasets to plot,
+                                                      the legend label to apply, and the colour associated with decoded structures.
+    :param Callable[[str], Dict[str, Dict[str, np.ndarray]]] metric_fetcher: Callback returning a mapping of metric group names (e.g. ``dataset_bondlen``)
+                                                                              to dictionaries of metric arrays for the provided ``key``.
+    :param str dataset_key: Dictionary key under each metric group corresponding to the original dataset values.
+    :param str decoded_key: Dictionary key under each metric group corresponding to decoded structure values.
 
-    Returns
-    -------
-    entries : list of dict
-        Normalised entries, one per dataset, containing dataset/decoded metric dictionaries
-        and legend metadata for downstream plotting.
-    metric_names : list of str
-        Ordered list of metric names present in the decoded metric dictionary.
-
-    Raises
-    ------
-    ValueError
-        If the decoded metric dictionary is missing for a requested key.
+    :return: Tuple of (entries, metric_names) where entries is a list of dicts containing dataset/decoded metric dictionaries
+             and legend metadata for downstream plotting, and metric_names is an ordered list of metric names present in the decoded metric dictionary.
     """
     entries: List[Dict[str, object]] = []
     metric_keys: Optional[Iterable[str]] = None
@@ -354,7 +338,20 @@ def plot_inversion_hist(MA, plot_data, fname=None, **kwargs):
     
 
 def plot_dope_hist(MA, plot_data=None, fname=None, refine=True, *, bins: int = 50, **kwargs):
-    """Plot DOPE score distributions for datasets and decoded structures."""
+    """
+    Plot DOPE score distributions for datasets and decoded structures.
+    
+    :param MolearnAnalysis MA: A MolearnAnalysis object with datasets loaded.
+    :param list plot_data: A list of tuples containing the data to plot. Each tuple should contain
+                           the key to a original/encoded dataset in the MolearnAnalysis object, a label for the legend,
+                           and a colour for the decoded data plot.
+                           Format: [(key, label, colour), ...]
+    :param Path fname: File name to save the plot.
+    :param bool refine: If True, refine structures before calculating DOPE score. Can also be 'both' to plot both refined and unrefined.
+    :param int bins: No of bins in the histogram.
+
+    :return: None
+    """
 
     if plot_data is None:
         raise ValueError("plot_data must be provided.")
@@ -483,29 +480,18 @@ def plot_rmsd_hist(MA, plot_data=None, fname=None, **kwargs):
 
 
 def plot_network_rmsd_surface(MA, plot_data=None, cmap='gist_heat_r', fname=None, **kwargs):
-    """Plot the latent grid coloured by reconstruction RMSD.
+    """
+    Plot the latent grid coloured by reconstruction RMSD.
 
-    Parameters
-    ----------
-    MA : MolearnAnalysis
-        Analysis instance with latent grid axes and a precomputed
-        ``surfaces['Network_RMSD']`` entry (produced by :meth:`MolearnAnalysis.scan_error`).
-    plot_data : list[tuple], optional
-        Optional overlays given as ``(key, label, colour, plot_type)`` tuples. ``plot_type``
-        must be either ``'scatter'`` or ``'kde'`` and each ``key`` must correspond to an
-        encoded dataset available through :meth:`MolearnAnalysis.get_encoded`.
-    cmap : str, default 'gist_heat_r'
-        Matplotlib colormap name for the background surface.
-    fname : str or Path, optional
-        Destination path for the saved figure. When omitted the plot is displayed only.
-    **kwargs : dict
-        Additional keyword arguments forwarded to
-        :meth:`matplotlib.figure.Figure.savefig`.
+    :param MolearnAnalysis MA: Analysis instance with latent grid axes and a precomputed
+                               ``surfaces['Network_RMSD']`` entry (produced by :meth:`MolearnAnalysis.scan_error`).
+    :param list plot_data: Optional overlays given as ``(key, label, colour, plot_type)`` tuples. ``plot_type``
+                           must be either ``'scatter'`` or ``'kde'`` and each ``key`` must correspond to an
+                           encoded dataset available through :meth:`MolearnAnalysis.get_encoded`.
+    :param str cmap: Matplotlib colormap name for the background surface.
+    :param Path fname: Destination path for the saved figure. When omitted the plot is displayed only.
 
-    Raises
-    ------
-    ValueError
-        If the RMSD surface has not been computed on ``MA``.
+    :return: None
     """
 
     if 'Network_RMSD' not in MA.surfaces:
@@ -546,33 +532,20 @@ def plot_network_rmsd_surface(MA, plot_data=None, cmap='gist_heat_r', fname=None
 
 
 def plot_dope_surface(MA, refine=True, truncate_at=None, plot_data=None, cmap='gist_heat_r', fname=None, **kwargs):
-    """Plot the latent grid coloured by decoded DOPE scores.
+    """
+    Plot the latent grid coloured by decoded DOPE scores.
 
-    Parameters
-    ----------
-    MA : MolearnAnalysis
-        Analysis instance containing latent grid axes and precomputed DOPE surfaces
-        via :meth:`MolearnAnalysis.scan_dope`.
-    refine : bool, default True
-        When ``True`` the refined DOPE surface (``'DOPE_refined'``) is rendered; otherwise
-        the unrefined surface (``'DOPE_unrefined'``) is used.
-    truncate_at : float, optional
-        Upper bound for the colour scale. Defaults to the maximum value in the selected surface.
-    plot_data : list[tuple], optional
-        Optional overlays given as ``(key, label, colour, plot_type)`` tuples, matching the
-        semantics described for :func:`plot_network_rmsd_surface`.
-    cmap : str, default 'gist_heat_r'
-        Matplotlib colormap name applied to the surface.
-    fname : str or Path, optional
-        Destination path for the saved figure. When omitted the plot is displayed only.
-    **kwargs : dict
-        Additional keyword arguments forwarded to
-        :meth:`matplotlib.figure.Figure.savefig`.
+    :param MolearnAnalysis MA: Analysis instance containing latent grid axes and precomputed DOPE surfaces
+                               via :meth:`MolearnAnalysis.scan_dope`.
+    :param bool refine: When ``True`` the refined DOPE surface (``'DOPE_refined'``) is rendered; otherwise
+                        the unrefined surface (``'DOPE_unrefined'``) is used.
+    :param float truncate_at: Upper bound for the colour scale. Defaults to the maximum value in the selected surface.
+    :param list plot_data: Optional overlays given as ``(key, label, colour, plot_type)`` tuples, matching the
+                           semantics described for :func:`plot_network_rmsd_surface`.
+    :param str cmap: Matplotlib colormap name applied to the surface.
+    :param Path fname: Destination path for the saved figure. When omitted the plot is displayed only.
 
-    Raises
-    ------
-    ValueError
-        If the requested DOPE surface has not been computed on ``MA``.
+    :return: None
     """
     surface_key = 'DOPE_refined' if refine else 'DOPE_unrefined'
     if surface_key not in MA.surfaces:
@@ -626,35 +599,18 @@ def plot_dope_surface(MA, refine=True, truncate_at=None, plot_data=None, cmap='g
 
 
 def plot_inversion_surface(MA, plot_data=None, levels=10, cmap='gist_heat_r', fname=None, **kwargs):
-    """Plot the latent grid coloured by predicted D-amino acid counts.
+    """
+    Plot the latent grid coloured by predicted D-amino acid counts.
 
-    Parameters
-    ----------
-    MA : MolearnAnalysis
-        Analysis instance with latent grid axes and chirality surface data produced by
-        :meth:`MolearnAnalysis.scan_ca_chirality`.
-    plot_data : list[tuple], optional
-        Optional overlays given as ``(key, label, colour, plot_type)`` tuples, matching the
-        semantics described for :func:`plot_network_rmsd_surface`.
-    levels : int, default 10
-        Number of discrete contour levels used for the colour map.
-    cmap : str, default 'gist_heat_r'
-        Matplotlib colormap name applied to the surface.
-    fname : str or Path, optional
-        Destination path for the saved figure. When omitted the plot is displayed only.
-    **kwargs : dict
-        Additional keyword arguments forwarded to
-        :meth:`matplotlib.figure.Figure.savefig`.
+    :param MolearnAnalysis MA: Analysis instance with latent grid axes and chirality surface data produced by
+                               :meth:`MolearnAnalysis.scan_ca_chirality`.
+    :param list plot_data: Optional overlays given as ``(key, label, colour, plot_type)`` tuples, matching the
+                           semantics described for :func:`plot_network_rmsd_surface`.
+    :param int levels: Number of discrete contour levels used for the colour map.
+    :param str cmap: Matplotlib colormap name applied to the surface.
+    :param Path fname: Destination path for the saved figure. When omitted the plot is displayed only.
 
-    Raises
-    ------
-    ValueError
-        If the chirality surface has not been computed on ``MA``.
-
-    Notes
-    -----
-    Colorbar tick labels can become misaligned when ``levels`` is odd because of the way
-    discrete bins are centred.
+    :return: None
     """
 
     if 'Chirality' not in MA.surfaces:
@@ -715,27 +671,16 @@ def plot_inversion_surface(MA, plot_data=None, levels=10, cmap='gist_heat_r', fn
 
 
 def plot_analysis_surface(MA, dataset, cmap='gist_heat_r', fname=None, **kwargs):
-    """Plot a specific dataset overlayed on its analysis surface.
+    """
+    Plot a specific dataset overlayed on its analysis surface.
 
-    Parameters
-    ----------
-    MA : MolearnAnalysis
-        Analysis instance containing latent grid axes and the requested surface entry.
-    dataset : str
-        Key identifying the surface to render. Use :meth:`MolearnAnalysis.scan_dataset`
-        (or similar) to populate ``MA.surfaces[dataset]`` beforehand.
-    cmap : str, default 'gist_heat_r'
-        Matplotlib colormap name applied to the surface.
-    fname : str or Path, optional
-        Destination path for the saved figure. When omitted the plot is displayed only.
-    **kwargs : dict
-        Additional keyword arguments forwarded to
-        :meth:`matplotlib.figure.Figure.savefig`.
+    :param MolearnAnalysis MA: Analysis instance containing latent grid axes and the requested surface entry.
+    :param str dataset: Key identifying the surface to render. Use :meth:`MolearnAnalysis.scan_dataset`
+                        (or similar) to populate ``MA.surfaces[dataset]`` beforehand.
+    :param str cmap: Matplotlib colormap name applied to the surface.
+    :param Path fname: Destination path for the saved figure. When omitted the plot is displayed only.
 
-    Raises
-    ------
-    ValueError
-        If the requested surface is missing from ``MA.surfaces``.
+    :return: None
     """
 
     if dataset not in MA.surfaces:

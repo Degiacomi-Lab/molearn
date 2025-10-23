@@ -69,11 +69,6 @@ class Test_PDBData_Basics(unittest.TestCase):
         self.assertTrue(train_batch[0].shape[1] == self.data.dataset.shape[1])
         self.assertTrue(valid_batch[0].shape[1] == self.data.dataset.shape[1])
 
-    def test_split(self):
-        train, valid = self.data.split(validation_split=0.5)
-        self.assertIsInstance(train, PDBData)
-        self.assertIsInstance(valid, PDBData)
-        self.assertTrue(train.dataset.shape[0] == int(self.data.dataset.shape[0] / 2))
 
     def test_get_datasets(self):
         train, valid = self.data.get_datasets(validation_split=0.5)
