@@ -367,10 +367,10 @@ def plot_dope_hist(MA, plot_data=None, fname=None, refine=True, *, bins: int = 5
 
     def _fetch(key: str):
         metrics: Dict[str, Dict[str, np.ndarray]] = {}
-        decoded_scores = MA.get_all_dope_score(MA.get_decoded(key, unscale=True), refine=refine)
+        decoded_scores = MA.get_all_dope_score(MA.get_decoded(key, scale=True), refine=refine)
         metrics["decoded"] = _score_dict(decoded_scores)
         if key in MA._datasets:
-            dataset_scores = MA.get_all_dope_score(MA.get_dataset(key, unscale=True), refine=refine)
+            dataset_scores = MA.get_all_dope_score(MA.get_dataset(key, scale=True), refine=refine)
             metrics["dataset"] = _score_dict(dataset_scores)
         return metrics
 

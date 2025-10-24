@@ -35,7 +35,7 @@ def main():
     trainer.prepare_optimiser()
 
     ##### Training Loop #####
-    # Keep training until loss does not improve for 32 consecutive epochs
+    # Keep training until loss does not improve for 16 consecutive epochs
 
     fit_results = trainer.run_until_converge(
         patience=16,
