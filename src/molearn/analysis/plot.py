@@ -337,18 +337,17 @@ def plot_inversion_hist(MA, plot_data, fname=None, **kwargs):
     plt.show()
     
 
-def plot_dope_hist(MA, plot_data=None, fname=None, refine=True, *, bins: int = 50, **kwargs):
+def plot_dope_hist(MA, plot_data=None, fname=None, refine=True, **kwargs):
     """
-    Plot DOPE score distributions for datasets and decoded structures.
+    Plot DOPE score distributions as split violin plots comparing datasets and decoded structures.
     
     :param MolearnAnalysis MA: A MolearnAnalysis object with datasets loaded.
     :param list plot_data: A list of tuples containing the data to plot. Each tuple should contain
-                           the key to a original/encoded dataset in the MolearnAnalysis object, a label for the legend,
+                           the key to an original/decoded dataset in the MolearnAnalysis object, a label for the legend,
                            and a colour for the decoded data plot.
                            Format: [(key, label, colour), ...]
     :param Path fname: File name to save the plot.
     :param bool refine: If True, refine structures before calculating DOPE score. Can also be 'both' to plot both refined and unrefined.
-    :param int bins: No of bins in the histogram.
 
     :return: None
     """
@@ -382,41 +381,62 @@ def plot_dope_hist(MA, plot_data=None, fname=None, refine=True, *, bins: int = 5
         decoded_key="decoded",
     )
 
-    # Determine per-metric axis limits from the aggregated values.
-    limits: Dict[str, Tuple[float, float]] = {}
+    dataset_colour = "#B3B3B3"
+    figures: List[plt.Figure] = []
     for metric_name in metric_names:
-        values = []
-        for entry in entries:
-            values.append(_flatten(entry["decoded"][metric_name]))
-            if entry["dataset"] is not None:
-                values.append(_flatten(entry["dataset"][metric_name]))
-        merged = np.concatenate(values)
-        limits[metric_name] = (merged.min(), merged.max())
+        data_pairs: List[np.ndarray] = []
+        color_pairs: List[str] = []
+        labels: List[str] = []
+        decoded_handles: Dict[str, mpatches.Patch] = {}
 
-    figures = _plot_metric_histograms(
-        entries,
-        metric_names,
-        bins=bins,
-        wkdir=None,
-        filename_prefix="DOPE",
-        xlabel="DOPE score",
-        xlim=limits,
-        density=True,
-        legend_suffix="",
-        save_kwargs={},
-    )
-    if fname is not None:
-        target = _ensure_path(fname)
-        if target.suffix == "":
-            target = target.with_suffix(".pdf")
-        if len(figures) == 1:
-            figures[0].savefig(target, **kwargs)
-        else:
-            for fig, metric_name in zip(figures, metric_names):
-                fig.savefig(
-                    target.parent / f"{target.stem}_{metric_name}{target.suffix}",
-                    **kwargs,
-                )
+        for entry in entries:
+            dataset_metric = entry["dataset"]
+            if dataset_metric is None:
+                raise ValueError(f"Dataset DOPE scores unavailable for key '{entry['label']}'.")
+            decoded_metric = entry["decoded"]
+            dataset_values = _flatten(dataset_metric[metric_name])
+            decoded_values = _flatten(decoded_metric[metric_name])
+            data_pairs.extend([dataset_values, decoded_values])
+            labels.append(entry["label"])
+            decoded_color = entry["colors"][1]
+            color_pairs.extend([dataset_colour, decoded_color])
+            if entry["label"] not in decoded_handles:
+                decoded_handles[entry["label"]] = mpatches.Patch(color=decoded_color, label=f"{entry['label']} decoded")
+
+        fig, ax = plt.subplots(figsize=(10, 6))
+        sns.violinplot(
+            data=data_pairs,
+            split=True,
+            inner="quart",
+            palette=color_pairs,
+            ax=ax,
+            gap=-0.05,
+            cut=0,
+            width=0.9,
+            bw=0.2,
+            native_scale=True,
+            dodge=False,
+        )
+
+        legend_patches = [mpatches.Patch(color=dataset_colour, label="Dataset")]
+        legend_patches.extend(decoded_handles.values())
+        ax.legend(handles=legend_patches, loc='upper right')
+
+        ax.set_ylabel('DOPE score')
+        ax.set_xticks(np.arange(len(labels)) * 2 + 0.5)
+        ax.set_xticklabels(labels, rotation=0)
+        title_suffix = f" ({metric_name})" if len(metric_names) > 1 else ""
+        ax.set_title(f'Distribution of DOPE scores{title_suffix}')
+        ax.grid(True, linestyle='--', alpha=0.6)
+
+        figures.append(fig)
+        plt.show()
+
+    # Save the plot if fname is provided
+    if fname:
+        plt.savefig(fname, **kwargs)
+    plt.show()
+
 
 
 def plot_rmsd_hist(MA, plot_data=None, fname=None, **kwargs):
