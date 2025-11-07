@@ -1,6 +1,5 @@
-name: molearn
+name: docs-environment
 channels:
-  - pytorch
   - conda-forge
   - salilab
   - plotly
@@ -14,8 +13,7 @@ dependencies:
   - cctbx
   - pandas
   - scipy
-  - pytorch
-  - pytorch-cuda
+  - pytorch-cpu
   - biobox
   - openmm
   - ipywidgets
