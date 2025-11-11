@@ -15,18 +15,15 @@ jobs:
       - name: Set up conda + mamba
         uses: conda-incubator/setup-miniconda@v3
         with:
-          python-version: '3.11'
-          activate-environment: base
+          activate-environment: molearn
+          environment-file: environment.yml
           mamba-version: '*'
-          channels: conda-forge,defaults
+          conda-solver: libmamba
+          channels: pytorch,nvidia,conda-forge,salilab,plotly,defaults
           channel-priority: strict
           auto-update-conda: false
           remove-profiles: true
-          conda-solver: libmamba
-          clean-patched-environment-file: true
-          environment-file: environment.yml
           run-post: true
-
       - name: Test
         run: |
           cd test
