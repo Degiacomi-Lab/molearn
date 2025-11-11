@@ -267,16 +267,18 @@ TSWLatexianTemp*
 wop*
 mp*
 nop*
-examples/data
-examples/analysis_foldingnet_basic
-examples/astar_interpolation_path
-examples/linear_interpolation_path
-examples/foldingnet_checkpoints
 *__pycache__
 ERROR*
 LOG*
 *.swp
 *.swo
 
+examples/data
+examples/analysis_foldingnet_basic
+examples/astar_interpolation_path
+examples/linear_interpolation_path
+examples/foldingnet_checkpoints
+
 archive/
 .ipynb_checkpoints/
+build/
