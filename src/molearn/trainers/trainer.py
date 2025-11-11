@@ -78,10 +78,6 @@ class Trainer:
         self._last_log_file = None
         self._last_checkpoint = None
 
-    # ------------------------------------------------------------------
-    # Internal state helpers
-    # ------------------------------------------------------------------
-
     def _reset_progress(self) -> None:
         """Reset convergence tracking without touching the global epoch."""
 
@@ -248,10 +244,6 @@ class Trainer:
             log_file=log_file,
             final_metrics=logs if "logs" in locals() else {},
         )
-
-    # ------------------------------------------------------------------
-    # Public convenience API
-    # ------------------------------------------------------------------
 
     def fit(
         self,
@@ -750,43 +742,6 @@ class Trainer:
             mag_ref = math.floor(math.log10(abs(ref_loss)))
             mag_new = math.floor(math.log10(abs(tar_loss)))
         return 10 ** (mag_ref - mag_new) * scale_scale
-
-    # Delete these?
-    # ------------------------------------------------------------------
-    # Backwards compatibility shims
-    # ------------------------------------------------------------------
-
-    @property
-    def best(self) -> Optional[float]:
-        return self.progress.best_loss
-
-    @best.setter
-    def best(self, value: Optional[float]) -> None:
-        self.progress.best_loss = value
-
-    @property
-    def best_name(self) -> Optional[str]:
-        return self.progress.best_checkpoint
-
-    @best_name.setter
-    def best_name(self, value: Optional[str]) -> None:
-        self.progress.best_checkpoint = value
-
-    @property
-    def has_converged(self) -> bool:
-        return self.progress.converged
-
-    @has_converged.setter
-    def has_converged(self, value: bool) -> None:
-        self.progress.converged = value
-
-    @property
-    def _converge_counter(self) -> int:
-        return self.progress.epochs_since_improve
-
-    @_converge_counter.setter
-    def _converge_counter(self, value: int) -> None:
-        self.progress.epochs_since_improve = value
 
 
 if __name__ == "__main__":
