@@ -77,6 +77,7 @@ class Trainer:
 
         self._last_log_file = None
         self._last_checkpoint = None
+        self._repeat = 0
 
     def _reset_progress(self) -> None:
         """Reset convergence tracking without touching the global epoch."""
@@ -627,7 +628,7 @@ class Trainer:
     def checkpoint(self, epoch, valid_logs, checkpoint_folder, is_best, has_converged=False):
         """
         Checkpoint the current network. The checkpoint will be saved as ``'last.ckpt'``.
-        If valid_logs[loss_key] is better than self.best then this checkpoint will replace self.best and ``'last.ckpt'`` will be renamed to ``f'{checkpoint_folder}/checkpoint_epoch{epoch}_loss{valid_loss}.ckpt'`` and the former best (filename saved as ``self.best_name``) will be deleted
+        If valid_logs[loss_key] is better than self.progress.best_loss then this checkpoint will replace self.progress.best_checkpoint and ``'last.ckpt'`` will be renamed to ``f'{checkpoint_folder}/checkpoint_epoch{epoch}_loss{valid_loss}.ckpt'`` and the former best (filename saved as ``self.progress.best_checkpoint``) will be deleted
 
         :param int epoch: current epoch, will be saved within the ckpt. Current epoch can usually be obtained with ``self.epoch``
         :param dict valid_logs: results dictionary containing loss_key.
@@ -659,15 +660,15 @@ class Trainer:
                 last_checkpoint_path,
                 filename,
             )
-            if self.best_name is not None and os.path.exists(self.best_name):
-                os.remove(self.best_name)
-            self.best_name = filename
+            if self.progress.best_checkpoint is not None and os.path.exists(self.progress.best_checkpoint):
+                os.remove(self.progress.best_checkpoint)
+            self.progress.best_checkpoint = filename
 
         if has_converged:
             filename = f'{checkpoint_folder}/checkpoint_converged.ckpt'
-            if self.best_name is None:
+            if self.progress.best_checkpoint is None:
                 raise RuntimeError("No best checkpoint available to mark as converged")
-            shutil.copyfile(self.best_name, filename)
+            shutil.copyfile(self.progress.best_checkpoint, filename)
 
     def load_checkpoint(
         self, checkpoint_name="best", checkpoint_folder="", load_optimiser=True
@@ -680,8 +681,8 @@ class Trainer:
         :param bool load_optimiser: (default: True) Should optimiser state dictionary be loaded.
         """
         if checkpoint_name == "best":
-            if self.best_name is not None:
-                _name = self.best_name
+            if self.progress.best_checkpoint is not None:
+                _name = self.progress.best_checkpoint
             else:
                 ckpts = glob.glob(checkpoint_folder + "/checkpoint_*")
                 indexs = [x.rfind("loss") for x in ckpts]
