@@ -16,7 +16,7 @@ jobs:
         uses: conda-incubator/setup-miniconda@v3
         with:
           activate-environment: molearn
-          environment-file: environment.yml
+          environment-file: .github/test_environment.yml
           mamba-version: '*'
           conda-solver: libmamba
           channels: pytorch,nvidia,conda-forge,salilab,plotly,defaults
