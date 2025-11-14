@@ -40,7 +40,7 @@ class To2D(nn.Module):
         z = torch.sigmoid(z)
         z = z.view(z.size(0), -1)
         z = self.proj(z)
-        return z.view(z.size(0), 2, 1)
+        return z
 
 
 class From2D(nn.Module):
@@ -52,7 +52,6 @@ class From2D(nn.Module):
 
     def forward(self, x):
         batch = x.size(0)
-        x = x.view(batch, -1)
         x = self.f(x)
         x = x.view(batch, self.latent_z, self.out_length)
         return x
