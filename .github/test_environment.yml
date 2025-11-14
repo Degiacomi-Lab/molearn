@@ -1,9 +1,7 @@
 name: molearn
 channels:
-  - pytorch
   - conda-forge
   - salilab
-  - plotly
   - defaults
 dependencies:
   - python=3.11
@@ -14,7 +12,7 @@ dependencies:
   - cctbx
   - pandas
   - scipy
-  - pytorch-cpu
+  - pytorch
   - biobox
   - openmm
   - ipywidgets

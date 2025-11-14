@@ -19,7 +19,7 @@ jobs:
           environment-file: .github/test_environment.yml
           mamba-version: '*'
           conda-solver: libmamba
-          channels: pytorch,nvidia,conda-forge,salilab,plotly,defaults
+          channels: conda-forge,salilab,defaults
           channel-priority: strict
           auto-update-conda: false
           remove-profiles: true
