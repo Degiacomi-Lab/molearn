@@ -116,7 +116,7 @@ class OpenMM_Physics_Trainer(Trainer):
         :param torch.Tensor batch: tensor of shape [batch_size, n_atoms, 3]. Give access to the mini-batch of structures. This is used to determine ``n_atoms``
         :param torch.Tensor latent: tensor shape [batch_size, 2, 1]. Pass the encoded vectors of the mini-batch.
         """
-        alpha = torch.rand(int(len(batch) // 2), 1, 1).type_as(latent)
+        alpha = torch.rand(int(len(batch) // 2), 1).type_as(latent)
         latent_interpolated = (1 - alpha) * latent[:-1:2] + alpha * latent[1::2]
 
         generated = self.autoencoder.decode(latent_interpolated)[:,: batch.size(1), : ]
