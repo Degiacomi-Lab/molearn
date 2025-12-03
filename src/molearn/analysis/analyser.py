@@ -271,7 +271,7 @@ class MolearnAnalysis:
     def num_trainable_params(self):
         """
         :return: number of trainable parameters in the neural network previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_network>`
-        """
+        """ 
         return sum(p.numel() for p in self.network.parameters() if p.requires_grad)
 
     def get_error(self, key, align=True):
@@ -973,7 +973,7 @@ class MolearnAnalysis:
             decoded = self.get_decoded("grid")
             rama = self.get_all_ramachandran_score(decoded)
             for key, value in rama.items():
-                self.surfaces[keys[key]] = value
+                self.surfaces[keys[key]] = value.reshape(self.n_samples, self.n_samples)
 
         return self.surfaces["Ramachandran_favored"], self.xvals, self.yvals
 
