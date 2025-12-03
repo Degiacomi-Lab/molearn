@@ -131,3 +131,9 @@ class Parallel_Ramachandran_Score:
         '''
         # is copy necessary?
         return self.pool.apply_async(self.process_function, (coords.copy(), kwargs))
+
+    def close(self):
+        if self.pool:
+            self.pool.close() 
+            self.pool.join() 
+            self.pool = None
