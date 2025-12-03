@@ -1175,7 +1175,6 @@ class MolearnAnalysis:
         Explicitly closes the multiprocessing pool if it was initialised.
         """
         if hasattr(self, "ramachandran_score_class") and self.ramachandran_score_class:
-            print("Cleaning up Parallel_Ramachandran_Score pool...")
             self.ramachandran_score_class.close()
 
     def _cleanup_dope_score(self):
@@ -1183,7 +1182,6 @@ class MolearnAnalysis:
         Explicitly closes the multiprocessing pool if it was initialised.
         """
         if hasattr(self, "dope_score_class") and self.dope_score_class:
-            print("Cleaning up Parallel_DOPE_Score pool...")
             self.dope_score_class.close()
 
     def __del__(self):
