@@ -1170,6 +1170,28 @@ class MolearnAnalysis:
             if key not in ["dope_score_class", "ramachandran_score_class"]
         }
 
+    def _cleanup_ramachandran_score(self):
+        """
+        Explicitly closes the multiprocessing pool if it was initialised.
+        """
+        if hasattr(self, "ramachandran_score_class") and self.ramachandran_score_class:
+            self.ramachandran_score_class.close()
+
+    def _cleanup_dope_score(self):
+        """
+        Explicitly closes the multiprocessing pool if it was initialised.
+        """
+        if hasattr(self, "dope_score_class") and self.dope_score_class:
+            self.dope_score_class.close()
+
+    def __del__(self):
+        """
+        Called when the instance is garbage collected.
+        Guarantees cleanup.
+        """
+        self._cleanup_ramachandran_score()
+        self._cleanup_dope_score()
+
     @property
     def datasets(self):
         return {key: bundle.dataset for key, bundle in self._datasets.items()}
