@@ -173,6 +173,8 @@ class PDBData:
         valid_idx = indices[train_size : train_size + valid_size]
 
         if save_indices:
+            if indices_dir != '.':
+                os.makedirs(indices_dir, exist_ok=True)
             np.savetxt(f"{indices_dir}/train_indices.txt", train_idx.numpy(), fmt="%d")
             np.savetxt(f"{indices_dir}/valid_indices.txt", valid_idx.numpy(), fmt="%d")
 
@@ -353,7 +355,8 @@ class PDBData:
         validation_split=0.1,
         pin_memory=True,
         manual_seed=None,
-        save_indices=False
+        save_indices=False,
+        indices_dir='.'
     ):
         """
         :param int batch_size: size of the training batches
@@ -371,7 +374,7 @@ class PDBData:
             train_size=None,
             manual_seed=manual_seed,
             save_indices=save_indices,
-            indices_dir='.'
+            indices_dir=indices_dir
         )
 
         tensor_dataset = torch.utils.data.TensorDataset(dataset)
