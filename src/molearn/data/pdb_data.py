@@ -155,7 +155,8 @@ class PDBData:
         valid_size=None,
         train_size=None,
         manual_seed=None,
-        save_indices=False
+        save_indices=False,
+        indices_dir='.'
     ) -> tuple[torch.Tensor, torch.Tensor]:
         dataset = self._ensure_dataset_prepared()
         total = len(dataset)
@@ -172,8 +173,8 @@ class PDBData:
         valid_idx = indices[train_size : train_size + valid_size]
 
         if save_indices:
-            np.savetxt("train_indices.txt", train_idx.numpy(), fmt="%d")
-            np.savetxt("valid_indices.txt", valid_idx.numpy(), fmt="%d")
+            np.savetxt(f"{indices_dir}/train_indices.txt", train_idx.numpy(), fmt="%d")
+            np.savetxt(f"{indices_dir}/valid_indices.txt", valid_idx.numpy(), fmt="%d")
 
         self.train_indices = train_idx
         self.valid_indices = valid_idx
@@ -369,7 +370,8 @@ class PDBData:
             valid_size=None,
             train_size=None,
             manual_seed=manual_seed,
-            save_indices=save_indices
+            save_indices=save_indices,
+            indices_dir='.'
         )
 
         tensor_dataset = torch.utils.data.TensorDataset(dataset)
