@@ -1,0 +1,24 @@
+name: molearn
+channels:
+  - conda-forge
+  - salilab
+  - defaults
+dependencies:
+  - python=3.11
+  - pip
+  - numpy
+  - mdanalysis
+  - modeller
+  - cctbx
+  - pandas
+  - scipy
+  - pytorch
+  - biobox
+  - openmm
+  - ipywidgets
+  - plotly
+  - nglview
+  - openmmtorchplugin
+  - mdtraj
+  - pip:
+    - geomloss

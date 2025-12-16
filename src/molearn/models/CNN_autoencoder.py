@@ -30,26 +30,30 @@ class ResidualBlock(nn.Module):
 
 
 class To2D(nn.Module):
-    
-    def __init__(self):
+    def __init__(self, latent_z):
         super(To2D, self).__init__()
-        pass
-    
+        self.latent_z = latent_z
+        self.proj = nn.Linear(2 * latent_z, 2)
+
     def forward(self, x):
         z = torch.nn.functional.adaptive_avg_pool2d(x, output_size=(2, 1))
         z = torch.sigmoid(z)
+        z = z.view(z.size(0), -1)
+        z = self.proj(z)
         return z
 
 
 class From2D(nn.Module):
-    def __init__(self):
+    def __init__(self, latent_z):
         super(From2D, self).__init__()
-        self.f = nn.Linear(2, 26*2)    
+        self.latent_z = latent_z
+        self.out_length = 26  # matches legacy decoder setup
+        self.f = nn.Linear(2, self.out_length * latent_z)
 
     def forward(self, x):
-        x = x.view(x.size(0), 2)
+        batch = x.size(0)
         x = self.f(x)
-        x = x.view(x.size(0), 2, 26)
+        x = x.view(batch, self.latent_z, self.out_length)
         return x
 
 
@@ -85,11 +89,11 @@ class AutoEncoder(nn.Module):
             for j in range(r):
                 eb.append(ResidualBlock(int(init_z*m**(i+1))))
         eb.append(nn.Conv1d(int(init_z*m**depth), latent_z, 4, 2, 1, bias=False))
-        eb.append(To2D())
+        eb.append(To2D(latent_z))
         self.encoder = eb
         # decoder block
         db = nn.ModuleList()
-        db.append(From2D())
+        db.append(From2D(latent_z))
         db.append(nn.ConvTranspose1d(latent_z, int(init_z*m**(depth+1)), 4, 2, 1, bias=False))
         db.append(nn.BatchNorm1d(int(init_z*m**(depth+1))))
         if droprate is not None:
@@ -107,11 +111,28 @@ class AutoEncoder(nn.Module):
         self.decoder = db
         
     def encode(self, x):
+        """Encode coordinates shaped ``(batch, atoms, 3)`` or ``(batch, 3, atoms)``."""
+
+        if x.shape[2] == 3 and x.shape[1] != 3:
+            x = x.permute(0, 2, 1)
+
         for m in self.encoder:
-            x = m(x)
+            if isinstance(m, To2D):
+                x = m(x.unsqueeze(-1))
+            else:
+                x = m(x)
         return x
     
     def decode(self, x):
+        """Decode the latent representation back to ``(batch, atoms, 3)`` coordinates."""
+
         for m in self.decoder:
             x = m(x)
-        return x
+
+        return x.permute(0, 2, 1)
+
+    def forward(self, x):
+        """Full autoencoder pass with input/output shaped ``(batch, atoms, 3)``."""
+
+        z = self.encode(x)
+        return self.decode(z)

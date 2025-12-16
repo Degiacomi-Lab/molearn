@@ -1,5 +1,6 @@
 from __future__ import annotations
 from copy import deepcopy
+import json
 import biobox as bb
 import os
 import sys
@@ -41,18 +42,20 @@ radii = {
 
 
 class PDBData:
-    def __init__(self, filename=None, topology=None, fix_terminal=False, atoms=None):
+    def __init__(self, filename=None, topology=None, fix_terminal=False, atoms=None, standardize=True):
         """
         Create object enabling the manipulation of multi-PDB files into a dataset suitable for training.
 
-        :param None | str | list[str] filename: If not None, :func:`import_pdb <molearn.data.PDBData.import_pdb>` is called on each filename provided.
-        :param None | str topology: If not None, :func:`import_pdb <molearn.data.PDBData.import_pdb>` is called with the topology file.
-        :param bool fix_terminal: If True, calls :func:`fix_terminal <molearn.data.PDBData.fix_terminal>` after import, and before atomselect
-        :param list[str] atoms: If not None, calls :func:`atomselect <molearn.data.PDBData.atomselect>`
+        :param None | str | list[str] filename: if not None, :func:`import_pdb <molearn.data.PDBData.import_pdb>` is called on each filename provided.
+        :param None | str topology: if not None, :func:`import_pdb <molearn.data.PDBData.import_pdb>` is called with the topology file.
+        :param bool fix_terminal: if True, calls :func:`fix_terminal <molearn.data.PDBData.fix_terminal>` after import, and before atomselect
+        :param list[str] atoms: if not None, calls :func:`atomselect <molearn.data.PDBData.atomselect>`
+        :param bool standardize: if True, standardize the dataset by removing the mean and dividing by the standard deviation.
         """
 
         self.filename = filename
         self.topology = topology
+        self.standardize = standardize
         if filename is not None:
             self.import_pdb(filename, topology)
             if fix_terminal:
@@ -60,9 +63,150 @@ class PDBData:
             if atoms is not None:
                 self.atomselect(atoms=atoms)
 
+    def _ensure_mol_loaded(self):
+        if not hasattr(self, "_mol"):
+            raise ValueError(
+                "No trajectory loaded. Call import_pdb before requesting data."
+            )
+
+    def _ensure_dataset_prepared(self):
+        if not hasattr(self, "dataset"):
+            self.prepare_dataset()
+        return self.dataset
+
+    def _prepare_coordinates(self) -> np.ndarray:
+        self._ensure_mol_loaded()
+        return np.asarray(
+            [self._mol.atoms.positions.astype(float) for _ in self._mol.trajectory]
+        )
+
+    def _compute_backbone_indices(self):
+        n_indices, ca_indices, cb_indices, c_indices, o_indices = [], [], [], [], []
+        for i, atom in enumerate(self._mol.atoms):
+            if atom.name == 'N':
+                assert len(n_indices) == len(ca_indices) == len(c_indices) == len(o_indices)
+                if len(cb_indices) < len(n_indices):
+                    cb_indices.append(-1)        
+                n_indices.append(i)
+            elif atom.name == 'CA':
+                ca_indices.append(i)
+            elif atom.name == 'C':
+                c_indices.append(i)
+            elif atom.name == 'O':
+                o_indices.append(i)
+            elif atom.name == 'CB':
+                cb_indices.append(i)
+            else:
+                NameError(f"Unknown atom name: {atom.name}. Check atom selection.")
+        assert len(n_indices) == len(ca_indices) == len(c_indices) == len(o_indices)
+        if len(cb_indices) < len(ca_indices):
+            cb_indices.append(-1)
+        self.indices = {
+            "N": torch.as_tensor(n_indices,  dtype=torch.long),
+            "CA": torch.as_tensor(ca_indices,  dtype=torch.long),
+            "C": torch.as_tensor(c_indices,  dtype=torch.long),
+            "O": torch.as_tensor(o_indices,  dtype=torch.long),
+            "CB": torch.as_tensor(cb_indices,  dtype=torch.long),
+        }
+        self.cb_valid_idx = self.indices["CB"][self.indices["CB"] >= 0]
+
+    def _standardise_coordinates(self, coords: np.ndarray) -> np.ndarray:
+        if self.standardize:
+            if not hasattr(self, "std") or not hasattr(self, "mean"):
+                self.std = coords.std()
+                self.mean = coords.mean()
+                print(f"Computed mean: {self.mean}, std: {self.std}")
+            else:
+                print(f"Using pre-computed mean: {self.mean}, std: {self.std}")
+        else:
+            self.std = 1.0
+            self.mean = 0.0
+            print("Not standardizing the dataset.")
+        return (coords - self.mean) / self.std
+
+    def _resolve_split_sizes(
+        self,
+        total: int,
+        validation_split: float,
+        valid_size: int | None,
+        train_size: int | None,
+    ) -> tuple[int, int]:
+        if total <= 1:
+            raise ValueError("Dataset must contain at least two frames to split.")
+
+        if train_size is None and valid_size is None:
+            valid_size = max(1, int(round(total * validation_split)))
+            train_size = total - valid_size
+        elif train_size is None:
+            train_size = total - valid_size
+        elif valid_size is None:
+            valid_size = total - train_size
+
+        if train_size <= 0 or valid_size <= 0:
+            raise ValueError("Train and validation sizes must be positive.")
+        if train_size + valid_size > total:
+            raise ValueError("Requested split sizes exceed dataset length.")
+
+        return train_size, valid_size
+
+    def _get_split_indices(
+        self,
+        validation_split=0.1,
+        valid_size=None,
+        train_size=None,
+        manual_seed=None,
+        save_indices=False,
+        indices_dir='.'
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        dataset = self._ensure_dataset_prepared()
+        total = len(dataset)
+        train_size, valid_size = self._resolve_split_sizes(
+            total, validation_split, valid_size, train_size
+        )
+        generator = (
+            torch.Generator().manual_seed(manual_seed)
+            if manual_seed is not None
+            else None
+        )
+        indices = torch.randperm(total, generator=generator)
+        train_idx = indices[:train_size]
+        valid_idx = indices[train_size : train_size + valid_size]
+
+        if save_indices:
+            if indices_dir != '.':
+                os.makedirs(indices_dir, exist_ok=True)
+            np.savetxt(f"{indices_dir}/train_indices.txt", train_idx.numpy(), fmt="%d")
+            np.savetxt(f"{indices_dir}/valid_indices.txt", valid_idx.numpy(), fmt="%d")
+
+        self.train_indices = train_idx
+        self.valid_indices = valid_idx
+        self._split_permutation = indices
+        return train_idx, valid_idx
+
+    def analysis_bundle(self) -> dict:
+        """Convenience accessor used by analysis utilities."""
+
+        bundle = self.metadata().copy()
+        bundle.update({
+            "dataset": self._ensure_dataset_prepared(),
+            "mol": self.mol,
+        })
+        return bundle
+
+    def metadata(self) -> dict:
+        """Return a metadata dictionary for trainers and analysis tools."""
+
+        self._ensure_dataset_prepared()
+        return {
+            "mean": self.mean,
+            "std": self.std,
+            "atoms": self.atoms,
+            "indices": self.indices,
+        }
+
     def import_pdb(self, filename: str | list[str], topology: str | None = None):
         """
-        Load one or multiple trajectory files
+        Load one or multiple trajectory files as MDAnalysis Universe.
 
         :param str | list[str] filename: the path the trajectory as a str or a list of filepaths to multiple trajectories
         :param str | None topology: the path the topology file for the trajector(y)ies
@@ -109,32 +253,26 @@ class PDBData:
             raise ValueError("Unsuported atom selection")
         self._mol.atoms = self._mol.select_atoms(selection_string)
 
-    def prepare_dataset(self):
+    def prepare_dataset(self, std=None, mean=None):
         """
-        Once all datasets have been loaded, normalise data and convert into `torch.Tensor` (ready for training)
+        Prepare dataset from the loaded trajectory data to create a standardized/unstandardized tensor.
         """
-        if not hasattr(self, "dataset"):
-            assert hasattr(
-                self, "_mol"
-            ), "You need to call import_pdb before preparing the dataset"
+        if std is not None and mean is not None:
+            self.std = std
+            self.mean = mean
 
-        self.dataset = np.asarray(
-            [self._mol.atoms.positions.astype(float) for _ in self._mol.trajectory]
-        )
-        if not hasattr(self, "std"):
-            self.std = self.dataset.std()
-        if not hasattr(self, "mean"):
-            self.mean = self.dataset.mean()
-        self.dataset -= self.mean
-        self.dataset /= self.std
-        self.dataset = torch.from_numpy(self.dataset).float()
-        self.dataset = self.dataset.permute(0, 2, 1)
-        print(f"Dataset shape: {self.dataset.shape}")
-        print(f"mean: {str(self.mean)}\n std: {str(self.std)}")
-
+        self._ensure_mol_loaded()
+        coords = self._prepare_coordinates()
+        self._compute_backbone_indices()
+        coords = self._standardise_coordinates(coords)
+        self.dataset = torch.from_numpy(coords).float()
+        self._atom_names = list(np.unique(self._mol.atoms.names))
+        print(f"Dataset shape: {self.dataset.shape}") # (frames, atoms, 3)
+        return self.dataset
+            
     def get_atominfo(self):
         """
-        generate list of all atoms in dataset, where every line contains [atom name, residue name, resid]
+        Generate list of all atoms in dataset, where every line contains [atom name, residue name, resid]
         """
         if not hasattr(self, "atominfo"):
             assert hasattr(
@@ -149,7 +287,7 @@ class PDBData:
 
     def frame(self):
         """
-        return `biobox.Molecule` object with loaded data
+        Return `biobox.Molecule` object with loaded data
         """
         M = bb.Molecule()
         _ = self._mol.trajectory[0]
@@ -217,128 +355,96 @@ class PDBData:
         validation_split=0.1,
         pin_memory=True,
         manual_seed=None,
+        save_indices=False,
+        indices_dir='.'
     ):
         """
         :param int batch_size: size of the training batches
         :param float validation_split: ratio of data to randomly assigned as validation
         :param bool pin_memory: if True, pin memory for the dataloader
         :param int | None manual_seed: 
+        :param bool save_indices: if True, save train and valid indices to "train_indices.txt" and "valid_indices.txt"
         :return: `torch.utils.data.DataLoader` for training set
         :return: `torch.utils.data.DataLoader` for validation set
         """
-        if not hasattr(self, "dataset"):
-            self.prepare_dataset()
-        valid_size = int(len(self.dataset) * validation_split)
-        train_size = len(self.dataset) - valid_size
-        dataset = torch.utils.data.TensorDataset(self.dataset.float())
-        if manual_seed is not None:
-            self.train_dataset, self.valid_dataset = torch.utils.data.random_split(
-                dataset,
-                [train_size, valid_size],
-                generator=torch.Generator().manual_seed(manual_seed),
-            )
-            self.train_dataloader = torch.utils.data.DataLoader(
-                self.train_dataset,
-                batch_size=batch_size,
-                pin_memory=pin_memory,
-                sampler=torch.utils.data.RandomSampler(
-                    self.train_dataset,
-                    generator=torch.Generator().manual_seed(manual_seed),
-                ),
-            )
-        else:
-            self.train_dataset, self.valid_dataset = torch.utils.data.random_split(
-                dataset, [train_size, valid_size]
-            )
-            self.train_dataloader = torch.utils.data.DataLoader(
-                self.train_dataset,
-                batch_size=batch_size,
-                pin_memory=pin_memory,
-                shuffle=True,
-            )
-        self.valid_dataloader = torch.utils.data.DataLoader(
-            self.valid_dataset,
+        dataset = self._ensure_dataset_prepared()
+        train_idx, valid_idx = self._get_split_indices(
+            validation_split=validation_split,
+            valid_size=None,
+            train_size=None,
+            manual_seed=manual_seed,
+            save_indices=save_indices,
+            indices_dir=indices_dir
+        )
+
+        tensor_dataset = torch.utils.data.TensorDataset(dataset)
+        train_subset = torch.utils.data.Subset(tensor_dataset, train_idx.tolist())
+        valid_subset = torch.utils.data.Subset(tensor_dataset, valid_idx.tolist())
+
+        shuffle_train = manual_seed is None
+        self.train_dataset = dataset[train_idx]
+        self.valid_dataset = dataset[valid_idx]
+
+        self.train_dataloader = torch.utils.data.DataLoader(
+            train_subset,
             batch_size=batch_size,
             pin_memory=pin_memory,
-            shuffle=True,
+            shuffle=shuffle_train,
+        )
+        self.valid_dataloader = torch.utils.data.DataLoader(
+            valid_subset,
+            batch_size=batch_size,
+            pin_memory=pin_memory,
+            shuffle=False,
         )
         return self.train_dataloader, self.valid_dataloader
 
-    def split(self, *args, **kwargs):
-        """
-        Split :func:`PDBData <molearn.data.PDBData>` into two other :func:`PDBData <molearn.data.PDBData>` objects corresponding to train and valid sets.
-
-        :param manual_seed: manual seed used to split dataset
-        :param validation_split: ratio of data to randomly assigned as validation
-        :param train_size: if not None, specify number of train structures to be returned
-        :param valid_size: if not None, speficy number of valid structures to be returned
-        :return: :func:`PDBData <molearn.data.PDBData>` object corresponding to train set
-        :return: :func:`PDBData <molearn.data.PDBData>` object corresponding to validation set
-        """
-        # validation_split=0.1, valid_size=None, train_size=None, manual_seed = None):
-        train_dataset, valid_dataset = self.get_datasets(*args, **kwargs)
-        train = PDBData()
-        valid = PDBData()
-        for data in [train, valid]:
-            for key in ["_mol", "std", "mean", "filename"]:
-                setattr(data, key, getattr(self, key))
-        train.dataset = train_dataset
-        valid.dataset = valid_dataset
-        return train, valid
-
-    def only_test(self):
-        """
-        Prepare a datset without spliting it into training and validation dataset
-        """
-        if not hasattr(self, "dataset"):
-            self.prepare_dataset()
-        dataset = self.dataset.float()
-        self.indices = np.arange(len(dataset))
-        test = PDBData()
-        for key in ["_mol", "std", "mean", "filename"]:
-            setattr(test, key, getattr(self, key))
-        test.dataset = dataset
-        return test
-
     def get_datasets(
-        self, validation_split=0.1, valid_size=None, train_size=None, manual_seed=None
+        self, 
+        validation_split=0.1, 
+        valid_size=None, 
+        train_size=None, 
+        manual_seed=None, 
+        save_indices=False
     ):
         """
-        Create a training and validation set from the imported data
-
+        Create a training and validation set from the imported data.
+        This is deprecated. Use `get_dataloader` instead.
+        
         :param validation_split: ratio of data to randomly assigned as validation
         :param valid_size: if not None, specify number of train structures to be returned
         :param train_size: if not None, speficy number of valid structures to be returned
         :param manual_seed: seed to initialise the random number generator used for splitting the dataset. Useful to replicate a specific split.
         :return: two `torch.Tensor`, for training and validation structures.
         """
-        if not hasattr(self, "dataset"):
-            self.prepare_dataset()
-        dataset = self.dataset.float()
-        if train_size is None:
-            _valid_size = int(len(self.dataset) * validation_split)
-            _train_size = len(self.dataset) - _valid_size
-        else:
-            _train_size = train_size
-            if valid_size is None:
-                _valid_size = validation_split * _train_size
-            else:
-                _valid_size = valid_size
-
-        if manual_seed is not None:
-            indices = torch.randperm(
-                len(self.dataset), generator=torch.Generator().manual_seed(manual_seed)
-            )
-        else:
-            indices = torch.randperm(len(self.dataset))
-
-        self.indices = indices
-        train_dataset = dataset[indices[:_train_size]]
-        valid_dataset = dataset[indices[_train_size : _train_size + _valid_size]]
+        dataset = self._ensure_dataset_prepared()
+        train_idx, valid_idx = self._get_split_indices(
+            validation_split=validation_split,
+            valid_size=valid_size,
+            train_size=train_size,
+            manual_seed=manual_seed,
+            save_indices=save_indices
+        )
+        train_dataset = dataset[train_idx]
+        valid_dataset = dataset[valid_idx]
         return train_dataset, valid_dataset
 
+    def write_statistics(self, filename: str):
+        """
+        Write mean and standard deviation to a JSON file.
+
+        :param str filename: path to the output JSON file
+        """
+        self._ensure_dataset_prepared()
+        stats = {"mean": float(self.mean), "std": float(self.std)}
+        with open(filename, "w") as f:
+            json.dump(stats, f)
+            
     @property
     def atoms(self):
+        self._ensure_dataset_prepared()
+        if hasattr(self, "_atom_names"):
+            return self._atom_names
         return list(np.unique(self.frame().data["name"].values))  # all the atoms
 
     @property

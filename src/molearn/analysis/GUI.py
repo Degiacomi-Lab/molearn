@@ -23,6 +23,7 @@ warnings.filterwarnings("ignore")
 
 from ipywidgets import Layout
 from ipywidgets import widgets
+from ipywidgets import interact
 from tkinter import Tk, filedialog
 import plotly.graph_objects as go
 import nglview as nv
@@ -82,24 +83,25 @@ class MolearnGUI:
         control display of training set
         '''
         
-        if len(points.xs) == 0:
-            return
+        with self.output:
+            if len(points.xs) == 0:
+                return
 
-        # add new waypoint to list
-        pt = np.array([[points.xs[0], points.ys[0]]])
-       
-        if len(self.waypoints) == 0:
-            self.waypoints = pt    
-        else:
-            self.waypoints = np.concatenate((self.waypoints, pt))
-            
-        # update textbox (triggering update of 3D representation)
-        try:
-            pt = self.waypoints.flatten().round(decimals=4).astype(str)
-            # pt = np.array([self.latent.data[3].x, self.latent.data[3].y]).T.flatten().round(decimals=4).astype(str)
-            self.mybox.value = " ".join(pt)
-        except Exception:
-            return
+            # add new waypoint to list
+            pt = np.array([[points.xs[0], points.ys[0]]])
+        
+            if len(self.waypoints) == 0:
+                self.waypoints = pt    
+            else:
+                self.waypoints = np.concatenate((self.waypoints, pt))
+                
+            # update textbox (triggering update of 3D representation)
+            try:
+                pt = self.waypoints.flatten().round(decimals=4).astype(str)
+                # pt = np.array([self.latent.data[3].x, self.latent.data[3].y]).T.flatten().round(decimals=4).astype(str)
+                self.mybox.value = " ".join(pt)
+            except Exception:
+                return
 
         self.update_trails()    
         
@@ -213,25 +215,24 @@ class MolearnGUI:
     def drop_dataset_event(self, change):
         '''
         control which dataset is displayed
-        '''        
+        '''
+        with self.output:
+            if change.new == "none":
+                self.latent.data[1].x = []
+                self.latent.data[1].y = []
+                
+            else:
+                try:
+                    data = as_numpy(self.MA.get_encoded(change.new))
+                except Exception as e:
+                    print(f"{e}")
+                    return      
+                with self.latent.batch_update():
+                    self.latent.data[1].x = data[:, 0]
+                    self.latent.data[1].y = data[:, 1]
+                    self.latent.data[1].name = change.new
 
-        if change.new == "none":
-            self.latent.data[1].x = []
-            self.latent.data[1].y = []
-            
-        else:
-            try:
-                data = as_numpy(self.MA.get_encoded(change.new).squeeze(2))
-            except Exception as e:
-                print(f"{e}")
-                return      
-       
-            self.latent.data[1].x = data[:, 0]
-            self.latent.data[1].y = data[:, 1]
-
-            self.latent.data[1].visible = True
-        
-        self.latent.update()
+                    self.latent.data[1].visible = True
 
     def drop_path_event(self, change):
         '''
@@ -302,39 +303,38 @@ class MolearnGUI:
         '''
         save class state
         '''
+        with self.output:
+            root = Tk()
+            root.withdraw()                                        # Hide the main window.
+            root.call('wm', 'attributes', '.', '-topmost', True)   # Raise the root to the top of all windows.
+            fname = filedialog.asksaveasfilename(defaultextension="p", filetypes=[("pickle file", "p")])
 
-        root = Tk()
-        root.withdraw()                                        # Hide the main window.
-        root.call('wm', 'attributes', '.', '-topmost', True)   # Raise the root to the top of all windows.
-        fname = filedialog.asksaveasfilename(defaultextension="p", filetypes=[("pickle file", "p")])
-
-        if fname == "":
-            return
-
-        pickle.dump([self.MA, self.waypoints], open(fname, "wb"))
-
+            if fname == "":
+                return
+        
     def button_load_state_event(self, check):
         '''
         load class state
         '''
+        with self.output:
+            root = Tk()
+            root.withdraw()                                        # Hide the main window.
+            root.call('wm', 'attributes', '.', '-topmost', True)   # Raise the root to the top of all windows.
+            fname = filedialog.askopenfilename(defaultextension="p", filetypes=[("picke file", "p")])
 
-        root = Tk()
-        root.withdraw()                                        # Hide the main window.
-        root.call('wm', 'attributes', '.', '-topmost', True)   # Raise the root to the top of all windows.
-        fname = filedialog.askopenfilename(defaultextension="p", filetypes=[("picke file", "p")])
+            if fname == "":
+                return
 
-        if fname == "":
-            return
-
-        try:
-            self.MA, self.waypoints = pickle.load(open(fname, "rb"))
-            self.run()
-        except Exception as e:
-            raise Exception(f"Cannot load state file. {e}")
+            try:
+                self.MA, self.waypoints = pickle.load(open(fname, "rb"))
+                self.run()
+            except Exception as e:
+                raise Exception(f"Cannot load state file. {e}")
 
     #####################################################
 
     def run(self):
+        self.output = widgets.Output()
 
         # create an MDAnalysis instance of input protein (for viewing purposes)
         if hasattr(self.MA, "mol"):
@@ -454,10 +454,14 @@ class MolearnGUI:
             sc = self.MA.surfaces[options[0]]
         else:
             sc = []
-            
+
+        self.latent = go.FigureWidget()
+
         if len(sc)>0:
-            plot1 = go.Heatmap(x=self.MA.xvals, y=self.MA.yvals, z=sc, zmin=np.min(sc), zmax=np.max(sc),
-                               colorscale='viridis', name="latent_space")   
+            self.latent.add_heatmap(x=self.MA.xvals, y=self.MA.yvals, z=sc, zmin=np.min(sc), zmax=np.max(sc),
+                            colorscale='viridis', name="latent_space")   
+            # plot1 = go.Heatmap(x=self.MA.xvals, y=self.MA.yvals, z=sc, zmin=np.min(sc), zmax=np.max(sc),
+            #                 colorscale='viridis', name="latent_space")   
         else:
 
             if self.MA is not None:
@@ -468,28 +472,37 @@ class MolearnGUI:
                 yvals = np.linspace(0, 1, 10)
                     
             surf_empty = np.zeros((len(xvals), len(yvals)))
-            plot1 = go.Heatmap(x=xvals, y=yvals, z=surf_empty, opacity=0.0, showscale=False, name="latent_space")   
-                      
+            self.latent.add_heatmap(x=xvals, y=yvals, z=surf_empty, opacity=0.0, showscale=False, name="latent_space")
+            # plot1 = go.Heatmap(x=xvals, y=yvals, z=surf_empty, opacity=0.0, showscale=False, name="latent_space")   
+                    
         # dataset
         if self.MA is not None and len(list(self.MA._datasets))>0:
-                  
-            mydata = as_numpy(self.MA.get_encoded(options2[1]).squeeze(2))
+            mydata = as_numpy(self.MA.get_encoded(options2[1]))
             color = "white" if len(sc)>0 else "black"
-            plot2 = go.Scatter(x=mydata[:, 0].flatten(),
-                              y=mydata[:, 1].flatten(),
-                  showlegend=False, opacity=0.9, mode="markers",
-                  marker=dict(color=color, size=5), name=options2[1], visible=False)
+
+            self.latent.add_scatter(x=mydata[:, 0].flatten(),
+                                     y=mydata[:, 1].flatten(),
+                                     showlegend=False, opacity=0.9, mode="markers",
+                                     marker=dict(color=color, size=5), name=options2[1], visible=False)
+            # plot2 = go.Scatter(x=mydata[:, 0].flatten(),
+            #                     y=mydata[:, 1].flatten(),
+            #     showlegend=False, opacity=0.9, mode="markers",
+            #     marker=dict(color=color, size=5), name=options2[1], visible=False)
         else:
-            plot2 = go.Scatter(x=[], y=[])
+            self.latent.add_scatter(x=[], y=[])
+            # plot2 = go.Scatter(x=[], y=[])
 
         # path
-        plot3 = go.Scatter(x=np.array([]), y=np.array([]),
-                   showlegend=False, opacity=0.9, mode='lines+markers',
-                   marker=dict(color='red', size=4))
+        self.latent.add_scatter(x=np.array([]), y=np.array([]),
+                showlegend=False, opacity=0.9, mode='lines+markers',
+                marker=dict(color='red', size=4))
+        # plot3 = go.Scatter(x=np.array([]), y=np.array([]),
+        #         showlegend=False, opacity=0.9, mode='lines+markers',
+        #         marker=dict(color='red', size=4))
 
-        self.latent = go.FigureWidget([plot1, plot2, plot3])
+        # self.latent = go.FigureWidget([plot1, plot2, plot3])
         self.latent.update_layout(xaxis_title="latent vector 1", yaxis_title="latent vector 2",
-                         autosize=True, width=400, height=350, margin=dict(l=75, r=0, t=25, b=0))
+                        autosize=True, width=400, height=350, margin=dict(l=75, r=0, t=25, b=0))
         self.latent.update_xaxes(showspikes=False)
         self.latent.update_yaxes(showspikes=False)
 
@@ -523,8 +536,9 @@ class MolearnGUI:
         self.block1 = widgets.VBox([self.latent], layout=Layout(flex='1 1 auto', width='auto'))
         
         # make all items displayed clickable
-        for item in self.latent.data:
-            item.on_click(self.on_click)
+        with self.output:
+            for item in self.latent.data:
+                item.on_click(self.on_click)
         
         self.block2 = widgets.VBox([self.protein], layout=Layout(flex='1 5 auto', width='auto'))
 
@@ -534,5 +548,11 @@ class MolearnGUI:
         if len(self.waypoints) > 0:
             self.mybox.value = " ".join(self.waypoints.flatten().astype(str))
 
+        
         display.clear_output(wait=True)
-        display.display(self.scene)
+
+
+        # display.display(self.scene)
+        display.display(self.scene, self.output)
+
+

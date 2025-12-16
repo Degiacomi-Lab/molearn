@@ -5,8 +5,29 @@ import math
 import numpy as np
 import time
 import torch
+from dataclasses import dataclass, field
+from typing import Any, Callable, Dict, Optional, Tuple
 from molearn.data import PDBData
 import json
+
+
+@dataclass
+class TrainerProgress:
+    best_loss: Optional[float] = None
+    best_checkpoint: Optional[str] = None
+    epochs_since_improve: int = 0
+    converged: bool = False
+    repeat_index: int = 0
+
+
+@dataclass
+class FitResult:
+    epochs_run: int
+    best_loss: Optional[float]
+    best_checkpoint: Optional[str]
+    last_checkpoint: Optional[str]
+    log_file: Optional[str]
+    final_metrics: Dict[str, float] = field(default_factory=dict)
 
 
 class TrainingFailure(Exception):
@@ -22,14 +43,12 @@ class Trainer:
     :ivar torch.optim.optimiser optimiser: pytorch optimiser with access to self.autoencoder.parameters()
     :ivar torch.Device device: The device used for all operations.
     :ivar int epoch: the current epoch
-    :ivar float best: The best validation score corresponding to the current best checkpoint
-    :ivar float best_name: the filename corresponding to self.best
+    :ivar TrainerProgress progress: Tracks best validation loss, checkpoint metadata, and convergence state.
     :ivar float std: Standard deviation of the training dataset. Can be used to unscale structures produced by the network.
     :ivar float mol: Biobox molecule containing a single example frame of the protein being trained on. This can be used to save examples during training. It is also used to save a temporary pdb that may be used to initialise thirdparty packages.
     :ivar torch.Dataloader train_dataloader: Training data
     :ivar torch.Dataloader valid_dataloader: Validation data
-    :ivar _data: (:func:`molearn.data <molearn.data.PDBata>` Data object given to :func:`set_data <molearn.trainers.Trainer.set_data>`
-
+    :ivar _data: (:func:`molearn.data <molearn.data.PDData>` Data object given to :func:`set_data <molearn.trainers.Trainer.set_data>`
     """
 
     def __init__(self, device=None, json_log=False):
@@ -47,14 +66,224 @@ class Trainer:
         else:
             self.device = device
         print(f"device: {self.device}")
-        self.best = None
-        self.best_name = None
+        self.progress = TrainerProgress()
         self.epoch = 0
-        self.scheduler = None
         self.verbose = True
-        self.log_filename = None
-        self.scheduler_key = None
         self.json_log = json_log
+
+        self.log_folder = "fn_checkpoints"
+        self.log_filename = "log.dat"
+        self.checkpoint_folder = "fn_checkpoints"
+
+        self._last_log_file = None
+        self._last_checkpoint = None
+        self._repeat = 0
+
+    def _reset_progress(self) -> None:
+        """Reset convergence tracking without touching the global epoch."""
+
+        self.progress.best_loss = None
+        self.progress.best_checkpoint = None
+        self.progress.epochs_since_improve = 0
+        self.progress.converged = False
+
+    def _ensure_setup(self) -> None:
+        """Validate that the trainer has all prerequisites before fitting."""
+
+        missing = []
+        if not hasattr(self, "autoencoder"):
+            missing.append("autoencoder")
+        if not hasattr(self, "optimiser"):
+            missing.append("optimiser")
+        if not hasattr(self, "train_dataloader"):
+            missing.append("train_dataloader")
+        if not hasattr(self, "valid_dataloader"):
+            missing.append("valid_dataloader")
+        if missing:
+            raise RuntimeError(
+                "Trainer is missing required attributes: " + ", ".join(missing)
+            )
+
+    def _run_phase(
+        self,
+        dataloader,
+        step_fn: Callable[[torch.Tensor], Dict[str, torch.Tensor]],
+        prefix: str,
+        *,
+        backward: bool,
+        dry_run: bool = False,
+    ) -> Tuple[Dict[str, float], Dict[str, float]]:
+        """Shared mini-batch loop for training/validation phases."""
+
+        totals: Dict[str, float] = {}
+        count = 0
+        for batch in dataloader:
+            batch = batch[0].to(self.device)
+            batch_size = batch.shape[0]
+            if backward and not dry_run:
+                self.optimiser.zero_grad()
+                outputs = step_fn(batch)
+                outputs["loss"].backward()
+                self.optimiser.step()
+            else:
+                with torch.no_grad():
+                    outputs = step_fn(batch)
+
+            for key, value in outputs.items():
+                totals[key] = totals.get(key, 0.0) + value.item() * batch_size
+            count += batch_size
+
+        if count == 0:
+            return {}, {}
+
+        averaged = {key: totals[key] / count for key in totals}
+        prefixed = {f"{prefix}_{key}": averaged[key] for key in averaged}
+        return prefixed, averaged
+
+    def _update_progress(self, loss: float, patience: Optional[int]) -> bool:
+        """Update best checkpoint tracking and convergence status."""
+
+        patience = patience if patience is not None else math.inf
+        if self.progress.best_loss is None or loss < self.progress.best_loss:
+            self.progress.best_loss = float(loss)
+            self.progress.epochs_since_improve = 0
+            is_best = True
+        else:
+            self.progress.epochs_since_improve += 1
+            if self.progress.epochs_since_improve > patience:
+                self.progress.converged = True
+            is_best = False
+        return is_best
+
+    def _train_loop(
+        self,
+        *,
+        max_epochs: Optional[int],
+        patience: Optional[int],
+        log_filename: str,
+        log_folder: str,
+        checkpoint_folder: str,
+        verbose: Optional[bool],
+    ) -> FitResult:
+        """Core optimisation loop used by all public run methods."""
+
+        if max_epochs is None and patience is None:
+            raise ValueError("Provide at least one stopping criterion (epochs or patience)")
+
+        self._ensure_setup()
+        self._reset_progress()
+        self.get_repeat(checkpoint_folder)
+        log_file = self.prepare_logs(log_filename, log_folder)
+        if verbose is not None:
+            self.verbose = verbose
+
+        epochs_run = 0
+        max_epochs = max_epochs if max_epochs is not None else math.inf
+        logs: Dict[str, float] = {}
+
+        while epochs_run < max_epochs and not self.progress.converged:
+            time1 = time.time()
+            train_logs, _ = self._run_phase(
+                self.train_dataloader,
+                self.train_step,
+                "train",
+                backward=True,
+                dry_run=False,
+            )
+            time2 = time.time()
+            valid_logs, raw_valid = self._run_phase(
+                self.valid_dataloader,
+                self.valid_step,
+                "valid",
+                backward=False,
+                dry_run=False,
+            )
+            time3 = time.time()
+
+            logs = {**train_logs, **valid_logs}
+            logs.update(
+                epoch=self.epoch,
+                train_seconds=time2 - time1,
+                valid_seconds=time3 - time2,
+            )
+
+            valid_loss = logs.get("valid_loss")
+            if valid_loss is None:
+                raise ValueError("valid_step must return a 'loss' entry")
+            is_best = self._update_progress(valid_loss, patience)
+
+            self.checkpoint(
+                self.epoch,
+                logs,
+                checkpoint_folder,
+                is_best,
+                has_converged=self.progress.converged,
+            )
+            time4 = time.time()
+
+            logs.update(
+                checkpoint_seconds=time4 - time3,
+                total_seconds=time4 - time1,
+            )
+            self.log(log_file, logs)
+
+            if np.isnan(logs["valid_loss"]) or np.isnan(logs["train_loss"]):
+                raise TrainingFailure("nan received, failing")
+
+            self.epoch += 1
+            epochs_run += 1
+            self.results_epoch = raw_valid
+
+            if max_epochs is math.inf and patience is None and epochs_run >= 1:
+                break  # safety valve when neither stopping criterion is provided
+
+        return FitResult(
+            epochs_run=epochs_run,
+            best_loss=self.progress.best_loss,
+            best_checkpoint=self.progress.best_checkpoint,
+            last_checkpoint=self._last_checkpoint,
+            log_file=log_file,
+            final_metrics=logs if "logs" in locals() else {},
+        )
+
+    def fit(
+        self,
+        data: PDBData,
+        autoencoder,
+        *,
+        autoencoder_kwargs: Optional[Dict[str, Any]] = None,
+        optimiser_kwargs: Optional[Dict[str, Any]] = None,
+        data_kwargs: Optional[Dict[str, Any]] = None,
+        epochs: Optional[int] = None,
+        patience: Optional[int] = None,
+        log_filename: str = "log.dat",
+        log_folder: str = "checkpoint_folder",
+        checkpoint_folder: str = "checkpoint_folder",
+        verbose: Optional[bool] = None,
+    ) -> FitResult:
+        """End-to-end helper that wires data, model, optimiser, and training.
+
+        :returns: :class:`FitResult` describing the executed training procedure.
+        """
+
+        if autoencoder_kwargs is None:
+            autoencoder_kwargs = {}
+        if optimiser_kwargs is None:
+            optimiser_kwargs = {}
+        if data_kwargs is None:
+            data_kwargs = {}
+
+        self.set_autoencoder(autoencoder, **autoencoder_kwargs)
+        self.set_data(data, **data_kwargs)
+        self.prepare_optimiser(**optimiser_kwargs)
+        return self._train_loop(
+            max_epochs=epochs,
+            patience=patience,
+            log_filename=log_filename,
+            log_folder=log_folder,
+            checkpoint_folder=checkpoint_folder,
+            verbose=verbose,
+        )
 
     def get_network_summary(self):
         """
@@ -107,16 +336,19 @@ class Trainer:
         :param \*\*kwargs: will be passed on to :func:`data.get_dataloader(**kwargs) <molearn.data.PDBData.get_dataloader>`
 
         """
-        if isinstance(data, PDBData):
-            self.set_dataloader(*data.get_dataloader(**kwargs))
-        else:
-            raise NotImplementedError(
-                "Have not implemented this method to use any data other than PDBData yet"
-            )
+        self.set_dataloader(*data.get_dataloader(**kwargs))
+        self._data = data
+        self.mol = data.mol
+        self.standardize = data.standardize
         self.std = data.std
         self.mean = data.mean
-        self.mol = data.mol
-        self._data = data
+
+        self.n_idx = data.indices['N'].to(device=self.device)
+        self.ca_idx = data.indices['CA'].to(device=self.device)
+        self.c_idx = data.indices['C'].to(device=self.device)
+        self.o_idx = data.indices['O'].to(device=self.device)
+        self.cb_idx = data.indices['CB'].to(device=self.device)
+        self.cb_valid_idx = data.indices['CB'][data.indices['CB'] >= 0].to(device=self.device)
 
     def prepare_optimiser(self, lr=1e-3, weight_decay=0.0001, **optimiser_kwargs):
         """
@@ -135,13 +367,14 @@ class Trainer:
             **optimiser_kwargs,
         )
 
-    def log(self, log_dict, verbose=None):
+    def log(self, log_file, log_dict, verbose=None):
         """
         Then contents of log_dict are dumped using ``json.dumps(log_dict)`` and printed and/or appended to ``self.log_filename``
         This function is called from :func:`self.run <molearn.trainers.Trainer.run>`
 
+        :param str log_file: file to which the log_dict will be saved. If the file does not exist it will be created.
         :param dict log_dict: dictionary to be printed or saved
-        :param bool verbose: (default: False) if True or self.verbose is true the output will be printed
+        :param bool verbose: if True or self.verbose is true the output will be printed
         """
 
         if verbose or self.verbose:
@@ -156,11 +389,11 @@ class Trainer:
 
         if not self.json_log:
             # create header if file doesn't exist => first epoch
-            if not os.path.isfile(self.log_filename):
-                with open(self.log_filename, "a") as f:
+            if not os.path.isfile(log_file):
+                with open(log_file, "a") as f:
                     f.write(f"{','.join([str(k) for k in log_dict.keys()])}\n")
 
-            with open(self.log_filename, "a") as f:
+            with open(log_file, "a") as f:
                 # just try to format if it is not a Failure
                 if "Failure" not in log_dict.values():
                     f.write(f"{','.join([str(v) for v in log_dict.values()])}\n")
@@ -169,109 +402,118 @@ class Trainer:
                     f.write(dump + "\n")
         else:
             dump = json.dumps(log_dict)
-            with open(self.log_filename, "a") as f:
+            with open(log_file, "a") as f:
                 f.write(dump + "\n")
 
-    def scheduler_step(self, logs):
+    def prepare_logs(self, log_filename, log_folder):
         """
-        This function does nothing. It is called after :func:`self.valid_epoch <molearn.trainers.Trainer.valid_epoch>` in :func:`Trainer.run() <molearn.trainers.Trainer.run>` and before :func:`checkpointing <molearn.trainers.Trainer.checkpoint>`. It is designed to be overridden if you wish to use a scheduler.
-
-        :param dict logs: Dictionary passed passed containing all logs returned from ``self.train_epoch`` and ``self.valid_epoch``.
+        :param str log_filename: (default: 'log.dat') The name of the log file.
+        :param str log_folder: (default: 'checkpoint_folder') The folder in which the log file will be saved.
+        :returns: The full path to the log file.
         """
-        pass
 
-    def prepare_logs(self, log_filename, log_folder=None):
-        self.log_filename = log_filename
-        if log_folder is not None:
-            if not os.path.exists(log_folder):
-                os.mkdir(log_folder)
-            if hasattr(self, "_repeat") and self._repeat > 0:
-                self.log_filename = f"{log_folder}/{self._repeat}_{self.log_filename}"
-            else:
-                self.log_filename = f"{log_folder}/{self.log_filename}"
+        if not os.path.exists(log_folder):
+            os.mkdir(log_folder)
+        if hasattr(self, "_repeat") and self._repeat > 0:
+            log_filename = f"{log_folder}/{self.log_filename}_{self._repeat}"
+        else:
+            log_filename = f"{log_folder}/{self.log_filename}"
+        self._last_log_file = log_filename
+        return log_filename
+
+    def run_until_converge(
+        self,
+        patience=16,
+        log_filename="log.dat",
+        log_folder="checkpoint_folder",
+        checkpoint_folder="checkpoint_folder",
+        verbose=None,
+    ):
+        """
+        Train until convergence. This method will call :func:`Trainer.run <molearn.trainers.Trainer.run>` in a loop until the training has converged.
+        The training will stop when the validation loss has not improved for ``patience`` epochs.
+
+        :param int patience: how many epochs to wait before stopping training if the validation loss has not improved.
+        :param str log_filename: the name of the log file.
+        :param str log_folder: the folder in which the log file will be saved.
+        :param str checkpoint_folder: the folder in which the checkpoint will be saved.
+        :param bool verbose: if True, the epoch logs will be printed as well as written to log_filename
+    :returns: :class:`FitResult` with information about the training run.
+        """
+        return self._train_loop(
+            max_epochs=None,
+            patience=patience,
+            log_filename=log_filename,
+            log_folder=log_folder,
+            checkpoint_folder=checkpoint_folder,
+            verbose=verbose,
+        )
 
     def run(
         self,
-        max_epochs=100,
-        log_filename=None,
-        log_folder=None,
-        checkpoint_frequency=1,
+        epochs=100,
+        log_filename="log.dat",
+        log_folder="checkpoint_folder",
         checkpoint_folder="checkpoint_folder",
-        allow_n_failures=10,
         verbose=None,
-        allow_grad_in_valid=False,
     ):
         """
         Calls the following in a loop:
 
         - :func:`Trainer.train_epoch <molearn.trainers.Trainer.train_epoch>`
         - :func:`Trainer.valid_epoch <molearn.trainers.Trainer.valid_epoch>`
-        - :func:`Trainer.scheduler_step <molearn.trainers.Trainer.scheduler_step>`
         - :func:`Trainer.checkpoint <molearn.trainers.Trainer.checkpoint>`
         - :func:`Trainer.checkpoint <molearn.trainers.Trainer.checkpoint>`
         - :func:`Trainer.log <molearn.trainers.Trainer.log>`
 
-        :param int max_epochs: (default: 100). run until ``self.epoch`` matches max_epochs
+        :param int epochs: (default: 100). run this many epochs.
         :param str log_filename: (default: None) If log_filename already exists, all logs are appended to the existing file. Else new log file file is created.
         :param str log_folder: (default: None) If not None log_folder directory is created and the log file is saved within this folder
         :param int checkpoint_frequency: (default: 1) The frequency at which last.ckpt is saved. A checkpoint is saved every epoch if ``'valid_loss'`` is lower else when ``self.epoch`` is divisible by checkpoint_frequency.
         :param str checkpoint_folder: (default: 'checkpoint_folder') Where to save checkpoints.
-        :param int allow_n_failures: (default: 10) How many times should training be restarted on error. Each epoch is run in a try except block. If an error is raised training is continued from the best checkpoint.
         :param bool verbose: (default: None) set trainer.verbose. If True, the epoch logs will be printed as well as written to log_filename
-
+    :returns: :class:`FitResult` with information about the training run.
         """
-        self.get_repeat(checkpoint_folder)
-        self.prepare_logs(
-            log_filename if log_filename is not None else self.log_filename, log_folder
+        return self._train_loop(
+            max_epochs=epochs,
+            patience=None,
+            log_filename=log_filename,
+            log_folder=log_folder,
+            checkpoint_folder=checkpoint_folder,
+            verbose=verbose,
         )
+
+    def dry_run(self,
+                log_filename="dry_run.dat",
+                log_folder="tmp_folder",):
+        """
+        Pass the training and validation set through the network once without updating model parameters.
+        This is useful for debugging or restoring statistics for models loaded from checkpoint.
         
-        if verbose is not None:
-            self.verbose = verbose
+        :param str log_filename: the name of the log file.
+        :param str log_folder: the folder in which the log file will be saved.
+        """
+        self.verbose = True
+        self.autoencoder.eval()
+        log_file = self.prepare_logs(log_filename, log_folder)
 
-        for attempt in range(allow_n_failures):
-            try:
-                for epoch in range(self.epoch, max_epochs):
-                    time1 = time.time()
-                    logs = self.train_epoch()
-                    time2 = time.time()
-                    if allow_grad_in_valid:
-                        logs.update(self.valid_epoch())
-                    else:
-                        with torch.no_grad():
-                            logs.update(self.valid_epoch())
-                    time3 = time.time()
-                    self.scheduler_step(logs)
-                    if self.best is None or self.best > logs["valid_loss"]:
-                        self.checkpoint(epoch, logs, checkpoint_folder)
-                    elif epoch % checkpoint_frequency == 0:
-                        self.checkpoint(epoch, logs, checkpoint_folder)
-                    time4 = time.time()
-                    logs.update(
-                        epoch=epoch,
-                        train_seconds=time2 - time1,
-                        valid_seconds=time3 - time2,
-                        checkpoint_seconds=time4 - time3,
-                        total_seconds=time4 - time1,
-                    )
-                    self.log(logs)
-                    if np.isnan(logs["valid_loss"]) or np.isnan(logs["train_loss"]):
-                        raise TrainingFailure("nan received, failing")
-                    self.epoch += 1
-            except TrainingFailure:
-                if attempt == (allow_n_failures - 1):
-                    failure_message = (
-                        f"Training Failure due to Nan in attempt {attempt}, end now\n"
-                    )
-                    self.log({"Failure": failure_message})
-                    raise TrainingFailure("nan received, failing")
-                failure_message = f"Training Failure due to Nan in attempt {attempt}, try again from best\n"
-                self.log({"Failure": failure_message})
-                if hasattr(self, "best"):
-                    self.load_checkpoint("best", checkpoint_folder)
-            else:
-                break
+        with torch.no_grad():
+            time1 = time.time()
+            logs = self.train_epoch(dry_run=True)
+            time2 = time.time()
+            logs.update(self.valid_epoch())
+            time3 = time.time()
+            logs.update(
+                epoch=self.epoch,
+                train_seconds=time2 - time1,
+                valid_seconds=time3 - time2,
+                total_seconds=time3 - time1,
+            )
+            self.log(log_file, logs)
+            if np.isnan(logs["valid_loss"]) or np.isnan(logs["train_loss"]):
+                raise TrainingFailure("nan received, failing")
 
-    def train_epoch(self, epoch):
+    def train_epoch(self, dry_run=False):
         """
         Train one epoch. Called once an epoch from :func:`trainer.run <molearn.trainers.Trainer.run>`
         This method performs the following functions:
@@ -290,41 +532,20 @@ class Trainer:
         :rtype: dict
         """
         self.autoencoder.train()
-        N = 0
-        results = {}
-        for i, batch in enumerate(self.train_dataloader):
-            batch = batch[0].to(self.device)
-            self.optimiser.zero_grad()
-            train_result = self.train_step(batch)
-            train_result["loss"].backward()
-
-            # grad_norms = {}
-            # for name, param in self.autoencoder.named_parameters():
-            #     if param.grad is not None:
-            #         # Calculate the gradient norm for each parameter
-            #         grad_norm = param.grad.norm().item()
-            #         grad_norms[name] = grad_norm
-            # # Write grad_norms to a log file:
-            # with open("gradients_log.txt", "a") as log_file:
-            #     log_file.write(f"Epoch {epoch}, Batch {i}: {grad_norms}\n")
-
-            self.optimiser.step()
-            if i == 0:
-                results = {
-                    key: value.item() * len(batch)
-                    for key, value in train_result.items()
-                }
-            else:
-                for key in train_result.keys():
-                    results[key] += train_result[key].item() * len(batch)
-            N += len(batch)
-        return {f"train_{key}": results[key] / N for key in results.keys()}
+        prefixed, _ = self._run_phase(
+            self.train_dataloader,
+            self.train_step,
+            "train",
+            backward=True,
+            dry_run=dry_run,
+        )
+        return prefixed
 
     def train_step(self, batch):
         """
         Called from :func:`Trainer.train_epoch <molearn.trainers.Trainer.train_epoch>`.
 
-        :param torch.Tensor batch: Tensor of shape [Batch size, 3, Number of Atoms]. A mini-batch of protein frames normalised. To recover original data multiple by ``self.std``.
+        :param torch.Tensor batch: Tensor of shape [Batch size, Number of Atoms, 3]. A mini-batch of protein frames normalised. To recover original data multiple by ``self.std``.
         :returns: Return loss. The dictionary must contain an entry with key ``'loss'`` that :func:`self.train_epoch <molearn.trainers.Trainer.train_epoch>` will call ``result['loss'].backwards()`` to obtain gradients.
         :rtype: dict
         """
@@ -338,18 +559,18 @@ class Trainer:
         Calculates the mean squared error loss for self.autoencoder.
         Encoded and decoded frames are saved in self._internal under keys ``encoded`` and ``decoded`` respectively should you wish to use them elsewhere.
 
-        :param torch.Tensor batch: Tensor of shape [Batch size, 3, Number of Atoms] A mini-batch of protein frames normalised. To recover original data multiple by ``self.std``.
+        :param torch.Tensor batch: Tensor of shape [Batch size, Number of Atoms, 3] A mini-batch of protein frames normalised. To recover original data multiple by ``self.std``.
         :returns: Return calculated mse_loss
         :rtype: dict
         """
         self._internal = {}
         encoded = self.autoencoder.encode(batch)
         self._internal["encoded"] = encoded
-        decoded = self.autoencoder.decode(encoded)[:, :, : batch.size(2)]
+        decoded = self.autoencoder.decode(encoded)[:, : batch.size(1), :]
         self._internal["decoded"] = decoded
         return dict(mse_loss=((batch - decoded) ** 2).mean())
 
-    def valid_epoch(self, epoch):
+    def valid_epoch(self):
         """
         Called once an epoch from :func:`trainer.run <molearn.trainers.Trainer.run>` within a no_grad context.
         This method performs the following functions:
@@ -364,21 +585,14 @@ class Trainer:
         :rtype: dict
         """
         self.autoencoder.eval()
-        N = 0
-        results = {}
-        for i, batch in enumerate(self.valid_dataloader):
-            batch = batch[0].to(self.device)
-            valid_result = self.valid_step(batch)
-            if i == 0:
-                results = {
-                    key: value.item() * len(batch)
-                    for key, value in valid_result.items()
-                }
-            else:
-                for key in valid_result.keys():
-                    results[key] += valid_result[key].item() * len(batch)
-            N += len(batch)
-        return {f"valid_{key}": results[key] / N for key in results.keys()}
+        prefixed, averaged = self._run_phase(
+            self.valid_dataloader,
+            self.valid_step,
+            "valid",
+            backward=False,
+        )
+        self.results_epoch = averaged
+        return prefixed
 
     def valid_step(self, batch):
         """
@@ -391,57 +605,14 @@ class Trainer:
         results = self.common_step(batch)
         results["loss"] = results["mse_loss"]
         return results
-
-    def learning_rate_sweep(
-        self,
-        max_lr=100,
-        min_lr=1e-5,
-        number_of_iterations=1000,
-        checkpoint_folder="checkpoint_sweep",
-        train_on="mse_loss",
-        save=["loss", "mse_loss"],
-    ):
-        """
-        Deprecated method.
-        Performs a sweep of learning rate between ``max_lr`` and ``min_lr`` over ``number_of_iterations``.
-        See `Finding Good Learning Rate and The One Cycle Policy <https://towardsdatascience.com/finding-good-learning-rate-and-the-one-cycle-policy-7159fe1db5d6>`_
-
-        :param float max_lr: (default: 100.0) final/maximum learning rate to be used
-        :param float min_lr: (default: 1e-5) Starting learning rate
-        :param int number_of_iterations: (default: 1000) Number of steps to run sweep over.
-        :param str train_on: (default: 'mse_loss') key returned from trainer.train_step(batch) on which to train
-        :param list save: (default: ['loss', 'mse_loss']) what loss values to return.
-        :returns: array of shape [len(save), min(number_of_iterations, iterations before NaN)] containing loss values defined in `save` key word.
-        :rtype: numpy.ndarray
-        """
-        self.autoencoder.train()
-
-        def cycle(iterable):
-            while True:
-                for i in iterable:
-                    yield i
-
-        init_loss = 0.0
-        values = []
-        data = iter(cycle(self.train_dataloader))
-        for i in range(number_of_iterations):
-            lr = min_lr * ((max_lr / min_lr) ** (i / number_of_iterations))
-            self.update_optimiser_hyperparameters(lr=lr)
-            batch = next(data)[0].to(self.device).float()
-
-            self.optimiser.zero_grad()
-            result = self.train_step(batch)
-            # result['loss']/=len(batch)
-            result[train_on].backward()
-            self.optimiser.step()
-            values.append((lr,) + tuple((result[name].item() for name in save)))
-            if i == 0:
-                init_loss = result[train_on].item()
-            # if result[train_on].item()>1e6*init_loss:
-            #    break
-        values = np.array(values)
-        print("min value ", values[np.nanargmin(values[:, 1])])
-        return values
+    
+    def update_hyperparameters(self, **kwargs):
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
+            else:
+                raise ValueError(f"Trainer has no attribute {key}")
+        self._reset_progress()
 
     def update_optimiser_hyperparameters(self, **kwargs):
         """
@@ -452,20 +623,22 @@ class Trainer:
         for g in self.optimiser.param_groups:
             for key, value in kwargs.items():
                 g[key] = value
+        self._reset_progress()
 
-    def checkpoint(self, epoch, valid_logs, checkpoint_folder, loss_key="valid_loss"):
+    def checkpoint(self, epoch, valid_logs, checkpoint_folder, is_best, has_converged=False):
         """
         Checkpoint the current network. The checkpoint will be saved as ``'last.ckpt'``.
-        If valid_logs[loss_key] is better than self.best then this checkpoint will replace self.best and ``'last.ckpt'`` will be renamed to ``f'{checkpoint_folder}/checkpoint_epoch{epoch}_loss{valid_loss}.ckpt'`` and the former best (filename saved as ``self.best_name``) will be deleted
+        If valid_logs[loss_key] is better than self.progress.best_loss then this checkpoint will replace self.progress.best_checkpoint and ``'last.ckpt'`` will be renamed to ``f'{checkpoint_folder}/checkpoint_epoch{epoch}_loss{valid_loss}.ckpt'`` and the former best (filename saved as ``self.progress.best_checkpoint``) will be deleted
 
         :param int epoch: current epoch, will be saved within the ckpt. Current epoch can usually be obtained with ``self.epoch``
         :param dict valid_logs: results dictionary containing loss_key.
         :param str checkpoint_folder:  The folder in which to save the checkpoint.
-        :param str loss_key: (default: 'valid_loss') The key with which to get loss from valid_logs.
+        :param bool is_best: if the current checkpoint is the best so far, this will be used to determine if the checkpoint should be renamed to ``f'{checkpoint_folder}/checkpoint_epoch{epoch}_loss{valid_loss}.ckpt'``.
+        :param bool has_converged: if True, the checkpoint will be saved as ``f'{checkpoint_folder}/checkpoint_converged.ckpt'``. This is used to indicate that training has converged.
         """
-        valid_loss = valid_logs[loss_key]
-        if not os.path.exists(checkpoint_folder):
-            os.mkdir(checkpoint_folder)
+
+        valid_loss = valid_logs["valid_loss"]
+        last_checkpoint_path = f'{checkpoint_folder}/last{f"_{self._repeat}" if self._repeat > 0 else ""}.ckpt'
         torch.save(
             {
                 "epoch": epoch,
@@ -477,20 +650,25 @@ class Trainer:
                 "std": self.std,
                 "mean": self.mean,
             },
-            f'{checkpoint_folder}/last{f"_{self._repeat}" if self._repeat > 0 else ""}.ckpt',
+            last_checkpoint_path,
         )
+        self._last_checkpoint = last_checkpoint_path
 
-        if self.best is None or self.best > valid_loss:
+        if is_best:
             filename = f'{checkpoint_folder}/checkpoint{f"_{self._repeat}" if self._repeat>0 else ""}_epoch{epoch}_loss{valid_loss}.ckpt'
             shutil.copyfile(
-                f'{checkpoint_folder}/last{f"_{self._repeat}" if self._repeat>0 else ""}.ckpt',
+                last_checkpoint_path,
                 filename,
             )
-            if self.best is not None:
-                os.remove(self.best_name)
-            self.best_name = filename
-            self.best_epoch = epoch
-            self.best = valid_loss
+            if self.progress.best_checkpoint is not None and os.path.exists(self.progress.best_checkpoint):
+                os.remove(self.progress.best_checkpoint)
+            self.progress.best_checkpoint = filename
+
+        if has_converged:
+            filename = f'{checkpoint_folder}/checkpoint_converged.ckpt'
+            if self.progress.best_checkpoint is None:
+                raise RuntimeError("No best checkpoint available to mark as converged")
+            shutil.copyfile(self.progress.best_checkpoint, filename)
 
     def load_checkpoint(
         self, checkpoint_name="best", checkpoint_folder="", load_optimiser=True
@@ -503,8 +681,8 @@ class Trainer:
         :param bool load_optimiser: (default: True) Should optimiser state dictionary be loaded.
         """
         if checkpoint_name == "best":
-            if self.best_name is not None:
-                _name = self.best_name
+            if self.progress.best_checkpoint is not None:
+                _name = self.progress.best_checkpoint
             else:
                 ckpts = glob.glob(checkpoint_folder + "/checkpoint_*")
                 indexs = [x.rfind("loss") for x in ckpts]
@@ -527,8 +705,9 @@ class Trainer:
                     "self.optimiser does not exist, I have no way of knowing what optimiser you previously used, please set it first."
                 )
             self.optimiser.load_state_dict(checkpoint["optimizer_state_dict"])
-        epoch = checkpoint["epoch"]
-        self.epoch = epoch + 1
+        self.epoch = checkpoint["epoch"] + 1
+        self.std = checkpoint["std"]
+        self.mean = checkpoint["mean"]
 
     def get_repeat(self, checkpoint_folder):
         if not os.path.exists(checkpoint_folder):
@@ -547,21 +726,23 @@ class Trainer:
                 raise Exception(
                     "Something went wrong, you surely havnt done 1000 repeats?"
                 )
+        self.progress.repeat_index = self._repeat
 
-    def _get_scale(
-        self, cur_mse_loss: float, loss_to_scale: float, scale_scale: float = 1.0
+    def get_scale(
+        self, ref_loss: float, tar_loss: float, scale_scale: float = 1.0
     ):
         """
-        get a scaling factor to scale a loss to be in the same order of magnitude like `cur_mse_loss`
+        Get a scaling factor to scale a loss to be in the same order of magnitude like `cur_mse_loss`
 
-        :param float cur_mse_loss: the mse loss of the current epoch
-        :param float loss_to_scale: the loss that should be scaled to be in the same order of magnitude as the `cur_mse_loss`
+        :param float target_loss: the reference loss
+        :param float tar_loss: the loss that should be scaled to be in the same order of magnitude as the `target_loss`
         :param float scale_scale: scale to in-/ decrease the scale further
         :return float scaling_factor: the calculated scaling factor for the `loss_to_scale`
         """
-        mag_mse = math.floor(math.log10(cur_mse_loss if cur_mse_loss > 0 else 1e-32))
-        mag_phy = math.floor(math.log10(loss_to_scale if loss_to_scale > 0 else 1e-32))
-        return 10 ** (mag_mse - mag_phy) * scale_scale
+        with torch.no_grad():
+            mag_ref = math.floor(math.log10(abs(ref_loss)))
+            mag_new = math.floor(math.log10(abs(tar_loss)))
+        return 10 ** (mag_ref - mag_new) * scale_scale
 
 
 if __name__ == "__main__":

@@ -354,13 +354,47 @@ class openmm_clamped_energy_function(torch.autograd.Function):
         return None, -force*grad_output.view(-1, 1, 1), None
 
 
+# class openmm_energy(torch.nn.Module):
+    
+#     def __init__(self, mol, std, clamp=None, **kwargs):
+#         super().__init__()
+#         self.openmmplugin = OpenmmPluginScore(mol, **kwargs)
+#         self.std = std/10
+#         self.clamp = clamp
+#         if self.clamp is not None:
+#             self.forward = self._clamp_forward
+#         else:
+#             self.forward = self._forward
+
+#     def _forward(self, x):
+#         '''
+#         :param `torch.Tensor` x: dtype=torch.float, device=CUDA, shape B, 3, N 
+#         :returns: torch energy tensor dtype should be float and on same device as x
+#         '''
+#         _x = (x*self.std).permute(0, 2, 1).contiguous()
+#         energy = openmm_energy_function.apply(self.openmmplugin, _x)
+#         return energy
+
+#     def _clamp_forward(self, x):
+#         '''
+#         :param `torch.Tensor` x: dtype=torch.float, device=CUDA, shape B, 3, N 
+#         :returns: torch energy tensor dtype should be float and on same device as x
+#         '''
+#         _x = (x*self.std).permute(0, 2, 1).contiguous()
+#         energy = openmm_clamped_energy_function.apply(self.openmmplugin, _x, self.clamp)
+#         return energy
+
+
 class openmm_energy(torch.nn.Module):
     
     def __init__(self, mol, std, clamp=None, **kwargs):
         super().__init__()
         self.openmmplugin = OpenmmPluginScore(mol, **kwargs)
-        self.std = std/10
         self.clamp = clamp
+        if std != 1.0:
+            self.std = std/10
+        else:
+            self.std = 1.0
         if self.clamp is not None:
             self.forward = self._clamp_forward
         else:
@@ -368,18 +402,18 @@ class openmm_energy(torch.nn.Module):
 
     def _forward(self, x):
         '''
-        :param `torch.Tensor` x: dtype=torch.float, device=CUDA, shape B, 3, N 
+        :param `torch.Tensor` x: dtype=torch.float, device=CUDA, shape (B, n, 3)
         :returns: torch energy tensor dtype should be float and on same device as x
         '''
-        _x = (x*self.std).permute(0, 2, 1).contiguous()
+        _x = (x*self.std).contiguous()
         energy = openmm_energy_function.apply(self.openmmplugin, _x)
         return energy
 
     def _clamp_forward(self, x):
         '''
-        :param `torch.Tensor` x: dtype=torch.float, device=CUDA, shape B, 3, N 
+        :param `torch.Tensor` x: dtype=torch.float, device=CUDA, shape (B, n, 3) 
         :returns: torch energy tensor dtype should be float and on same device as x
         '''
-        _x = (x*self.std).permute(0, 2, 1).contiguous()
+        _x = (x*self.std).contiguous()
         energy = openmm_clamped_energy_function.apply(self.openmmplugin, _x, self.clamp)
         return energy

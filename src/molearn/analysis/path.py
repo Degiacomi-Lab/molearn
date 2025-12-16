@@ -207,7 +207,7 @@ def get_path(idx_start, idx_end, landscape, xvals, yvals, smooth=3):
         return traj_smooth, np.array(score)[::-1]
 
 
-def _get_point_index(crd, xvals, yvals):
+def get_point_index(crd, xvals, yvals):
     '''
     Extract index (of 2D surface) closest to a given real value coordinate
     
@@ -241,8 +241,8 @@ def get_path_aggregate(crd, landscape, xvals, yvals, input_is_index=False):
     for i in range(1, len(crd)):
 
         if not input_is_index:
-            idx_start = _get_point_index(crd[i-1], xvals, yvals)
-            idx_end = _get_point_index(crd[i], xvals, yvals)      
+            idx_start = get_point_index(crd[i-1], xvals, yvals)
+            idx_end = get_point_index(crd[i], xvals, yvals)      
         else:
             idx_start = crd[i-1]
             idx_end = crd[i]

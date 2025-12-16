@@ -83,8 +83,8 @@ import molearn
 
 ## Usage ##
 
-* See example scripts in the `examples` folder.
-* Jupyter notebook tutorials describing the usage of a trained neural network are available [here](https://github.com/Degiacomi-Lab/molearn_notebook).
+* See example scripts and notebooks in the `examples` folder.
+<!-- * Jupyter notebook tutorials describing the usage of a trained neural network are available [here](https://github.com/Degiacomi-Lab/molearn_notebook). -->
 * software API and a FAQ page are available at [molearn.readthedocs.io](https://molearn.readthedocs.io/).
 
 ## References ##

@@ -1,10 +1,10 @@
+import os
 import torch
 from molearn.loss_functions import openmm_energy
 from .trainer import Trainer
-import os
 
 
-soft_xml_script = """\
+SOFT_NB_XML = """\
 <ForceField>
  <Script>
 import openmm as mm
@@ -33,15 +33,14 @@ class OpenMM_Physics_Trainer(Trainer):
 
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, physics_inter_weight=0, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.physics_inter_weight = physics_inter_weight
 
     def prepare_physics(
         self,
-        physics_scaling_factor=0.1,
         clamp_threshold=1e8,
         clamp=False,
-        start_physics_at=10,
         xml_file=None,
         soft_NB=True,
         **kwargs,
@@ -53,50 +52,74 @@ class OpenMM_Physics_Trainer(Trainer):
         :param float physics_scaling_factor: scaling factor saved to ``self.psf`` that is used in :func:`train_step <molearn.trainers.OpenMM_Physics_Trainer.train_step>`. Defaults to 0.1
         :param float clamp_threshold: if ``clamp=True`` is passed then forces will be clamped between -clamp_threshold and clamp_threshold. Default: 1e-8
         :param bool clamp: Whether to clamp the forces. Defaults to False
-        :param int start_physics_at: At which epoch the physics loss will be added to the loss. Default: 10
         :param \*\*kwargs: All aditional kwargs will be passed to :func:`openmm_energy <molearn.loss_functions.openmm_energy>`
 
         """
-        if xml_file is None and soft_NB:
-            print("using soft nonbonded forces by default")
-            from molearn.utils import random_string
+        self.physics_loss = self.setup_openmm_energy(
+            openmm_energy,
+            clamp_threshold=clamp_threshold,
+            clamp=clamp,
+            xml_file=xml_file,
+            soft_NB=soft_NB,
+            **kwargs,
+        )
 
-            tmp_filename = f"soft_nonbonded_{random_string()}.xml"
-            with open(tmp_filename, "w") as f:
-                f.write(soft_xml_script)
-            xml_file = ["amber14-all.xml", tmp_filename]
-            kwargs["remove_NB"] = True
-        elif xml_file is None:
-            xml_file = ["amber14-all.xml"]
-        self.start_physics_at = start_physics_at
-        self.psf = physics_scaling_factor
-        if clamp:
-            clamp_kwargs = dict(max=clamp_threshold, min=-clamp_threshold)
-        else:
-            clamp_kwargs = None
-        self.physics_loss = openmm_energy(
+    def setup_openmm_energy(
+        self,
+        energy_builder,
+        *,
+        clamp_threshold: float = 1e8,
+        clamp: bool = False,
+        xml_file=None,
+        soft_NB: bool = True,
+        platform: str | None = None,
+        **kwargs,
+    ):
+        if not hasattr(self, "_data"):
+            raise RuntimeError("set_data must be called before configuring physics")
+
+        tmp_filename = None
+        xml_files = xml_file
+        if xml_files is None:
+            if soft_NB:
+                print("using soft nonbonded forces by default")
+                from molearn.utils import random_string
+
+                tmp_filename = f"soft_nonbonded_{random_string()}.xml"
+                with open(tmp_filename, "w") as handle:
+                    handle.write(SOFT_NB_XML)
+                xml_files = ["amber14-all.xml", tmp_filename]
+                kwargs.setdefault("remove_NB", True)
+            else:
+                xml_files = ["amber14-all.xml"]
+
+        clamp_kwargs = dict(max=clamp_threshold, min=-clamp_threshold) if clamp else None
+        energy = energy_builder(
             self.mol,
             self.std,
             clamp=clamp_kwargs,
-            platform="CUDA" if self.device == torch.device("cuda") else "Reference",
+            platform=platform or ("CUDA" if self.device.type == "cuda" else "Reference"),
             atoms=self._data.atoms,
-            xml_file=xml_file,
+            xml_file=xml_files,
             **kwargs,
         )
-        os.remove(tmp_filename)
+
+        if tmp_filename and os.path.exists(tmp_filename):
+            os.remove(tmp_filename)
+        return energy
 
     def common_physics_step(self, batch, latent):
         """
         Called from both :func:`train_step <molearn.trainers.OpenMM_Physics_Trainer.train_step>` and :func:`valid_step <molearn.trainers.OpenMM_Physics_Trainer.valid_step>`.
         Takes random interpolations between adjacent samples latent vectors. These are decoded (decoded structures saved as ``self._internal['generated'] = generated if needed elsewhere) and the energy terms calculated with ``self.physics_loss``.
 
-        :param torch.Tensor batch: tensor of shape [batch_size, 3, n_atoms]. Give access to the mini-batch of structures. This is used to determine ``n_atoms``
+        :param torch.Tensor batch: tensor of shape [batch_size, n_atoms, 3]. Give access to the mini-batch of structures. This is used to determine ``n_atoms``
         :param torch.Tensor latent: tensor shape [batch_size, 2, 1]. Pass the encoded vectors of the mini-batch.
         """
-        alpha = torch.rand(int(len(batch) // 2), 1, 1).type_as(latent)
+        alpha = torch.rand(int(len(batch) // 2), 1).type_as(latent)
         latent_interpolated = (1 - alpha) * latent[:-1:2] + alpha * latent[1::2]
 
-        generated = self.autoencoder.decode(latent_interpolated)[:, :, : batch.size(2)]
+        generated = self.autoencoder.decode(latent_interpolated)[:,: batch.size(1), : ]
         self._internal["generated"] = generated
         energy = self.physics_loss(generated)
         energy[energy.isinf()] = 1e35
@@ -104,7 +127,7 @@ class OpenMM_Physics_Trainer(Trainer):
         energy = energy.nanmean()
 
         return {
-            "physics_loss": energy
+            "inter_physics_loss": energy
         }  # a if not energy.isinf() else torch.tensor(0.0)}
 
     def train_step(self, batch):
@@ -112,27 +135,15 @@ class OpenMM_Physics_Trainer(Trainer):
         This method overrides :func:`Trainer.train_step <molearn.trainers.Trainer.train_step>` and adds an additional 'Physics_loss' term.
         Called from :func:`Trainer.train_epoch <molearn.trainers.Trainer.train_epoch>`.
 
-        :param torch.Tensor batch: tensor shape [Batch size, 3, Number of Atoms]. A mini-batch of protein frames normalised. To recover original data multiple by ``self.std``.
+        :param torch.Tensor batch: tensor shape [Batch size, Number of Atoms, 3]. A mini-batch of protein frames normalised. To recover original data multiple by ``self.std``.
         :returns: Return loss. The dictionary must contain an entry with key ``'loss'`` that :func:`self.train_epoch <molearn.trainers.Trainer.train_epoch>` will call ``result['loss'].backwards()`` to obtain gradients.
         :rtype: dict
         """
 
         results = self.common_step(batch)
         results.update(self.common_physics_step(batch, self._internal["encoded"]))
-
-        with torch.no_grad():
-            if self.epoch == self.start_physics_at:
-                self.phy_scale = self._get_scale(
-                    results["mse_loss"],
-                    results["physics_loss"],
-                    self.psf,
-                )
-        if self.epoch >= self.start_physics_at:
-            final_loss = results["mse_loss"] + self.phy_scale * results["physics_loss"]
-        else:
-            final_loss = results["mse_loss"]
-
-        results["loss"] = final_loss
+        loss = results["mse_loss"] + self.physics_inter_weight * results["inter_physics_loss"]
+        results["loss"] = loss
         return results
 
     def valid_step(self, batch):
@@ -143,7 +154,7 @@ class OpenMM_Physics_Trainer(Trainer):
 
         Called from super class :func:`Trainer.valid_epoch<molearn.trainer.Trainer.valid_epoch>` on every mini-batch.
 
-        :param torch.Tensor batch: Tensor of shape [Batch size, 3, Number of Atoms]. A mini-batch of protein frames normalised. To recover original data multiple by ``self.std``.
+        :param torch.Tensor batch: Tensor of shape [Batch size, Number of Atoms, 3]. A mini-batch of protein frames normalised. To recover original data multiple by ``self.std``.
         :returns:  Return loss. The dictionary must contain an entry with key ``'loss'`` that will be the score via which the best checkpoint is determined.
         :rtype: dict
 
@@ -152,9 +163,7 @@ class OpenMM_Physics_Trainer(Trainer):
         results = self.common_step(batch)
         results.update(self.common_physics_step(batch, self._internal["encoded"]))
         # scale = (self.psf*results['mse_loss'])/(results['physics_loss'] +1e-5)
-        final_loss = torch.log(results["mse_loss"]) + self.psf * torch.log(
-            results["physics_loss"]
-        )
+        final_loss = torch.log(results["mse_loss"]) + self.physics_inter_weight * torch.log(results["inter_physics_loss"])
         results["loss"] = final_loss
         return results
 
