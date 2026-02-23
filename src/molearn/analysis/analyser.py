@@ -304,6 +304,61 @@ class MolearnAnalysis:
             err.append(rmsd)
         return np.array(err)
 
+    def get_atomwise_error(self, key):
+        """
+        Calculates the per-atom RMSD for an entire dataset of conformations.
+
+        :param key: String identifier used to retrieve specific datasets (e.g., 'test', 'val').
+        :return: A 2D numpy array of shape [M, N], where M is the number of frames 
+                and N is the number of atoms. Each element [i, j] represents the 
+                distance (error) of atom j in frame i.
+        """
+        dataset = self.get_dataset(key, scale=True) # [B, n, 3]
+        decoded = self.get_decoded(key, scale=True)
+
+        err = []
+        m = deepcopy(self.mol)
+        for i in range(dataset.shape[0]):
+            crd_dataset = as_numpy(dataset[i])
+            crd_decoded = as_numpy(decoded[i])
+            err_i = self.atomwise_rmsd_tensors(crd_dataset, crd_decoded)
+
+            err.append(err_i)
+        return np.array(err)
+
+    def atomwise_rmsd(self, m1_tensor, m2_tensor):
+        """
+        Calculate atom-wise RMSD between two [N, 3] numpy arrays.
+        
+        Uses the Kabsch algorithm to align the two structures. Implementation is similar to biobox's implementation of RMSD:
+        https://github.com/Degiacomi-Lab/biobox/blob/1def01a17682eadc19eb97d07b3e0f5a8700c31f/src/biobox/classes/structure.py#L624
+
+        :param m1_tensor: np.array of shape (N, 3)
+        :param m2_tensor: np.array of shape (N, 3)
+        :returns: np.array of shape (N,) containing distances
+        """
+        if m1_tensor.shape != m2_tensor.shape:
+            raise ValueError(f"Shape mismatch: {m1_tensor.shape} vs {m2_tensor.shape}")
+
+        # Center
+        m1 = m1_tensor - np.mean(m1_tensor, axis=0)
+        m2 = m2_tensor - np.mean(m2_tensor, axis=0)
+
+        # Kabsch Algorithm 
+        h = np.dot(m2.T, m1)
+        V, S, Wt = np.linalg.svd(h)
+
+        reflect = float(str(float(np.linalg.det(V) * np.linalg.det(Wt))))
+        if reflect < 0.0:
+            S[-1] = -S[-1]
+            V[:, -1] = -V[:, -1]
+
+        # Alignment and Distance
+        rotation_matrix = np.dot(V, Wt)
+        m2_aligned = np.dot(m2, rotation_matrix)
+        
+        return np.sqrt(np.sum((m2_aligned - m1)**2, axis=1))
+
     def get_dope(self, key, refine=True, **kwargs):
         """
         :param str key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
