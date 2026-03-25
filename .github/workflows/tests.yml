@@ -23,14 +23,6 @@ jobs:
           remove-profiles: true
           run-post: true
 
-      # Optional but VERY useful for debugging environment issues
-      - name: Debug environment
-        run: |
-          conda info
-          conda list
-          conda run -n molearn python -c "import sys; print(sys.executable)"
-          conda run -n molearn python -c "import pkg_resources; print('pkg_resources OK')"
-
       - name: Run tests
         run: |
           conda run -n molearn python test/test_openmm_plugin.py
