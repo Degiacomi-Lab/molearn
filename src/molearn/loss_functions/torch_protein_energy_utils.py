@@ -13,12 +13,14 @@ import numpy as np
 import torch
 from copy import deepcopy
 import os
-import pkg_resources
-
+from importlib.resources import files, as_file
 
 def read_lib_file(file_name, amber_atoms, atom_charge, connectivity):
     try:
-        f_location = pkg_resources.resource_filename('molearn', 'parameters')
+        #f_location = pkg_resources.resource_filename('molearn', 'parameters')
+        with as_file(files("molearn") / "parameters") as f_location:
+            f_location = str(f_location)
+
         f_in = open(f'{f_location}/{file_name}')
         print(f'File {file_name} opened')
     except Exception:
@@ -116,7 +118,10 @@ def get_amber_parameters(order=False, radians=True):
     read_lib_file(file_names[0],amber_atoms,other_parameters['charge'], other_parameters['connectivity'])
 
     try:
-        f_location = pkg_resources.resource_filename('molearn', 'parameters')
+        #f_location = pkg_resources.resource_filename('molearn', 'parameters')
+        with as_file(files("molearn") / "parameters") as f_location:
+            f_location = str(f_location)
+        
         f_in = open(f'{f_location}/{file_names[1]}')
         print('File %s opened' % file_names[1])
     except Exception:
@@ -145,7 +150,10 @@ def get_amber_parameters(order=False, radians=True):
 
     # pen frcmod file, should be identifcal format but missing any or all cards
     try:
-        f_location = pkg_resources.resource_filename('molearn', 'parameters')
+        #f_location = pkg_resources.resource_filename('molearn', 'parameters')
+        with as_file(files("molearn") / "parameters") as f_location:
+            f_location = str(f_location)
+        
         f_in = open(f'{f_location}/{file_names[2]}')
         print('File %s opened' % file_names[2])
     except Exception:
