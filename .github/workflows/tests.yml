@@ -5,28 +5,34 @@ on: [push]
 jobs:
   build-linux:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash -l {0}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Set up conda + mamba
         uses: conda-incubator/setup-miniconda@v3
         with:
           activate-environment: molearn
           environment-file: .github/test_environment.yml
-          mamba-version: '*'
+          mamba-version: "*"
           conda-solver: libmamba
           channels: conda-forge,salilab,defaults
           channel-priority: strict
           auto-update-conda: false
           remove-profiles: true
           run-post: true
-      - name: Test
+
+      # Optional but VERY useful for debugging environment issues
+      - name: Debug environment
         run: |
-          cd test
-          python test_openmm_plugin.py
-          python test_pdbdata.py
-          python test_trainer.py
+          conda info
+          conda list
+          conda run -n molearn python -c "import sys; print(sys.executable)"
+          conda run -n molearn python -c "import pkg_resources; print('pkg_resources OK')"
+
+      - name: Run tests
+        run: |
+          conda run -n molearn python test/test_openmm_plugin.py
+          conda run -n molearn python test/test_pdbdata.py
+          conda run -n molearn python test/test_trainer.py
