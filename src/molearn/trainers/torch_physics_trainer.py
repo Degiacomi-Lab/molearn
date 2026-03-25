@@ -81,7 +81,7 @@ class Torch_Physics_Trainer(Trainer):
         results = self.common_step(batch)
         results.update(self.common_physics_step(batch, self._internal['encoded']))
         # scale = self.psf*results['mse_loss']/(results['physics_loss']+1e-5)
-        final_loss = torch.log(results['mse_loss'])+self.psf*torch.log(results['physics_loss'])
+        final_loss = results['mse_loss'] + self.psf * results['physics_loss']
         results['loss'] = final_loss
         return results
 

@@ -321,7 +321,7 @@ class MolearnAnalysis:
         for i in range(dataset.shape[0]):
             crd_dataset = as_numpy(dataset[i])
             crd_decoded = as_numpy(decoded[i])
-            err_i = self.atomwise_rmsd_tensors(crd_dataset, crd_decoded)
+            err_i = self.atomwise_rmsd(crd_dataset, crd_decoded)
 
             err.append(err_i)
         return np.array(err)
