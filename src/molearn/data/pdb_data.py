@@ -97,7 +97,7 @@ class PDBData:
             elif atom.name == 'CB':
                 cb_indices.append(i)
             else:
-                NameError(f"Unknown atom name: {atom.name}. Check atom selection.")
+                raise ValueError(f"Unknown atom name: {atom.name}. Check atom selection.")
         assert len(n_indices) == len(ca_indices) == len(c_indices) == len(o_indices)
         if len(cb_indices) < len(ca_indices):
             cb_indices.append(-1)
