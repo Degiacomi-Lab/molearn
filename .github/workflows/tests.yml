@@ -25,6 +25,7 @@ jobs:
 
       - name: Run tests
         run: |
-          conda run -n molearn python test/test_openmm_plugin.py
-          conda run -n molearn python test/test_pdbdata.py
-          conda run -n molearn python test/test_trainer.py
+          cd test
+          python test_openmm_plugin.py
+          python test_pdbdata.py
+          python test_trainer.py
