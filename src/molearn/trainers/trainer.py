@@ -2,6 +2,7 @@ import os
 import glob
 import shutil
 import math
+import re
 import numpy as np
 import time
 import torch
@@ -339,7 +340,7 @@ class Trainer:
         self.set_dataloader(*data.get_dataloader(**kwargs))
         self._data = data
         self.mol = data.mol
-        self.standardize = data.standardize
+        self.standardise = data.standardise
         self.std = data.std
         self.mean = data.mean
 
@@ -692,9 +693,17 @@ class Trainer:
                 _name = self.progress.best_checkpoint
             else:
                 ckpts = glob.glob(checkpoint_folder + "/checkpoint_*")
-                indexs = [x.rfind("loss") for x in ckpts]
-                losses = [float(x[y + 4 : -5]) for x, y in zip(ckpts, indexs)]
-                _name = ckpts[np.argmin(losses)]
+                pattern = re.compile(r"_loss(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)\.ckpt$")
+                parsed = []
+                for ckpt in ckpts:
+                    match = pattern.search(os.path.basename(ckpt))
+                    if match is not None:
+                        parsed.append((ckpt, float(match.group(1))))
+                if not parsed:
+                    raise FileNotFoundError(
+                        f"No checkpoint files with parseable loss found in '{checkpoint_folder}'"
+                    )
+                _name = min(parsed, key=lambda item: item[1])[0]
         elif checkpoint_name == "last":
             _name = f"{checkpoint_folder}/last.ckpt"
         else:

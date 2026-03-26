@@ -1,6 +1,7 @@
 import torch
 from molearn.loss_functions import TorchProteinEnergy
 from .trainer import Trainer
+import warnings
 
 
 class Torch_Physics_Trainer(Trainer):
@@ -37,10 +38,20 @@ class Torch_Physics_Trainer(Trainer):
         bond/=n
         angle/=n
         torsion/=n
-        _all = torch.tensor([bond, angle, torsion])
-        _all[_all.isinf()]=1e35
-        total_physics = _all.nansum()
-        # total_physics = torch.nansum(torch.tensor([bond ,angle ,torsion]))
+        all_terms = torch.stack([bond, angle, torsion])
+        
+        if torch.isinf(all_terms).any():
+            inf_mask = torch.isinf(all_terms)
+            inf_names = ["bond", "angle", "torsion"]
+            bad_terms = [name for name, bad in zip(inf_names, inf_mask.tolist()) if bad]
+            warnings.warn(
+                f"Infinite physics energies detected in common_physics_step: {', '.join(bad_terms)}. "
+                "Replacing inf values with 1e35.",
+                RuntimeWarning,
+                stacklevel=2,
+            )
+            all_terms = torch.where(inf_mask, torch.full_like(all_terms, 1e35), all_terms)
+        total_physics = all_terms.nansum()
 
         return {'physics_loss':total_physics, 'bond_energy':bond, 'angle_energy':angle, 'torsion_energy':torsion}
 

@@ -42,7 +42,7 @@ radii = {
 
 
 class PDBData:
-    def __init__(self, filename=None, topology=None, fix_terminal=False, atoms=None, standardize=True):
+    def __init__(self, filename=None, topology=None, fix_terminal=False, atoms=None, standardise=True):
         """
         Create object enabling the manipulation of multi-PDB files into a dataset suitable for training.
 
@@ -50,12 +50,12 @@ class PDBData:
         :param None | str topology: if not None, :func:`import_pdb <molearn.data.PDBData.import_pdb>` is called with the topology file.
         :param bool fix_terminal: if True, calls :func:`fix_terminal <molearn.data.PDBData.fix_terminal>` after import, and before atomselect
         :param list[str] atoms: if not None, calls :func:`atomselect <molearn.data.PDBData.atomselect>`
-        :param bool standardize: if True, standardize the dataset by removing the mean and dividing by the standard deviation.
+        :param bool standardise: if True, standardise the dataset by removing the mean and dividing by the standard deviation.
         """
 
         self.filename = filename
         self.topology = topology
-        self.standardize = standardize
+        self.standardise = standardise
         if filename is not None:
             self.import_pdb(filename, topology)
             if fix_terminal:
@@ -84,7 +84,8 @@ class PDBData:
         n_indices, ca_indices, cb_indices, c_indices, o_indices = [], [], [], [], []
         for i, atom in enumerate(self._mol.atoms):
             if atom.name == 'N':
-                assert len(n_indices) == len(ca_indices) == len(c_indices) == len(o_indices)
+                if not len(n_indices) == len(ca_indices) == len(c_indices) == len(o_indices):
+                    raise ValueError("Inconsistent number of N, CA, C, and O atoms in the trajectory.")
                 if len(cb_indices) < len(n_indices):
                     cb_indices.append(-1)        
                 n_indices.append(i)
@@ -98,7 +99,8 @@ class PDBData:
                 cb_indices.append(i)
             else:
                 raise ValueError(f"Unknown atom name: {atom.name}. Check atom selection.")
-        assert len(n_indices) == len(ca_indices) == len(c_indices) == len(o_indices)
+        if not len(n_indices) == len(ca_indices) == len(c_indices) == len(o_indices):
+            raise ValueError("Inconsistent number of N, CA, C, and O atoms in the trajectory.")
         if len(cb_indices) < len(ca_indices):
             cb_indices.append(-1)
         self.indices = {
@@ -111,17 +113,19 @@ class PDBData:
         self.cb_valid_idx = self.indices["CB"][self.indices["CB"] >= 0]
 
     def _standardise_coordinates(self, coords: np.ndarray) -> np.ndarray:
-        if self.standardize:
+        if self.standardise:
             if not hasattr(self, "std") or not hasattr(self, "mean"):
                 self.std = coords.std()
                 self.mean = coords.mean()
                 print(f"Computed mean: {self.mean}, std: {self.std}")
+            if self.std == 0 :
+                raise ValueError("Standard deviation of coordinates is zero. Check input data.")
             else:
                 print(f"Using pre-computed mean: {self.mean}, std: {self.std}")
         else:
             self.std = 1.0
             self.mean = 0.0
-            print("Not standardizing the dataset.")
+            print("Not standardising the dataset.")
         return (coords - self.mean) / self.std
 
     def _resolve_split_sizes(
@@ -204,7 +208,7 @@ class PDBData:
             "indices": self.indices,
         }
 
-    def import_pdb(self, filename: str | list[str], topology: str | None = None):
+    def import_pdb(self, filename: str | list[str], topology: str | None = None) -> None:
         """
         Load one or multiple trajectory files as MDAnalysis Universe.
 
@@ -250,12 +254,12 @@ class PDBData:
         elif isinstance(atoms, str):
             selection_string = atoms
         else:
-            raise ValueError("Unsuported atom selection")
+            raise ValueError("Unsupported atom selection")
         self._mol.atoms = self._mol.select_atoms(selection_string)
 
-    def prepare_dataset(self, std=None, mean=None):
+    def prepare_dataset(self, std=None, mean=None) -> torch.Tensor:
         """
-        Prepare dataset from the loaded trajectory data to create a standardized/unstandardized tensor.
+        Prepare dataset from the loaded trajectory data to create a standardised/unstandardised tensor.
         """
         if std is not None and mean is not None:
             self.std = std
@@ -357,7 +361,7 @@ class PDBData:
         manual_seed=None,
         save_indices=False,
         indices_dir='.'
-    ):
+    ) -> tuple[torch.utils.data.DataLoader, torch.utils.data.DataLoader]:
         """
         :param int batch_size: size of the training batches
         :param float validation_split: ratio of data to randomly assigned as validation

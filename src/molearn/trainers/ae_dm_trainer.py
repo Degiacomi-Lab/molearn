@@ -1,5 +1,5 @@
 import torch
-from .trainer import *
+from .trainer import Trainer
 import os
 from dataclasses import dataclass
 from molearn.loss_functions import openmm_energy

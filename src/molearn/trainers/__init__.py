@@ -12,9 +12,10 @@
 trainers holds classes for training networks
 """
 
-from .trainer import *
-from .torch_physics_trainer import *
+import warnings
 
+from .trainer import FitResult, Trainer, TrainerProgress, TrainingFailure
+from .torch_physics_trainer import Torch_Physics_Trainer
 
 
 class RaiseErrorOnInit:
@@ -22,12 +23,25 @@ class RaiseErrorOnInit:
     def __init__(self,*args, **kwargs):
         raise ImportError(f'{self.module}. Therefore {self.__class__.__name__} can not be used')
 try:
-    from .openmm_physics_trainer import *
+    from .openmm_physics_trainer import OpenMM_Physics_Trainer
 except ImportError as e:
-    import warnings
     warnings.warn(f"{e}. OpenMM or openmmtorchplugin are not installed. If this is needed please install with `mamba install -c conda-forge openmmtorchplugin=1.1.3 openmm`")
+    OpenMM_Physics_Trainer = RaiseErrorOnInit
+    OpenMM_Physics_Trainer.module = "OpenMM or openmmtorchplugin are not installed"
 try:
-    from .sinkhorn_trainer import *
+    from .sinkhorn_trainer import Sinkhorn_Trainer
 except ImportError as e:
     warnings.warn(f"{e}. sinkhorn is not installed. If this is needed please install with `pip install geomloss`")
+    Sinkhorn_Trainer = RaiseErrorOnInit
+    Sinkhorn_Trainer.module = "geomloss is not installed"
+
+__all__ = [
+    "Trainer",
+    "TrainerProgress",
+    "FitResult",
+    "TrainingFailure",
+    "Torch_Physics_Trainer",
+    "OpenMM_Physics_Trainer",
+    "Sinkhorn_Trainer",
+]
 

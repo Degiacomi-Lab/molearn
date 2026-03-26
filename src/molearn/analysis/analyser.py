@@ -68,7 +68,7 @@ class DatasetBundle:
     dataset: torch.Tensor
     std: torch.Tensor | float
     mean: torch.Tensor | float
-    standardize: bool
+    standardise: bool
 
     def scale(self) -> torch.Tensor:
         return self.dataset * self.std + self.mean
@@ -116,14 +116,14 @@ class MolearnAnalysis:
             raise ValueError(
                 f"number of d.o.f differs: {key} has shape {bundle.dataset.shape} while {ref_key} has shape {ref_bundle.dataset.shape}"
             )
-        if ref_bundle.standardize != bundle.standardize:
+        if ref_bundle.standardise != bundle.standardise:
             raise ValueError(
                 f"Standardisation mismatch between dataset {key} and reference dataset {ref_key}"
             )
 
     def _set_metadata(self, data: PDBData, bundle: DatasetBundle) -> None:
-        if not hasattr(self, "standardize"):
-            self.standardize = bundle.standardize
+        if not hasattr(self, "standardise"):
+            self.standardise = bundle.standardise
         if not hasattr(self, "stdval"):
             self.stdval = bundle.std
         if not hasattr(self, "meanval"):
@@ -160,7 +160,7 @@ class MolearnAnalysis:
             dataset=normalized,
             std=data.std,
             mean=data.mean,
-            standardize=data.standardize,
+            standardise=data.standardise,
         )
 
     def _batch_slices(self, total: int, batch_size: int) -> Iterable[slice]:
@@ -189,7 +189,7 @@ class MolearnAnalysis:
         self._datasets[key] = bundle
         self._set_metadata(pdb_data, bundle)
 
-    def get_dataset(self, key, scale=False):
+    def get_dataset(self, key, scale=False) -> torch.Tensor:
         """
         :param str key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
         :param bool scale: if True, return the dataset scaled (i.e. with mean and std applied)
@@ -198,7 +198,7 @@ class MolearnAnalysis:
         bundle = self._datasets[key]
         return bundle.scale() if scale else bundle.dataset
     
-    def get_encoded(self, key, update=False):
+    def get_encoded(self, key, update=False) -> torch.Tensor:
         """
         :param str key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
         :param bool update: if True, re-encode and overwrite the existing data
@@ -233,7 +233,7 @@ class MolearnAnalysis:
         """
         self._encoded[key] = torch.tensor(coords).float()
 
-    def get_decoded(self, key, update=False, scale=False):
+    def get_decoded(self, key, update=False, scale=False) -> torch.Tensor:
         """
         :param str key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
         :param bool update: if True, re-decode and overwrite the existing data
@@ -268,13 +268,13 @@ class MolearnAnalysis:
         """
         self._decoded[key] = structures
 
-    def num_trainable_params(self):
+    def num_trainable_params(self) -> int:
         """
         :return: number of trainable parameters in the neural network previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_network>`
         """ 
         return sum(p.numel() for p in self.network.parameters() if p.requires_grad)
 
-    def get_error(self, key, align=True):
+    def get_error(self, key, align=True) -> np.ndarray:
         """
         Calculate the reconstruction error of a dataset encoded and decoded by a trained neural network.
 
@@ -304,7 +304,7 @@ class MolearnAnalysis:
             err.append(rmsd)
         return np.array(err)
 
-    def get_atomwise_error(self, key):
+    def get_atomwise_error(self, key) -> np.ndarray:
         """
         Calculates the per-atom RMSD for an entire dataset of conformations.
 
@@ -317,7 +317,6 @@ class MolearnAnalysis:
         decoded = self.get_decoded(key, scale=True)
 
         err = []
-        m = deepcopy(self.mol)
         for i in range(dataset.shape[0]):
             crd_dataset = as_numpy(dataset[i])
             crd_decoded = as_numpy(decoded[i])
@@ -326,7 +325,7 @@ class MolearnAnalysis:
             err.append(err_i)
         return np.array(err)
 
-    def atomwise_rmsd(self, m1_tensor, m2_tensor):
+    def atomwise_rmsd(self, m1_tensor, m2_tensor) -> np.ndarray:
         """
         Calculate atom-wise RMSD between two [N, 3] numpy arrays.
         
@@ -348,7 +347,7 @@ class MolearnAnalysis:
         h = np.dot(m2.T, m1)
         V, S, Wt = np.linalg.svd(h)
 
-        reflect = float(str(float(np.linalg.det(V) * np.linalg.det(Wt))))
+        reflect = np.sign(np.linalg.det(V) * np.linalg.det(Wt))
         if reflect < 0.0:
             S[-1] = -S[-1]
             V[:, -1] = -V[:, -1]
@@ -359,7 +358,7 @@ class MolearnAnalysis:
         
         return np.sqrt(np.sum((m2_aligned - m1)**2, axis=1))
 
-    def get_dope(self, key, refine=True, **kwargs):
+    def get_dope(self, key, refine=True, **kwargs) -> dict[str, np.ndarray]:
         """
         :param str key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
         :param bool refine: if True, refine structures before calculating DOPE score
@@ -373,7 +372,7 @@ class MolearnAnalysis:
 
         return dict(dataset_dope=dataset_dope, decoded_dope=decoded_dope)
 
-    def get_ramachandran(self, key):
+    def get_ramachandran(self, key) -> dict[str, np.ndarray]:
         """
         :param str key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
         """
@@ -392,7 +391,7 @@ class MolearnAnalysis:
         )
         return ramachandran
 
-    def get_inversions(self, key):
+    def get_inversions(self, key) -> dict[str, np.ndarray]:
         """
         Get the chirality of Cα atoms in a dataset and its decoded counterpart.
         """
@@ -470,7 +469,7 @@ class MolearnAnalysis:
             return dict(decoded_inversions=np.asarray(results_decode))
 
 
-    def get_bondlengths(self, key):
+    def get_bondlengths(self, key) -> dict[str, dict[str, np.ndarray]]:
         """
         Get backbone bond lengths of a dataset and its decoded counterpart.
         """
@@ -527,7 +526,7 @@ class MolearnAnalysis:
                 f"Key {key} not found in _datasets or _encoded. Please load the dataset or setup a grid first."
             )
         
-    def get_dihedrals(self, key):
+    def get_dihedrals(self, key) -> dict[str, dict[str, np.ndarray]]:
         if key in self._datasets.keys():
             dataset = self.get_dataset(key, scale=True)
             decoded = self.get_decoded(key, scale=True)
@@ -571,7 +570,7 @@ class MolearnAnalysis:
 
         return dihedrals
     
-    def get_angles(self, key):
+    def get_angles(self, key) -> dict[str, dict[str, np.ndarray]]:
         if key in self._datasets.keys():
             dataset = self.get_dataset(key, scale=True)
             decoded = self.get_decoded(key, scale=True)
@@ -620,7 +619,7 @@ class MolearnAnalysis:
             angles['CA-CB-C'] = CA_CB_C
         return angles
 
-    def setup_grid(self, samples=64, bounds_from=None, bounds=None, padding=0.1):
+    def setup_grid(self, samples=64, bounds_from=None, bounds=None, padding=0.1) -> str:
         """
         Define a NxN point grid regularly sampling the latent space.
 
@@ -678,7 +677,7 @@ class MolearnAnalysis:
         xmax, ymax = max(xmax), max(ymax)
         return xmin, xmax, ymin, ymax
 
-    def scan_error_from_target(self, key, index=None, align=True):
+    def scan_error_from_target(self, key, index=None, align=True) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Compute an RMSD surface against a specific target structure.
 
         A dataset must already be registered under ``key`` and a latent space grid
@@ -737,7 +736,7 @@ class MolearnAnalysis:
 
         return self.surfaces[s_key], self.xvals, self.yvals
 
-    def scan_error(self, s_key="Network_RMSD", z_key="Network_z_drift"):
+    def scan_error(self, s_key="Network_RMSD", z_key="Network_z_drift") -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """Evaluate autoencoder consistency over the latent grid.
 
         The method decodes the latent grid, re-encodes the resulting structures and
@@ -767,7 +766,7 @@ class MolearnAnalysis:
                 dataset=decoded,
                 std=std,
                 mean=mean,
-                standardize=getattr(self, "standardize", True),
+                standardise=getattr(self, "standardise", True),
             )
             self._ensure_dataset_shape("grid_decoded", bundle)
             self._datasets["grid_decoded"] = bundle
@@ -915,7 +914,7 @@ class MolearnAnalysis:
         ]
         return np.array(bond_lengths)
 
-    def get_all_ramachandran_score(self, tensor):
+    def get_all_ramachandran_score(self, tensor) -> dict[str, np.ndarray]:
         """
         Calculate Ramachandran score of an ensemble of atomic conrdinates.
 
@@ -934,7 +933,7 @@ class MolearnAnalysis:
             rama["total"].append(total)
         return {key: np.array(value) for key, value in rama.items()}
 
-    def get_all_dope_score(self, tensor, refine=True):
+    def get_all_dope_score(self, tensor, refine=True) -> np.ndarray:
         """
         Calculate DOPE score of an ensemble of atom coordinates.
 
@@ -947,7 +946,7 @@ class MolearnAnalysis:
         results = np.array([r.get() for r in tqdm(results, desc="Calc Dope")])
         return results
 
-    def reference_dope_score(self, frame):
+    def reference_dope_score(self, frame) -> float:
         """
         :param numpy.array frame: array with shape [1, N, 3] with Cartesian coordinates of atoms
         :return: DOPE score
@@ -962,7 +961,7 @@ class MolearnAnalysis:
         score = atmsel.assess_dope()
         return score
 
-    def scan_dope(self, key=None, refine=True, **kwargs):
+    def scan_dope(self, key=None, refine=True, **kwargs) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Score decoded structures with DOPE over the latent grid.
 
         Each point on the latent grid is decoded, optionally refined, and assessed
@@ -1007,7 +1006,7 @@ class MolearnAnalysis:
 
         return self.surfaces[key], self.xvals, self.yvals
 
-    def scan_ramachandran(self):
+    def scan_ramachandran(self) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Evaluate Ramachandran statistics for each decoded grid structure.
 
         The method decodes the latent grid, executes Ramachandran scoring for every
@@ -1248,9 +1247,9 @@ class MolearnAnalysis:
         self._cleanup_dope_score()
 
     @property
-    def datasets(self):
+    def datasets(self) -> dict[str, torch.Tensor]:
         return {key: bundle.dataset for key, bundle in self._datasets.items()}
     
     @property
-    def encoded(self):
+    def encoded(self) -> dict[str, torch.Tensor]:
         return dict(self._encoded)
