@@ -38,6 +38,8 @@ def main():
     # simply striding over the trajectories with a step size computed to result in n_cluster frames
     tm.stride()
     tm.create_trajectories()
+    # create a dendrogram plot
+    tm.create_dendrogram()
     # creating a new trajectory based on provided indices
     tm.own_idx("index_sample.txt")
     tm.create_trajectories()
