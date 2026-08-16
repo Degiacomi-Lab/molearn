@@ -142,6 +142,25 @@ class MolearnAnalysis:
         system_check = (self.n_atoms == bundle.dataset.shape[1] and self.atoms == data.atoms)
         assert system_check, "Datasets have different number of atoms or atom types. Have you selected the same atoms?"
 
+        atom_order = [tuple(a) for a in data.get_atominfo()]
+        if not hasattr(self, "atom_order"):
+            self.atom_order = atom_order
+        elif self.atom_order != atom_order:
+            i = next((k for k in range(min(len(self.atom_order), len(atom_order)))
+                      if self.atom_order[k] != atom_order[k]), 0)
+            raise ValueError(
+                f"dataset atoms are in a different order from the datasets already "
+                f"loaded. First difference at index {i}: expected "
+                f"{self.atom_order[i]}, got {atom_order[i]} (each entry is "
+                f"[name, resname, resid]).\n"
+                f"Index-based analyses (get_inversions, get_bondlengths) would be "
+                f"silently wrong. Reorder the coordinates to match, e.g.\n"
+                f"    ref = reference_data.get_atominfo()\n"
+                f"    pos = {{tuple(a): i for i, a in enumerate(this_data.get_atominfo())}}\n"
+                f"    perm = [pos[tuple(a)] for a in ref]\n"
+                f"    coords = coords[:, perm]"
+            )
+
     def _prepare_bundle(self, data: PDBData) -> DatasetBundle:
         dataset = data.dataset
         if dataset.ndim != 3:

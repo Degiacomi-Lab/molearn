@@ -81,35 +81,34 @@ class PDBData:
         )
 
     def _compute_backbone_indices(self):
-        n_indices, ca_indices, cb_indices, c_indices, o_indices = [], [], [], [], []
-        for i, atom in enumerate(self._mol.atoms):
-            if atom.name == 'N':
-                if not len(n_indices) == len(ca_indices) == len(c_indices) == len(o_indices):
-                    raise ValueError("Inconsistent number of N, CA, C, and O atoms in the trajectory.")
-                if len(cb_indices) < len(n_indices):
-                    cb_indices.append(-1)        
-                n_indices.append(i)
-            elif atom.name == 'CA':
-                ca_indices.append(i)
-            elif atom.name == 'C':
-                c_indices.append(i)
-            elif atom.name == 'O':
-                o_indices.append(i)
-            elif atom.name == 'CB':
-                cb_indices.append(i)
-            else:
-                raise ValueError(f"Unknown atom name: {atom.name}. Check atom selection.")
-        if not len(n_indices) == len(ca_indices) == len(c_indices) == len(o_indices):
-            raise ValueError("Inconsistent number of N, CA, C, and O atoms in the trajectory.")
-        if len(cb_indices) < len(ca_indices):
-            cb_indices.append(-1)
-        self.indices = {
-            "N": torch.as_tensor(n_indices,  dtype=torch.long),
-            "CA": torch.as_tensor(ca_indices,  dtype=torch.long),
-            "C": torch.as_tensor(c_indices,  dtype=torch.long),
-            "O": torch.as_tensor(o_indices,  dtype=torch.long),
-            "CB": torch.as_tensor(cb_indices,  dtype=torch.long),
-        }
+        """Per-residue index of each backbone atom within the selected atoms.
+
+        Returns one row per residue for each of N, CA, C, O and CB, holding the
+        position of that atom in the coordinate array. CB is -1 where the residue
+        has none (glycine, or a selection that excluded it).
+        """
+        atoms = self._mol.atoms
+        names = np.asarray(atoms.names)
+        slot = np.unique(np.asarray(atoms.resindices), return_inverse=True)[1]
+        n_residues = int(slot.max()) + 1 if len(slot) else 0
+
+        indices = {}
+        for name in ("N", "CA", "C", "O", "CB"):
+            column = np.full(n_residues, -1, dtype=np.int64)
+            found = np.flatnonzero(names == name)
+            column[slot[found]] = found
+            indices[name] = column
+
+        incomplete = [n for n in ("N", "CA", "C", "O") if (indices[n] < 0).any()]
+        if incomplete:
+            n_missing = {n: int((indices[n] < 0).sum()) for n in incomplete}
+            raise ValueError(
+                f"{n_residues} residues selected but some lack backbone atoms "
+                f"{n_missing} (atom: number of residues missing it). Check the atom "
+                f"selection, and that the structure has no incomplete residues."
+            )
+
+        self.indices = {k: torch.as_tensor(v) for k, v in indices.items()}
         self.cb_valid_idx = self.indices["CB"][self.indices["CB"] >= 0]
 
     def _standardise_coordinates(self, coords: np.ndarray) -> np.ndarray:
@@ -256,6 +255,9 @@ class PDBData:
         else:
             raise ValueError("Unsupported atom selection")
         self._mol.atoms = self._mol.select_atoms(selection_string)
+        # get_atominfo() caches; the selection has just changed the atom set/order
+        if hasattr(self, "atominfo"):
+            del self.atominfo
 
     def prepare_dataset(self, std=None, mean=None) -> torch.Tensor:
         """
