@@ -142,6 +142,25 @@ class MolearnAnalysis:
         system_check = (self.n_atoms == bundle.dataset.shape[1] and self.atoms == data.atoms)
         assert system_check, "Datasets have different number of atoms or atom types. Have you selected the same atoms?"
 
+        atom_order = [tuple(a) for a in data.get_atominfo()]
+        if not hasattr(self, "atom_order"):
+            self.atom_order = atom_order
+        elif self.atom_order != atom_order:
+            i = next((k for k in range(min(len(self.atom_order), len(atom_order)))
+                      if self.atom_order[k] != atom_order[k]), 0)
+            raise ValueError(
+                f"dataset atoms are in a different order from the datasets already "
+                f"loaded. First difference at index {i}: expected "
+                f"{self.atom_order[i]}, got {atom_order[i]} (each entry is "
+                f"[name, resname, resid]).\n"
+                f"Index-based analyses (get_inversions, get_bondlengths) would be "
+                f"silently wrong. Reorder the coordinates to match, e.g.\n"
+                f"    ref = reference_data.get_atominfo()\n"
+                f"    pos = {{tuple(a): i for i, a in enumerate(this_data.get_atominfo())}}\n"
+                f"    perm = [pos[tuple(a)] for a in ref]\n"
+                f"    coords = coords[:, perm]"
+            )
+
     def _prepare_bundle(self, data: PDBData) -> DatasetBundle:
         dataset = data.dataset
         if dataset.ndim != 3:
@@ -404,26 +423,9 @@ class MolearnAnalysis:
                 % missing
             )
 
-        # Get atom indices
-        mol_df = self.mol.data
-        indices = dict()
-        for resid in mol_df.resid.unique():
-            resname = mol_df[mol_df["resid"] == resid].resname.unique()[0]
-            if not resname == "GLY":
-                N_id = mol_df[
-                    (mol_df["resid"] == resid) & (mol_df["name"] == "N")
-                ].index[0]
-                C_id = mol_df[
-                    (mol_df["resid"] == resid) & (mol_df["name"] == "C")
-                ].index[0]
-                CA_id = mol_df[
-                    (mol_df["resid"] == resid) & (mol_df["name"] == "CA")
-                ].index[0]
-                CB_id = mol_df[
-                    (mol_df["resid"] == resid) & (mol_df["name"] == "CB")
-                ].index[0]
-                indices[resname + str(resid)] = (N_id, CA_id, C_id, CB_id)
-        idx = np.asarray(list(indices.values()))
+        has_cb = self.indices["CB"] >= 0          # False for glycine
+        idx = np.stack([self.indices["N"][has_cb], self.indices["CA"][has_cb],
+                        self.indices["C"][has_cb], self.indices["CB"][has_cb]], axis=1)
 
         if key in self._datasets.keys():
             dataset = self.get_dataset(key, scale=True)
@@ -481,26 +483,15 @@ class MolearnAnalysis:
         else:
             raise ValueError("Selected atoms should contain at least N, CA, and C.")
 
-        mol_df = self.mol.data
-        for resid in mol_df.resid.unique():
-            resname = mol_df[mol_df["resid"] == resid].resname.unique()[0]
-
-            N_id = mol_df[(mol_df["resid"] == resid) & (mol_df["name"] == "N")].index[0]
-            CA_id = mol_df[(mol_df["resid"] == resid) & (mol_df["name"] == "CA")].index[0]
-            C_id = mol_df[(mol_df["resid"] == resid) & (mol_df["name"] == "C")].index[0]
-            indices["N-CA"].append((N_id, CA_id))
-            indices["CA-C"].append((CA_id, C_id))
-            if resname != "GLY" and "CB" in self.atoms:
-                CB_id = mol_df[
-                    (mol_df["resid"] == resid) & (mol_df["name"] == "CB")
-                ].index[0]
-                indices["CA-CB"].append((CA_id, CB_id))
-
-            if resid != max(mol_df.resid.unique()):
-                next_N_id = mol_df[
-                    (mol_df["resid"] == (resid + 1)) & (mol_df["name"] == "N")
-                ].index[0]
-                indices["C-N"].append((C_id, next_N_id))
+        N, CA, C = self.indices["N"], self.indices["CA"], self.indices["C"]
+        indices["N-CA"] = list(zip(N, CA))
+        indices["CA-C"] = list(zip(CA, C))
+        # NOTE: consecutive residues are bonded regardless of chain, so a C-N
+        # "bond" is reported across chain breaks. 
+        indices["C-N"] = list(zip(C[:-1], N[1:]))
+        if "CA-CB" in indices:
+            has_cb = self.indices["CB"] >= 0
+            indices["CA-CB"] = list(zip(CA[has_cb], self.indices["CB"][has_cb]))
 
         # Look for the key in self._datasets and self._encoded
         if key in self._datasets.keys():
@@ -547,19 +538,19 @@ class MolearnAnalysis:
         CA = data[:, self.indices['CA'], :].numpy()
         C = data[:, self.indices['C'], :].numpy()
         C_prev = np.roll(C, shift=1, axis=1)
-        C_next = np.roll(C, shift=-1, axis=1)
         N_next = np.roll(N, shift=-1, axis=1)
+        CA_next = np.roll(CA, shift=-1, axis=1)
 
         # φ: C_{i-1}, N_i, CA_i, C_i
         phi = self._dihedrals(C_prev[:, 1:], N[:, 1:], CA[:, 1:], C[:, 1:])
         # ψ: N_i, CA_i, C_i, N_{i+1}
         psi = self._dihedrals(N[:, :-1], CA[:, :-1], C[:, :-1], N_next[:, :-1])
-        # ω: C_i, N_{i+1}, CA_{i+1}, C_{i+1}
-        omega = self._dihedrals(C[:, :-1], N_next[:, :-1], CA[:, :-1], C_next[:, :-1])
+        # ω: CA_i, C_i, N_{i+1}, CA_{i+1}
+        omega = self._dihedrals(CA[:, :-1], C[:, :-1], N_next[:, :-1], CA_next[:, :-1])
         dihedrals = {"Phi": phi, "Psi": psi, "Omega": omega}
 
         if 'CB' in self.atoms:
-            valid = (self.indices['CB'] > 0)
+            valid = (self.indices['CB'] >= 0)   # 0 is a valid atom index
             CB_atoms = self.indices['CB'][valid]
             CB = data[:, CB_atoms, :].numpy()
             N_v  = N[:,  valid, :]
@@ -607,7 +598,7 @@ class MolearnAnalysis:
             "O-C-N": O_C_N_next,
         }
         if 'CB' in self.atoms:
-            valid = (self.indices['CB'] > 0)
+            valid = (self.indices['CB'] >= 0)   # 0 is a valid atom index
             CB_atoms = self.indices['CB'][valid]
             CB = data[:, CB_atoms, :].numpy()
             N_v  = N[:,  valid, :]
@@ -878,7 +869,7 @@ class MolearnAnalysis:
         v /= np.linalg.norm(v, axis=-1, keepdims=True)
         w /= np.linalg.norm(w, axis=-1, keepdims=True)
         x = np.sum(v * w, axis=-1)
-        y = np.sum(np.cross(b1, v), axis=-1) * np.sum(w, axis=-1)    
+        y = np.sum(np.cross(b1, v) * w, axis=-1)
         return np.arctan2(y, x)
     
     @staticmethod
