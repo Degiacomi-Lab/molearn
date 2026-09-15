@@ -29,6 +29,14 @@ except ImportError as e:
     OpenMM_Physics_Trainer = RaiseErrorOnInit
     OpenMM_Physics_Trainer.module = "OpenMM or openmmtorchplugin are not installed"
 try:
+    from .distance_matrix_ae_trainer import (DistanceMatrix_AE_Trainer,
+                                             DistanceMatrix_AE_Trainer_Config)
+except ImportError as e:
+    warnings.warn(f"{e}. DistanceMatrix_AE_Trainer requires OpenMM for its physics term.")
+    DistanceMatrix_AE_Trainer = RaiseErrorOnInit
+    DistanceMatrix_AE_Trainer.module = "OpenMM is not installed"
+
+try:
     from .sinkhorn_trainer import Sinkhorn_Trainer
 except ImportError as e:
     warnings.warn(f"{e}. sinkhorn is not installed. If this is needed please install with `pip install geomloss`")
@@ -43,5 +51,7 @@ __all__ = [
     "Torch_Physics_Trainer",
     "OpenMM_Physics_Trainer",
     "Sinkhorn_Trainer",
+    "DistanceMatrix_AE_Trainer",
+    "DistanceMatrix_AE_Trainer_Config",
 ]
 

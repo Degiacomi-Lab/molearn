@@ -19,14 +19,17 @@ The file `MurD_closed_apo.tar.gz` contains 900 conformation of an MD simulation 
 
 #### Training examples
 
-* `cb_foldingnet_basic.py`: minimal example demonstrating how to load data, setup *foldingnet*, and train it. This script operates on training examples in the `data` folder and can be executed as-is (with training data extracted). This script will generate an output folder `foldingnet_chechkpoints` that include multiple checkpoint files and a log file, and a `data_statistics.json`. 
+* `train_foldingnet_withCB.py`: minimal example demonstrating how to load data, setup *foldingnet*, and train it. Atoms are selected as N, CA, CB, C and O. This script operates on training examples in the `data` folder and can be executed as-is (with training data extracted). It generates an output folder `foldingnet_checkpoints` containing checkpoint files and a log, plus a `data_statistics.json`.
 The training process can take ~1 hour to converge on a NVIDIA RTX 3080. Adjust the batch size based on your own GPU.
+
+* `train_DMAE_withCB.py`: the same data and atom selection, training `DistanceMatrix_AE` with `DistanceMatrix_AE_Trainer`. The encoder reads an inter-atomic distance matrix and the decoder emits Cartesian coordinates, so the model is invariant to rotation and translation by construction. Output goes to `DMAE_checkpoints`. It runs 3 epochs by default so the example finishes in about a minute; swap in `trainer.run_until_converge()` for a real model. 
 
 * `example_subclassing_trainer.py`: several examples of subclassing molearn Trainer and adding/overloading features to it. This script is not intended to be used as-is, and is instead thought as an inspiration for creating your own Trainers.
 
 #### Analysis example
 
-* `analysis_example.ipynb`: example analysis notebook of a trained neural network. This notebook operates on the content of the `data` and `foldingnet_checkpoints` folders. 
+* `analysis_example.ipynb`: example analysis notebook of a trained neural network. This notebook operates on the content of the `data` and `foldingnet_checkpoints` folders.
+
 
 #### Data preprocessing
 
