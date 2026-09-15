@@ -1168,10 +1168,15 @@ class MolearnAnalysis:
         """
         if "grid" not in self._encoded:
             raise ValueError("Call MolearnAnalysis.setup_grid before running custom scans")
-        decoded = self.get_decoded("grid")
+        # get_decoded already returns [B, n_atoms, 3] and applies mean/std with scale=True.
+        # The previous `j.view(1, 3, -1).permute(0, 2, 1)` reinterpreted the memory of an
+        # [n_atoms, 3] tensor rather than transposing it, so atom 0 came out as
+        # (x0, y1, z2) instead of (x0, y0, z0); radius of gyration on MurD read 1.94
+        # instead of 5.81. It also applied std without the mean offset.
+        decoded = self.get_decoded("grid", scale=True)
         results = []
         for i, j in enumerate(decoded):
-            s = (j.view(1, 3, -1).permute(0, 2, 1) * self.stdval).numpy()
+            s = j.unsqueeze(0).numpy()
             results.append(fct(s, *params))
         self.surfaces[key] = np.array(results).reshape(self.n_samples, self.n_samples)
 
