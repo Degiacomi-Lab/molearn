@@ -19,28 +19,22 @@ from molearn.trainers import (DistanceMatrix_AE_Trainer,
 
 def main():
     ##### Load Data #####
-    # No standardisation: the encoder sees a distance matrix, which is already invariant
-    # to translation, so subtracting a mean achieves nothing and dividing by the standard
-    # deviation only puts dm_loss in arbitrary units instead of Angstrom.
+    # No standardisation: the encoder sees a distance matrix, which is already invariant to translation. 
+    # data.write_statistics() is still called to save the mean 0 and std 1 for analysis later.
     data = PDBData(standardise=False)
     data.import_pdb(["./data/MurD_open.pdb", "./data/MurD_closed.pdb"])
     data.fix_terminal()
     data.atomselect(atoms=["N", "CA", "CB", "C", "O"])
     data.prepare_dataset()
-    # A separate file from the foldingnet example: with standardise=False the statistics
-    # are mean 0 / std 1, and writing them to the shared data_statistics.json would
-    # overwrite the values analysis_example.ipynb needs for the foldingnet model.
     data.write_statistics("DMAE_data_statistics.json")
-
     n_atoms = data.dataset.shape[1]
     print(f"{len(data.dataset)} frames, {n_atoms} atoms")
 
     ##### Prepare Trainer #####
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # dm_loss dominates; the dihedral term supplies chirality, which a distance matrix
-    # alone cannot express. Physics is off here to keep the example quick -- set
-    # physics_weight and call trainer.prepare_physics() to enable it.
+    # This trainer requires a config object to specify the loss function weights. The default values are reasonable, but you may want to tune them for your system.
+    # Physics is off here to keep the example quick -- setphysics_weight and call trainer.prepare_physics() to enable it.
     config = DistanceMatrix_AE_Trainer_Config(
         dm_weight=1.0,
         local_k=4,
@@ -69,8 +63,7 @@ def main():
     trainer.prepare_optimiser()
 
     ##### Training Loop #####
-    # 3 epochs so the example runs in about a minute. For a real model use
-    # trainer.run_until_converge(patience=16, ...) as in train_foldingnet_withCB.py.
+    # 3 epochs so the example runs in about a minute. For a real model use trainer.run_until_converge(patience=16, ...) as in train_foldingnet_withCB.py.
     fit_results = trainer.run(
         epochs=3,
         log_filename="log.dat",
