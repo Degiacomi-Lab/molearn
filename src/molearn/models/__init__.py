@@ -10,3 +10,9 @@
 # if not, write to the Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
 
 
+
+
+from .foldingnet import AutoEncoder as Foldingnet_AutoEncoder
+from .distance_matrix_ae import DistanceMatrix_AE
+
+__all__ = ["Foldingnet_AutoEncoder", "DistanceMatrix_AE"]

@@ -410,6 +410,100 @@ class MolearnAnalysis:
         )
         return ramachandran
 
+    def get_geometry(self, key) -> dict[str, dict[str, float]]:
+        """Clash score, chain breaks and non-planar peptides for a dataset.
+
+        :param str key: key pointing to a dataset or a latent grid
+        :return: dictionary with a ``dataset`` entry when ``key`` names a dataset, and
+            always a ``decoded`` entry
+        """
+        from ..scoring.geometry_score import geometry_summary
+
+        out = {}
+        if key in self._datasets:
+            out["dataset"] = geometry_summary(
+                self.get_dataset(key, scale=True), self.indices)
+        out["decoded"] = geometry_summary(
+            self.get_decoded(key, scale=True), self.indices)
+        return out
+
+    def get_refinement(self, key, indices=None, faspr=None, **kwargs) -> list[dict]:
+        """Pack side chains and minimise the decoded structures of a dataset.
+
+        :param str key: key pointing to a dataset or a latent grid
+        :param indices: optional subset of structure indices; packing and minimisation
+            cost seconds per structure, so a whole grid is rarely worth scoring
+        :param faspr: FASPR executable; falls back to ``$FASPR_BIN`` then ``PATH``
+        :return: one record per structure with ``packable`` and ``minimisable``
+        """
+        from ..refinement import refine
+
+        decoded = self.get_decoded(key, scale=True).numpy()
+        if indices is not None:
+            decoded = decoded[np.asarray(indices)]
+        return refine(decoded, self.mol, faspr=faspr, **kwargs)
+
+    def scan_geometry(self) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Evaluate backbone geometry quality for each decoded grid structure.
+
+        Stores ``Clash_score``, ``Chain_breaks`` and ``Non_planar_peptides`` in
+        :attr:`surfaces`.
+
+        :return: ``(clash_surface, xvals, yvals)``
+        :raises ValueError: if the latent grid has not been initialised
+        """
+        from ..scoring.geometry_score import (chain_breaks, clash_score,
+                                              non_planar_peptides)
+
+        if "grid" not in self._encoded:
+            raise ValueError("Call MolearnAnalysis.setup_grid before scanning geometry")
+        if "Clash_score" not in self.surfaces:
+            decoded = self.get_decoded("grid", scale=True)
+            metrics = {"Clash_score": [], "Chain_breaks": [], "Non_planar_peptides": []}
+            for frame in decoded:
+                f = frame.unsqueeze(0)
+                metrics["Clash_score"].append(
+                    clash_score(f, self.indices)["clashscore"])
+                metrics["Chain_breaks"].append(
+                    chain_breaks(f, self.indices)["frac_broken"])
+                metrics["Non_planar_peptides"].append(
+                    non_planar_peptides(f, self.indices)["frac_nonplanar"])
+            for name, values in metrics.items():
+                self.surfaces[name] = np.array(values).reshape(
+                    self.n_samples, self.n_samples)
+
+        return self.surfaces["Clash_score"], self.xvals, self.yvals
+
+    def scan_refinement(self, indices=None, faspr=None, **kwargs):
+        """Pack and minimise grid structures, storing pass/fail and energy surfaces.
+
+        Stores ``Packable``, ``Minimisable``, ``Energy_after``, ``Bond_outliers`` and
+        ``Angle_outliers`` in :attr:`surfaces`. Points not covered by ``indices`` are
+        ``NaN``.
+
+        :param indices: subset of grid indices to refine; all of them if omitted
+        :return: ``(minimisable_surface, xvals, yvals)``
+        :raises ValueError: if the latent grid has not been initialised
+        """
+        if "grid" not in self._encoded:
+            raise ValueError("Call MolearnAnalysis.setup_grid before scanning refinement")
+        n = self.n_samples ** 2
+        idx = np.arange(n) if indices is None else np.asarray(indices)
+        records = self.get_refinement("grid", indices=idx, faspr=faspr, **kwargs)
+
+        fields = {"Packable": "packable", "Minimisable": "minimisable",
+                  "Energy_after": "e_after", "Bond_outliers": "bond_frac_over_5kT",
+                  "Angle_outliers": "angle_frac_over_5kT"}
+        for name, field in fields.items():
+            flat = np.full(n, np.nan)
+            for pos, rec in zip(idx, records):
+                value = rec.get(field)
+                if value is not None:
+                    flat[pos] = float(value)
+            self.surfaces[name] = flat.reshape(self.n_samples, self.n_samples)
+
+        return self.surfaces["Minimisable"], self.xvals, self.yvals
+
     def get_inversions(self, key) -> dict[str, np.ndarray]:
         """
         Get the chirality of Cα atoms in a dataset and its decoded counterpart.
@@ -1088,54 +1182,42 @@ class MolearnAnalysis:
         pdb_file: Union[str, Path],
         out_path: Union[str, Path],
         maxIterations: int = 1000,
-    ) -> None:
+        faspr: Union[str, None] = None,
+    ) -> dict:
         """
-        Model the sidechains and relax generated structure
+        Model the sidechains and relax generated structure.
 
-        :param str pdb_file: path to the pdb file generated by the model
-        :param str out_path: path where the modelled/relaxed structures are be saved
+        Side chains are packed with FASPR and the result minimised with ff14SB and GBn2
+        implicit solvent (:mod:`molearn.refinement`).
+
+        :param pdb_file: path to the pdb file generated by the model
+        :param out_path: path where the modelled/relaxed structures are saved
+        :param maxIterations: minimisation iteration ceiling
+        :param faspr: FASPR executable; falls back to ``$FASPR_BIN`` then ``PATH``
+        :return: refinement record including ``packable`` and ``minimisable``
         """
 
-        if not isinstance(pdb_file, str):
-            pdb_file = str(pdb_file)
-        if not isinstance(out_path, str):
-            out_path = str(out_path)
+        from ..refinement import minimise_structures, pack_sidechains
 
-        # Assume sidechain modelling is required if the number of selected atoms is fewer than 6
-        if len(self.atoms) < 6:
-            modelled_file = out_path + os.sep + (pdb_file.stem + "_modelled.pdb")
-            try:
-                env = Environ()
-                env.libs.topology.read(file="$(LIB)/top_heav.lib")
-                env.libs.parameters.read(file="$(LIB)/par.lib")
+        pdb_file, out_path = Path(pdb_file), Path(out_path)
+        out_path.mkdir(parents=True, exist_ok=True)
 
-                mdl = complete_pdb(env, str(pdb_file))
-                mdl.write(str(modelled_file))
-                pdb_file = modelled_file
-            except Exception as e:
-                print(f"Failed to model {pdb_file}\n{e}")
-        try:
-            relaxed_file = out_path + os.sep + (pdb_file.stem + "_relaxed.pdb")
-            # Read pdb
-            pdb = PDBFile(pdb_file)
-            # Add hydrogens
-            forcefield = ForceField("amber99sb.xml")
-            modeller = Modeller(pdb.topology, pdb.positions)
-            modeller.addHydrogens(forcefield)
+        packable = True
+        target = str(pdb_file)
+        # pack side chains only if the selection does not already carry them
+        if len(self.atoms) <= 4:
+            packed, ok = pack_sidechains([target], out_path, faspr=faspr,
+                                         prefix=pdb_file.stem + "_modelled")
+            packable = bool(ok[0])
+            if not packable:
+                return {"file": target, "packable": False, "minimisable": False,
+                        "reason": "faspr_failed"}
+            target = packed[0]
 
-            system = forcefield.createSystem(
-                modeller.topology, nonbondedMethod=NoCutoff
-            )
-            integrator = VerletIntegrator(0.001 * picoseconds)
-            simulation = Simulation(modeller.topology, system, integrator)
-            simulation.context.setPositions(modeller.positions)
-            # Energy minimization
-            simulation.minimizeEnergy(maxIterations=maxIterations)
-            positions = simulation.context.getState(getPositions=True).getPositions()
-            # Write energy minimized file
-            PDBFile.writeFile(simulation.topology, positions, open(relaxed_file, "w+"))
-        except Exception as e:
-            print(f"Failed to relax {pdb_file}\n{e}")
+        rec = minimise_structures([target], out_dir=out_path,
+                                  max_iter=maxIterations)[0]
+        rec["packable"] = packable
+        return rec
 
     def _pdb_file(
         self,
