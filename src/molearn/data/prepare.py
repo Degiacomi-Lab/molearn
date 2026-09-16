@@ -43,7 +43,8 @@ class DataAssembler:
         self.outpath = outpath
         self.verbose = verbose
         self.dist_mat = dist_mat
-        assert os.path.exists(self.outpath), "Outpath does not exist"
+        if not os.path.exists(self.outpath):
+            raise ValueError("Outpath does not exist")
 
     def _loading_fallback(self, traj_path, topo_path):
         """
@@ -138,12 +139,14 @@ class DataAssembler:
                 # file type doesn't need a topo but zip needs equally long list
                 if any([fext == ".pdb", fext == ".h5", fext == ".lh5"]):
                     self.topo_path = [None] * len(self.traj_path)
-            assert isinstance(
-                self.topo_path, list
-            ), "If trajectories are supplied as a list the topologies must be too"
-            assert len(self.traj_path) == len(
-                self.topo_path
-            ), "there must be as many topologies supplied as trajectories"
+            if not isinstance(self.topo_path, list):
+                raise ValueError(
+                    "If trajectories are supplied as a list the topologies must be too"
+                )
+            if len(self.traj_path) != len(self.topo_path):
+                raise ValueError(
+                    "there must be as many topologies supplied as trajectories"
+                )
             multi_traj = []
             top0 = None
             ucell0 = None
@@ -253,7 +256,8 @@ class DataAssembler:
                 np.ndarray[tuple[int], np.dtype[np.int_]],
             ]
         """
-        assert hasattr(self, "traj"), "you first need to read in the trajectory"
+        if not hasattr(self, "traj"):
+            raise RuntimeError("you first need to read in the trajectory")
         if self.verbose:
             print("Calculating rmsd")
         rmsd_analysis = md.rmsd(self.traj, self.traj, 0)
@@ -294,9 +298,10 @@ class DataAssembler:
         """
         cluster the trajectory with AgglomerativeClustering based on the rmsd between the frames
         """
-        assert hasattr(
-            self, "traj_dists"
-        ), "No pairweise frame distances present - read in trajectory first and make sure `dist_mat=True`"
+        if not hasattr(self, "traj_dists"):
+            raise RuntimeError(
+                "No pairweise frame distances present - read in trajectory first and make sure `dist_mat=True`"
+            )
         if self.verbose:
             print("Distance clustering")
         # replace AgglomerativeClustering with any distance matrix based clustering function
@@ -351,7 +356,8 @@ class DataAssembler:
 
         :param int n: number of principal components (per frame) to use for the clustering
         """
-        assert hasattr(self, "traj"), "No traj found - read in trajectory first"
+        if not hasattr(self, "traj"):
+            raise RuntimeError("No traj found - read in trajectory first")
         if self.verbose:
             print("PCA clustering")
         train_traj = self.traj[self.train_idx]
@@ -443,25 +449,28 @@ class DataAssembler:
         Saves clustered or strided indices for the present training trajectory
         and optionally saves them as new trajectory
         """
-        assert all(
+        if not all(
             [
                 hasattr(self, "traj"),
                 hasattr(self, "traj_name"),
                 hasattr(self, "train_idx"),
                 hasattr(self, "cluster_idx"),
             ]
-        ), "Read in trajectory first"
-        assert all(
+        ):
+            raise RuntimeError("Read in trajectory first")
+        if not all(
             [
                 hasattr(self, "train_idx"),
                 hasattr(self, "cluster_idx"),
                 hasattr(self, "cluster_method"),
             ]
-        ), "Cluster the trajectory first"
+        ):
+            raise RuntimeError("Cluster the trajectory first")
 
-        assert hasattr(
-            self, "cluster_idx"
-        ), "No cluster indices optained by now - use any clustering method or stride to get frames from the trajectory"
+        if not hasattr(self, "cluster_idx"):
+            raise RuntimeError(
+                "No cluster indices optained by now - use any clustering method or stride to get frames from the trajectory"
+            )
         ori_frame_train_idx = self.train_idx[self.cluster_idx]
 
         if self.verbose:
@@ -506,15 +515,17 @@ class DataAssembler:
                 "Cluster labels are not initialized. Please run create_dendrogram first."
               )
 
-        assert all(
+        if not all(
             [
                 hasattr(self, "traj"),
                 hasattr(self, "traj_name"),
                 hasattr(self, "traj_dists"),
                 hasattr(self, "train_idx"),
                 hasattr(self, "frame_idx"),
-                hasattr(self, "cluster_idx"),            ]
-        ), "Ensure trajectory is clustered first"
+                hasattr(self, "cluster_idx"),
+            ]
+        ):
+            raise RuntimeError("Ensure trajectory is clustered first")
 
         # Get cluster labels
         # cluster_labels = fcluster(linkage(self.traj_dists, method="ward"), t=self.n_cluster, criterion="maxclust")

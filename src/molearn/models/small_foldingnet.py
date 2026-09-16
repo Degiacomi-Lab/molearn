@@ -1,5 +1,5 @@
 from torch import nn
-from .foldingnet import *
+from .foldingnet import AutoEncoder, Decoder, Decoder_Layer, Encoder
 
 
 class Small_Decoder(nn.Module):

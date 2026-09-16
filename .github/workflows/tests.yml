@@ -10,21 +10,23 @@ jobs:
         shell: bash -l {0}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Set up conda + mamba
         uses: conda-incubator/setup-miniconda@v3
         with:
           activate-environment: molearn
           environment-file: .github/test_environment.yml
-          mamba-version: '*'
+          mamba-version: "*"
           conda-solver: libmamba
           channels: conda-forge,salilab,defaults
           channel-priority: strict
           auto-update-conda: false
           remove-profiles: true
           run-post: true
-      - name: Test
+
+      - name: Run tests
         run: |
           cd test
           python test_openmm_plugin.py
