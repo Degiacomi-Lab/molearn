@@ -2,6 +2,7 @@ import os
 import glob
 import shutil
 import math
+import re
 import numpy as np
 import time
 import torch
@@ -339,7 +340,7 @@ class Trainer:
         self.set_dataloader(*data.get_dataloader(**kwargs))
         self._data = data
         self.mol = data.mol
-        self.standardize = data.standardize
+        self.standardise = data.standardise
         self.std = data.std
         self.mean = data.mean
 
@@ -639,16 +640,17 @@ class Trainer:
 
         valid_loss = valid_logs["valid_loss"]
         last_checkpoint_path = f'{checkpoint_folder}/last{f"_{self._repeat}" if self._repeat > 0 else ""}.ckpt'
+        to_primitive = lambda val: val.item() if hasattr(val, 'item') else val # Function that converts a single element torch tensor/numpy array to a primitive float
         torch.save(
             {
                 "epoch": epoch,
                 "model_state_dict": self.autoencoder.state_dict(),
                 "optimizer_state_dict": self.optimiser.state_dict(),
-                "loss": valid_loss,
+                "loss": to_primitive(valid_loss),
                 "network_kwargs": self._autoencoder_kwargs,
                 "atoms": self._data.atoms,
-                "std": self.std,
-                "mean": self.mean,
+                "std": to_primitive(self.std),
+                "mean": to_primitive(self.mean),
             },
             last_checkpoint_path,
         )
@@ -671,7 +673,7 @@ class Trainer:
             shutil.copyfile(self.progress.best_checkpoint, filename)
 
     def load_checkpoint(
-        self, checkpoint_name="best", checkpoint_folder="", load_optimiser=True
+        self, checkpoint_name="best", checkpoint_folder="", load_optimiser=True, weights_only=True
     ):
         """
         Load checkpoint.
@@ -680,19 +682,33 @@ class Trainer:
         :param str checkpoint_folder:  Folder whithin which to search for checkpoints.
         :param bool load_optimiser: (default: True) Should optimiser state dictionary be loaded.
         """
+
+        # Raise security warning if weights_only is disabled
+        if not weights_only:
+            warn_msg = "Security Warning: weights_only=False is set. Loading a checkpoint from an untrusted source could lead to arbitrary code execution. Use only if you trust the source.",
+            print(warn_msg)
+
         if checkpoint_name == "best":
             if self.progress.best_checkpoint is not None:
                 _name = self.progress.best_checkpoint
             else:
                 ckpts = glob.glob(checkpoint_folder + "/checkpoint_*")
-                indexs = [x.rfind("loss") for x in ckpts]
-                losses = [float(x[y + 4 : -5]) for x, y in zip(ckpts, indexs)]
-                _name = ckpts[np.argmin(losses)]
+                pattern = re.compile(r"_loss(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)\.ckpt$")
+                parsed = []
+                for ckpt in ckpts:
+                    match = pattern.search(os.path.basename(ckpt))
+                    if match is not None:
+                        parsed.append((ckpt, float(match.group(1))))
+                if not parsed:
+                    raise FileNotFoundError(
+                        f"No checkpoint files with parseable loss found in '{checkpoint_folder}'"
+                    )
+                _name = min(parsed, key=lambda item: item[1])[0]
         elif checkpoint_name == "last":
             _name = f"{checkpoint_folder}/last.ckpt"
         else:
             _name = f"{checkpoint_folder}/{checkpoint_name}"
-        checkpoint = torch.load(_name, map_location=self.device, weights_only=False)
+        checkpoint = torch.load(_name, map_location=self.device, weights_only=weights_only)
         if not hasattr(self, "autoencoder"):
             raise NotImplementedError(
                 "self.autoencoder does not exist, I have no way of knowing what network you want to load checkoint weights into yet, please set the network first"

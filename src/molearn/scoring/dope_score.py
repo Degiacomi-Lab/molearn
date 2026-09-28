@@ -4,7 +4,7 @@ from copy import deepcopy
 from ..utils import ShutUp, random_string
 try:
     import modeller
-    from modeller import *
+    from modeller import environ, log, selection
     from modeller.scripts import complete_pdb
     from modeller.optimizers import ConjugateGradients
 except Exception as e:

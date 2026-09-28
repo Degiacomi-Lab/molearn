@@ -13,4 +13,15 @@
 from .analyser import MolearnAnalysis, as_numpy
 from .GUI import MolearnGUI
 from .path import oversample, get_path, get_path_aggregate
-from .plot import *
+from .plot import (
+	plot_analysis_surface,
+	plot_angle_hist,
+	plot_bondlength_hist,
+	plot_dihedral_hist,
+	plot_dope_hist,
+	plot_dope_surface,
+	plot_inversion_hist,
+	plot_inversion_surface,
+	plot_network_rmsd_surface,
+	plot_rmsd_hist,
+)
