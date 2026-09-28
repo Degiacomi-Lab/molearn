@@ -29,7 +29,7 @@ import plotly.graph_objects as go
 import nglview as nv
 
 from .analyser import MolearnAnalysis
-from .path import oversample, get_path_aggregate
+from .path import oversample, pullback_oversample, get_path_aggregate
 from ..utils import as_numpy
 
 
@@ -131,7 +131,17 @@ class MolearnGUI:
             except Exception as e:
                 raise Exception(f"Cannot define sampling points: path finding failed. {e})")
                 return
-                                         
+
+        elif path == "Pull-back":
+            # connect points along the decoder pull-back arc length
+            try:
+                crd = pullback_oversample(crd, int(samplebox),
+                                          network=self.MA.network,
+                                          stdval=self.MA.stdval)
+            except Exception as e:
+                raise Exception(f"Cannot define sampling points: pullback_oversample failed. {e}")
+                return
+
         else:
             # connect points via straight line
             try:  
@@ -387,7 +397,7 @@ class MolearnGUI:
 
         # pathfinder method dropdown menu
         self.drop_path = widgets.Dropdown(
-            options=["Euclidean", "A*"],
+            options=["Euclidean", "Pull-back", "A*"],
             value="Euclidean",
             description='Path:',
             layout=Layout(flex='1 1 0%', width='auto'))

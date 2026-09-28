@@ -272,3 +272,75 @@ def oversample(crd, pts=10):
             pts.append(newpt)
 
     return np.array(pts)
+
+
+def _decoder_dm_fn(network, n_atoms):
+    '''
+    Build h(z) = flat upper-triangle pairwise distance matrix of decode(z), scaled by 1/sqrt(n_DM) so ||h(z_i) - h(z_j)|| equals dRMSD in the decoder's coordinate units.
+
+    :param network: autoencoder network exposing decode(z)
+    :param int n_atoms: number of atoms to take from decoder output
+    :return: callable h(z) with autograd-safe pairwise distances
+    '''
+    import torch
+
+    scale = float(n_atoms * (n_atoms - 1) // 2) ** -0.5
+
+    def h(z):
+        coords = network.decode(z)[:, :n_atoms, :]
+        gram = torch.matmul(coords, coords.transpose(-1, -2))
+        diag = torch.diagonal(gram, dim1=-2, dim2=-1)
+        dm_sq = diag.unsqueeze(-1) + diag.unsqueeze(-2) - 2.0 * gram
+        dm = torch.sqrt(torch.clamp(dm_sq, min=1e-12))
+        iu = torch.triu_indices(n_atoms, n_atoms, offset=1, device=coords.device)
+        return dm[..., iu[0], iu[1]] * scale
+
+    return h
+
+
+def pullback_oversample(crd, pts, network, stdval=1.0, n_atoms=None, n_quad=64):
+    '''
+    Add extra points between waypoints, spaced by decoder pull-back arc length instead of Euclidean latent distance.
+    
+    :param numpy.array crd: Nx2 numpy array with latent space coordinates
+    :param int pts: number of extra points to add in each interval
+    :param network: autoencoder network exposing decode(z)
+    :param float stdval: coordinate standardisation scale; multiplies arc length so it lands in Angstrom of dRMSD
+    :param int n_atoms: number of atoms to take from decoder output; if None, inferred from a probe decode
+    :param int n_quad: trapezoid nodes for arc length integration
+    :return: Mx2 numpy array, with M>=N.
+    '''
+    import torch
+    try:
+        from torch.func import jvp
+    except ImportError:
+        from torch.autograd.functional import jvp
+
+    device = next(network.parameters()).device
+    if n_atoms is None:
+        probe = torch.zeros(1, crd.shape[1], device=device)
+        n_atoms = network.decode(probe).shape[1]
+    h = _decoder_dm_fn(network, n_atoms)
+    network.eval()
+
+    t_dense = torch.linspace(0.0, 1.0, n_quad, device=device)
+    out = [crd[0]]
+    for i in range(1, crd.shape[0]):
+        z0 = torch.as_tensor(crd[i-1], dtype=torch.float32, device=device)
+        dz = torch.as_tensor(crd[i] - crd[i-1], dtype=torch.float32, device=device)
+        speeds = []
+        for t in t_dense:
+            point = (z0 + t * dz).unsqueeze(0)
+            tangent = dz.unsqueeze(0)
+            speeds.append(jvp(h, (point,), (tangent,))[1].detach().norm(dim=-1).squeeze(0))
+        speeds = torch.stack(speeds).double() * float(stdval)
+        dt = 1.0 / (n_quad - 1)
+        s = torch.cat([torch.zeros(1, device=device, dtype=torch.float64),
+                       torch.cumsum(0.5 * (speeds[1:] + speeds[:-1]) * dt, dim=0)])
+        L = s[-1].item()
+        targets = np.linspace(L / (pts + 1), L, pts + 1)
+        t_hit = np.interp(targets, s.cpu().numpy(), t_dense.cpu().numpy())
+        for t in t_hit:
+            out.append(crd[i-1] + (crd[i] - crd[i-1]) * float(t))
+
+    return np.array(out)
