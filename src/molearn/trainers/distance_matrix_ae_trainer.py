@@ -1,5 +1,5 @@
 import torch
-from .trainer import *
+from .trainer import Trainer
 import os
 from dataclasses import dataclass
 from molearn.loss_functions import openmm_energy
@@ -25,7 +25,7 @@ for a1, a2 in exclusions:
 """
 
 @dataclass
-class Trainer_Config:
+class DistanceMatrix_AE_Trainer_Config:
     dm_weight: float = 1.0
     local_k: int = 4
     local_weight: float = 0.9
@@ -39,10 +39,21 @@ class Trainer_Config:
     physics_inter_weight: float = 0.0
 
 
-class AE_DM_Trainer(Trainer):
-    def __init__(self, dm_dim, device, config):
+class DistanceMatrix_AE_Trainer(Trainer):
+    """Trainer for :class:`molearn.models.DistanceMatrix_AE`.
+
+    :param dm_dim: number of atoms, i.e. the distance-matrix side length.
+    :param device: torch device.
+    :param config: :class:`DistanceMatrix_AE_Trainer_Config` holding the loss weights.
+    :param detect_anomaly: run the training step under
+        ``torch.autograd.detect_anomaly``. Useful when debugging NaNs, but it roughly
+        doubles the step time, so it is off by default.
+    """
+
+    def __init__(self, dm_dim, device, config, detect_anomaly=False):
         super().__init__(device=device)
         self.dm_dim = dm_dim
+        self.detect_anomaly = detect_anomaly
 
         self.dm_weight = config.dm_weight
         self.local_k = config.local_k
@@ -102,6 +113,7 @@ class AE_DM_Trainer(Trainer):
         soft_NB=True,
         **kwargs,
     ):
+        tmp_filename = None
         if xml_file is None and soft_NB:
             print("using soft nonbonded forces by default")
             from molearn.utils import random_string
@@ -125,8 +137,10 @@ class AE_DM_Trainer(Trainer):
             xml_file=xml_file,
             **kwargs,
         )
-        os.remove(tmp_filename)
-        print()
+        # only the generated temporary file is ours to delete; an xml_file passed by the
+        # caller leaves tmp_filename unset
+        if tmp_filename is not None:
+            os.remove(tmp_filename)
 
     def common_physics_step(self, batch, latent):
         '''
@@ -141,28 +155,33 @@ class AE_DM_Trainer(Trainer):
         generated = self.autoencoder.decode(latent_interpolated)
 
         self._internal["generated"] = generated
-        energy = self.physics_loss(generated)
-        energy[energy.isinf()] = 1e35
-        energy = torch.clamp(energy, max=1e34)
-        energy = energy.nanmean()
-        return {'inter_physics_loss':energy}
+        if not self.physics_inter_weight:
+            return {'inter_physics_loss': torch.zeros((), device=generated.device)}
+        return {'inter_physics_loss': self._energy(generated)}
     
+    def _energy(self, coords):
+        energy = self.physics_loss(coords)
+        energy[energy.isinf()] = 1e35
+        return torch.clamp(energy, max=1e34).nanmean()
+
     def common_step(self, batch):
         self._internal = {}
-        dm_batch = self.autoencoder.coords_to_dm(batch)     # [B, 1, n, n]  
-        diheds_batch = self.coords_to_dihedral(batch)        # [B, 3*n_res]
-        z = self.autoencoder.encoder(dm_batch)
-        decoded_coord = self.autoencoder.decode(z)          # [B, n, 3]
-        dm_decoded = self.autoencoder.coords_to_dm(decoded_coord)    # [B, 1, n, n]  
-        diheds_decoded = self.coords_to_dihedral(decoded_coord)       # [B, 3*n_res]
+        dm_batch = self.autoencoder.coords_to_dm(batch)              # [B, 1, n, n]
+        diheds_batch = self.coords_to_dihedral(batch)
+        # encode_dm applies the symmetry fold when the model uses one
+        z = self.autoencoder.encode_dm(dm_batch)
+        decoded_coord = self.autoencoder.decode(z)                   # [B, n, 3]
+        dm_decoded = self.autoencoder.coords_to_dm(decoded_coord)
+        diheds_decoded = self.coords_to_dihedral(decoded_coord)
         dm_loss = self._get_dm_loss(dm_decoded, dm_batch)
         dihed_loss = self._get_dihed_loss(diheds_decoded, diheds_batch)
-        
-        # Compute energy for batch as physics loss
-        energy = self.physics_loss(decoded_coord)
-        energy[energy.isinf()] = 1e35
-        energy = torch.clamp(energy, max=1e34)
-        energy = energy.nanmean()
+
+        # skip the OpenMM call entirely when physics is switched off, so that
+        # prepare_physics is only required by runs that actually use it
+        if self.physics_weight or self.physics_inter_weight:
+            energy = self._energy(decoded_coord)
+        else:
+            energy = torch.zeros((), device=decoded_coord.device)
 
         self._internal["encoded"] = z
         self._internal["decoded"] = decoded_coord
@@ -175,7 +194,11 @@ class AE_DM_Trainer(Trainer):
         for i, batch in enumerate(self.train_dataloader):
             batch = batch[0].to(self.device)
             self.optimiser.zero_grad()
-            with torch.autograd.detect_anomaly():
+            if self.detect_anomaly:
+                with torch.autograd.detect_anomaly():
+                    train_result = self.train_step(batch)
+                    train_result["loss"].backward()
+            else:
                 train_result = self.train_step(batch)
                 train_result["loss"].backward()
             self.optimiser.step()
@@ -232,6 +255,18 @@ class AE_DM_Trainer(Trainer):
                 self.physics_weight * kwargs['physics_loss'] + \
                 self.phy_scale * kwargs['inter_physics_loss']
         return loss
+
+    def _get_final_loss(self, **kwargs):
+        """Validation loss, with the interpolation term at its configured weight.
+
+        Training rescales the interpolation energy by ``self.phy_scale``, which is
+        derived from the current batch, so it is not comparable between epochs. Checkpoint
+        selection needs a fixed combination, so validation uses the configured weight.
+        """
+        return self.dm_weight * kwargs['dm_loss'] + \
+            self.dihed_weight * kwargs['dihed_loss'] + \
+            self.physics_weight * kwargs['physics_loss'] + \
+            self.physics_inter_weight * kwargs['inter_physics_loss']
     
     def _get_dm_loss(self, dm1, dm2):
         """

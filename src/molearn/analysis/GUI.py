@@ -46,7 +46,7 @@ class MolearnGUI:
         '''
  
         if not isinstance(MA, MolearnAnalysis) and MA is not None:
-            raise Exception(f'Expecting an MolearnAnalysis instance, {type(MA)} found')
+            raise TypeError(f'Expecting an MolearnAnalysis instance, {type(MA)} found')
         else:
             self.MA = MA
 
@@ -63,7 +63,7 @@ class MolearnGUI:
         try:
             crd = self.get_samples(self.mybox.value, int(self.samplebox.value), self.drop_path.value)
             self.samples = crd.copy()
-        except Exception:
+        except (TypeError, ValueError, RuntimeError):
             self.button_pdb.disabled = False
             return
 
@@ -110,20 +110,13 @@ class MolearnGUI:
         provide a trail of point between list of waypoints, either connected
         on a straight line or via a shortest path calculated with the A* algorithm
         '''
-
-        if path == "A*":
-            use_path = True
-        else:
-            use_path = False
-
         try:
             crd = np.array(mybox.split()).astype(float)
             crd = crd.reshape((int(len(crd)/2), 2))
         except Exception:
             raise Exception("Cannot define sampling points")
-            return
     
-        if use_path:
+        if path == "A*":
             # connect points via A*
             try:
                 landscape = self.latent.data[0].z
@@ -147,8 +140,7 @@ class MolearnGUI:
             try:  
                 crd = oversample(crd, pts=int(samplebox))
             except Exception as e:
-                raise Exception(f"Cannot define sampling points: oversample failed. {e}")
-                return
+                raise Exception(f"Cannot define sampling points: oversample failed. {e}") from e
 
         return crd
         
@@ -161,7 +153,7 @@ class MolearnGUI:
             crd = self.get_samples(mybox, samplebox, path)
             self.samples = crd.copy()
             crd = crd.reshape((1, len(crd), 2))
-        except Exception:
+        except (TypeError, ValueError, RuntimeError):
             self.button_pdb.disabled = True
             return
 
@@ -195,9 +187,9 @@ class MolearnGUI:
    
         try:
             data = self.MA.surfaces[mykey]
-        except Exception as e:
+        except KeyError as e:
             print(f"{e}")
-            return      
+            return
    
         if np.abs(np.max(data) - np.min(data)) < 100:
             self.block0.children[1].readout_format = '.1f'
@@ -234,7 +226,7 @@ class MolearnGUI:
             else:
                 try:
                     data = as_numpy(self.MA.get_encoded(change.new))
-                except Exception as e:
+                except (KeyError, ValueError, AttributeError) as e:
                     print(f"{e}")
                     return      
                 with self.latent.batch_update():
@@ -560,7 +552,6 @@ class MolearnGUI:
 
         
         display.clear_output(wait=True)
-
 
         # display.display(self.scene)
         display.display(self.scene, self.output)

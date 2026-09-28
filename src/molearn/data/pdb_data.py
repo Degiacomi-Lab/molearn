@@ -42,7 +42,7 @@ radii = {
 
 
 class PDBData:
-    def __init__(self, filename=None, topology=None, fix_terminal=False, atoms=None, standardize=True):
+    def __init__(self, filename=None, topology=None, fix_terminal=False, atoms=None, standardise=True):
         """
         Create object enabling the manipulation of multi-PDB files into a dataset suitable for training.
 
@@ -50,12 +50,12 @@ class PDBData:
         :param None | str topology: if not None, :func:`import_pdb <molearn.data.PDBData.import_pdb>` is called with the topology file.
         :param bool fix_terminal: if True, calls :func:`fix_terminal <molearn.data.PDBData.fix_terminal>` after import, and before atomselect
         :param list[str] atoms: if not None, calls :func:`atomselect <molearn.data.PDBData.atomselect>`
-        :param bool standardize: if True, standardize the dataset by removing the mean and dividing by the standard deviation.
+        :param bool standardise: if True, standardise the dataset by removing the mean and dividing by the standard deviation.
         """
 
         self.filename = filename
         self.topology = topology
-        self.standardize = standardize
+        self.standardise = standardise
         if filename is not None:
             self.import_pdb(filename, topology)
             if fix_terminal:
@@ -81,47 +81,50 @@ class PDBData:
         )
 
     def _compute_backbone_indices(self):
-        n_indices, ca_indices, cb_indices, c_indices, o_indices = [], [], [], [], []
-        for i, atom in enumerate(self._mol.atoms):
-            if atom.name == 'N':
-                assert len(n_indices) == len(ca_indices) == len(c_indices) == len(o_indices)
-                if len(cb_indices) < len(n_indices):
-                    cb_indices.append(-1)        
-                n_indices.append(i)
-            elif atom.name == 'CA':
-                ca_indices.append(i)
-            elif atom.name == 'C':
-                c_indices.append(i)
-            elif atom.name == 'O':
-                o_indices.append(i)
-            elif atom.name == 'CB':
-                cb_indices.append(i)
-            else:
-                NameError(f"Unknown atom name: {atom.name}. Check atom selection.")
-        assert len(n_indices) == len(ca_indices) == len(c_indices) == len(o_indices)
-        if len(cb_indices) < len(ca_indices):
-            cb_indices.append(-1)
-        self.indices = {
-            "N": torch.as_tensor(n_indices,  dtype=torch.long),
-            "CA": torch.as_tensor(ca_indices,  dtype=torch.long),
-            "C": torch.as_tensor(c_indices,  dtype=torch.long),
-            "O": torch.as_tensor(o_indices,  dtype=torch.long),
-            "CB": torch.as_tensor(cb_indices,  dtype=torch.long),
-        }
+        """Per-residue index of each backbone atom within the selected atoms.
+
+        Returns one row per residue for each of N, CA, C, O and CB, holding the
+        position of that atom in the coordinate array. CB is -1 where the residue
+        has none (glycine, or a selection that excluded it).
+        """
+        atoms = self._mol.atoms
+        names = np.asarray(atoms.names)
+        slot = np.unique(np.asarray(atoms.resindices), return_inverse=True)[1]
+        n_residues = int(slot.max()) + 1 if len(slot) else 0
+
+        indices = {}
+        for name in ("N", "CA", "C", "O", "CB"):
+            column = np.full(n_residues, -1, dtype=np.int64)
+            found = np.flatnonzero(names == name)
+            column[slot[found]] = found
+            indices[name] = column
+
+        incomplete = [n for n in ("N", "CA", "C", "O") if (indices[n] < 0).any()]
+        if incomplete:
+            n_missing = {n: int((indices[n] < 0).sum()) for n in incomplete}
+            raise ValueError(
+                f"{n_residues} residues selected but some lack backbone atoms "
+                f"{n_missing} (atom: number of residues missing it). Check the atom "
+                f"selection, and that the structure has no incomplete residues."
+            )
+
+        self.indices = {k: torch.as_tensor(v) for k, v in indices.items()}
         self.cb_valid_idx = self.indices["CB"][self.indices["CB"] >= 0]
 
     def _standardise_coordinates(self, coords: np.ndarray) -> np.ndarray:
-        if self.standardize:
+        if self.standardise:
             if not hasattr(self, "std") or not hasattr(self, "mean"):
                 self.std = coords.std()
                 self.mean = coords.mean()
                 print(f"Computed mean: {self.mean}, std: {self.std}")
+            if self.std == 0 :
+                raise ValueError("Standard deviation of coordinates is zero. Check input data.")
             else:
                 print(f"Using pre-computed mean: {self.mean}, std: {self.std}")
         else:
             self.std = 1.0
             self.mean = 0.0
-            print("Not standardizing the dataset.")
+            print("Not standardising the dataset.")
         return (coords - self.mean) / self.std
 
     def _resolve_split_sizes(
@@ -204,7 +207,7 @@ class PDBData:
             "indices": self.indices,
         }
 
-    def import_pdb(self, filename: str | list[str], topology: str | None = None):
+    def import_pdb(self, filename: str | list[str], topology: str | None = None) -> None:
         """
         Load one or multiple trajectory files as MDAnalysis Universe.
 
@@ -250,12 +253,15 @@ class PDBData:
         elif isinstance(atoms, str):
             selection_string = atoms
         else:
-            raise ValueError("Unsuported atom selection")
+            raise ValueError("Unsupported atom selection")
         self._mol.atoms = self._mol.select_atoms(selection_string)
+        # get_atominfo() caches; the selection has just changed the atom set/order
+        if hasattr(self, "atominfo"):
+            del self.atominfo
 
-    def prepare_dataset(self, std=None, mean=None):
+    def prepare_dataset(self, std=None, mean=None) -> torch.Tensor:
         """
-        Prepare dataset from the loaded trajectory data to create a standardized/unstandardized tensor.
+        Prepare dataset from the loaded trajectory data to create a standardised/unstandardised tensor.
         """
         if std is not None and mean is not None:
             self.std = std
@@ -357,7 +363,7 @@ class PDBData:
         manual_seed=None,
         save_indices=False,
         indices_dir='.'
-    ):
+    ) -> tuple[torch.utils.data.DataLoader, torch.utils.data.DataLoader]:
         """
         :param int batch_size: size of the training batches
         :param float validation_split: ratio of data to randomly assigned as validation

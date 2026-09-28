@@ -1,6 +1,10 @@
 """
-`Scoring` holds classes for calculating DOPE and Ramachandran scores.
+`Scoring` holds classes for calculating DOPE and Ramachandran scores, and functions for
+backbone geometry quality (clashes, chain breaks, peptide planarity) and force-field
+strain (bond and angle outliers).
 """
+from .geometry_score import (chain_breaks, clash_score, geometry_summary,
+                             non_planar_peptides)
 class RaiseErrorOnInit:
     module = 'unknown module is creating an ImportError'
     def __init__(self,*args, **kwargs):
@@ -24,3 +28,12 @@ except Exception as e:
         module = e
     import warnings
     warnings.warn(f"{e}. Will not be able to calculate Ramachandran score.")
+
+try:
+    from .forcefield_score import (forcefield_summary, harmonic_params,
+                                   reference_values, strain, strain_summary,
+                                   term_kinds)
+except Exception as e:
+    import warnings
+    warnings.warn(f"{e}. OpenMM is probably not installed, so force-field strain "
+                  f"cannot be scored.")

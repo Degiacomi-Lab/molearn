@@ -68,7 +68,7 @@ class DatasetBundle:
     dataset: torch.Tensor
     std: torch.Tensor | float
     mean: torch.Tensor | float
-    standardize: bool
+    standardise: bool
 
     def scale(self) -> torch.Tensor:
         return self.dataset * self.std + self.mean
@@ -116,14 +116,14 @@ class MolearnAnalysis:
             raise ValueError(
                 f"number of d.o.f differs: {key} has shape {bundle.dataset.shape} while {ref_key} has shape {ref_bundle.dataset.shape}"
             )
-        if ref_bundle.standardize != bundle.standardize:
+        if ref_bundle.standardise != bundle.standardise:
             raise ValueError(
                 f"Standardisation mismatch between dataset {key} and reference dataset {ref_key}"
             )
 
     def _set_metadata(self, data: PDBData, bundle: DatasetBundle) -> None:
-        if not hasattr(self, "standardize"):
-            self.standardize = bundle.standardize
+        if not hasattr(self, "standardise"):
+            self.standardise = bundle.standardise
         if not hasattr(self, "stdval"):
             self.stdval = bundle.std
         if not hasattr(self, "meanval"):
@@ -141,6 +141,25 @@ class MolearnAnalysis:
         assert statistic_check, "Datasets have different mean or standard deviation. Have you set correct mean and std to the PDBData?"
         system_check = (self.n_atoms == bundle.dataset.shape[1] and self.atoms == data.atoms)
         assert system_check, "Datasets have different number of atoms or atom types. Have you selected the same atoms?"
+
+        atom_order = [tuple(a) for a in data.get_atominfo()]
+        if not hasattr(self, "atom_order"):
+            self.atom_order = atom_order
+        elif self.atom_order != atom_order:
+            i = next((k for k in range(min(len(self.atom_order), len(atom_order)))
+                      if self.atom_order[k] != atom_order[k]), 0)
+            raise ValueError(
+                f"dataset atoms are in a different order from the datasets already "
+                f"loaded. First difference at index {i}: expected "
+                f"{self.atom_order[i]}, got {atom_order[i]} (each entry is "
+                f"[name, resname, resid]).\n"
+                f"Index-based analyses (get_inversions, get_bondlengths) would be "
+                f"silently wrong. Reorder the coordinates to match, e.g.\n"
+                f"    ref = reference_data.get_atominfo()\n"
+                f"    pos = {{tuple(a): i for i, a in enumerate(this_data.get_atominfo())}}\n"
+                f"    perm = [pos[tuple(a)] for a in ref]\n"
+                f"    coords = coords[:, perm]"
+            )
 
     def _prepare_bundle(self, data: PDBData) -> DatasetBundle:
         dataset = data.dataset
@@ -160,7 +179,7 @@ class MolearnAnalysis:
             dataset=normalized,
             std=data.std,
             mean=data.mean,
-            standardize=data.standardize,
+            standardise=data.standardise,
         )
 
     def _batch_slices(self, total: int, batch_size: int) -> Iterable[slice]:
@@ -189,7 +208,7 @@ class MolearnAnalysis:
         self._datasets[key] = bundle
         self._set_metadata(pdb_data, bundle)
 
-    def get_dataset(self, key, scale=False):
+    def get_dataset(self, key, scale=False) -> torch.Tensor:
         """
         :param str key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
         :param bool scale: if True, return the dataset scaled (i.e. with mean and std applied)
@@ -198,7 +217,7 @@ class MolearnAnalysis:
         bundle = self._datasets[key]
         return bundle.scale() if scale else bundle.dataset
     
-    def get_encoded(self, key, update=False):
+    def get_encoded(self, key, update=False) -> torch.Tensor:
         """
         :param str key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
         :param bool update: if True, re-encode and overwrite the existing data
@@ -233,7 +252,7 @@ class MolearnAnalysis:
         """
         self._encoded[key] = torch.tensor(coords).float()
 
-    def get_decoded(self, key, update=False, scale=False):
+    def get_decoded(self, key, update=False, scale=False) -> torch.Tensor:
         """
         :param str key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
         :param bool update: if True, re-decode and overwrite the existing data
@@ -268,13 +287,13 @@ class MolearnAnalysis:
         """
         self._decoded[key] = structures
 
-    def num_trainable_params(self):
+    def num_trainable_params(self) -> int:
         """
         :return: number of trainable parameters in the neural network previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_network>`
         """ 
         return sum(p.numel() for p in self.network.parameters() if p.requires_grad)
 
-    def get_error(self, key, align=True):
+    def get_error(self, key, align=True) -> np.ndarray:
         """
         Calculate the reconstruction error of a dataset encoded and decoded by a trained neural network.
 
@@ -304,7 +323,61 @@ class MolearnAnalysis:
             err.append(rmsd)
         return np.array(err)
 
-    def get_dope(self, key, refine=True, **kwargs):
+    def get_atomwise_error(self, key) -> np.ndarray:
+        """
+        Calculates the per-atom RMSD for an entire dataset of conformations.
+
+        :param key: String identifier used to retrieve specific datasets (e.g., 'test', 'val').
+        :return: A 2D numpy array of shape [M, N], where M is the number of frames 
+                and N is the number of atoms. Each element [i, j] represents the 
+                distance (error) of atom j in frame i.
+        """
+        dataset = self.get_dataset(key, scale=True) # [B, n, 3]
+        decoded = self.get_decoded(key, scale=True)
+
+        err = []
+        for i in range(dataset.shape[0]):
+            crd_dataset = as_numpy(dataset[i])
+            crd_decoded = as_numpy(decoded[i])
+            err_i = self.atomwise_rmsd(crd_dataset, crd_decoded)
+
+            err.append(err_i)
+        return np.array(err)
+
+    def atomwise_rmsd(self, m1_tensor, m2_tensor) -> np.ndarray:
+        """
+        Calculate atom-wise RMSD between two [N, 3] numpy arrays.
+        
+        Uses the Kabsch algorithm to align the two structures. Implementation is similar to biobox's implementation of RMSD:
+        https://github.com/Degiacomi-Lab/biobox/blob/1def01a17682eadc19eb97d07b3e0f5a8700c31f/src/biobox/classes/structure.py#L624
+
+        :param m1_tensor: np.array of shape (N, 3)
+        :param m2_tensor: np.array of shape (N, 3)
+        :returns: np.array of shape (N,) containing distances
+        """
+        if m1_tensor.shape != m2_tensor.shape:
+            raise ValueError(f"Shape mismatch: {m1_tensor.shape} vs {m2_tensor.shape}")
+
+        # Center
+        m1 = m1_tensor - np.mean(m1_tensor, axis=0)
+        m2 = m2_tensor - np.mean(m2_tensor, axis=0)
+
+        # Kabsch Algorithm 
+        h = np.dot(m2.T, m1)
+        V, S, Wt = np.linalg.svd(h)
+
+        reflect = np.sign(np.linalg.det(V) * np.linalg.det(Wt))
+        if reflect < 0.0:
+            S[-1] = -S[-1]
+            V[:, -1] = -V[:, -1]
+
+        # Alignment and Distance
+        rotation_matrix = np.dot(V, Wt)
+        m2_aligned = np.dot(m2, rotation_matrix)
+        
+        return np.sqrt(np.sum((m2_aligned - m1)**2, axis=1))
+
+    def get_dope(self, key, refine=True, **kwargs) -> dict[str, np.ndarray]:
         """
         :param str key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
         :param bool refine: if True, refine structures before calculating DOPE score
@@ -318,7 +391,7 @@ class MolearnAnalysis:
 
         return dict(dataset_dope=dataset_dope, decoded_dope=decoded_dope)
 
-    def get_ramachandran(self, key):
+    def get_ramachandran(self, key) -> dict[str, np.ndarray]:
         """
         :param str key: key pointing to a dataset previously loaded with :func:`set_dataset <molearn.analysis.MolearnAnalysis.set_dataset>`
         """
@@ -337,7 +410,101 @@ class MolearnAnalysis:
         )
         return ramachandran
 
-    def get_inversions(self, key):
+    def get_geometry(self, key) -> dict[str, dict[str, float]]:
+        """Clash score, chain breaks and non-planar peptides for a dataset.
+
+        :param str key: key pointing to a dataset or a latent grid
+        :return: dictionary with a ``dataset`` entry when ``key`` names a dataset, and
+            always a ``decoded`` entry
+        """
+        from ..scoring.geometry_score import geometry_summary
+
+        out = {}
+        if key in self._datasets:
+            out["dataset"] = geometry_summary(
+                self.get_dataset(key, scale=True), self.indices)
+        out["decoded"] = geometry_summary(
+            self.get_decoded(key, scale=True), self.indices)
+        return out
+
+    def get_refinement(self, key, indices=None, faspr=None, **kwargs) -> list[dict]:
+        """Pack side chains and minimise the decoded structures of a dataset.
+
+        :param str key: key pointing to a dataset or a latent grid
+        :param indices: optional subset of structure indices; packing and minimisation
+            cost seconds per structure, so a whole grid is rarely worth scoring
+        :param faspr: FASPR executable; falls back to ``$FASPR_BIN`` then ``PATH``
+        :return: one record per structure with ``packable`` and ``minimisable``
+        """
+        from ..refinement import refine
+
+        decoded = self.get_decoded(key, scale=True).numpy()
+        if indices is not None:
+            decoded = decoded[np.asarray(indices)]
+        return refine(decoded, self.mol, faspr=faspr, **kwargs)
+
+    def scan_geometry(self) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Evaluate backbone geometry quality for each decoded grid structure.
+
+        Stores ``Clash_score``, ``Chain_breaks`` and ``Non_planar_peptides`` in
+        :attr:`surfaces`.
+
+        :return: ``(clash_surface, xvals, yvals)``
+        :raises ValueError: if the latent grid has not been initialised
+        """
+        from ..scoring.geometry_score import (chain_breaks, clash_score,
+                                              non_planar_peptides)
+
+        if "grid" not in self._encoded:
+            raise ValueError("Call MolearnAnalysis.setup_grid before scanning geometry")
+        if "Clash_score" not in self.surfaces:
+            decoded = self.get_decoded("grid", scale=True)
+            metrics = {"Clash_score": [], "Chain_breaks": [], "Non_planar_peptides": []}
+            for frame in decoded:
+                f = frame.unsqueeze(0)
+                metrics["Clash_score"].append(
+                    clash_score(f, self.indices)["clashscore"])
+                metrics["Chain_breaks"].append(
+                    chain_breaks(f, self.indices)["frac_broken"])
+                metrics["Non_planar_peptides"].append(
+                    non_planar_peptides(f, self.indices)["frac_nonplanar"])
+            for name, values in metrics.items():
+                self.surfaces[name] = np.array(values).reshape(
+                    self.n_samples, self.n_samples)
+
+        return self.surfaces["Clash_score"], self.xvals, self.yvals
+
+    def scan_refinement(self, indices=None, faspr=None, **kwargs):
+        """Pack and minimise grid structures, storing pass/fail and energy surfaces.
+
+        Stores ``Packable``, ``Minimisable``, ``Energy_after``, ``Bond_outliers`` and
+        ``Angle_outliers`` in :attr:`surfaces`. Points not covered by ``indices`` are
+        ``NaN``.
+
+        :param indices: subset of grid indices to refine; all of them if omitted
+        :return: ``(minimisable_surface, xvals, yvals)``
+        :raises ValueError: if the latent grid has not been initialised
+        """
+        if "grid" not in self._encoded:
+            raise ValueError("Call MolearnAnalysis.setup_grid before scanning refinement")
+        n = self.n_samples ** 2
+        idx = np.arange(n) if indices is None else np.asarray(indices)
+        records = self.get_refinement("grid", indices=idx, faspr=faspr, **kwargs)
+
+        fields = {"Packable": "packable", "Minimisable": "minimisable",
+                  "Energy_after": "e_after", "Bond_outliers": "bond_frac_over_5kT",
+                  "Angle_outliers": "angle_frac_over_5kT"}
+        for name, field in fields.items():
+            flat = np.full(n, np.nan)
+            for pos, rec in zip(idx, records):
+                value = rec.get(field)
+                if value is not None:
+                    flat[pos] = float(value)
+            self.surfaces[name] = flat.reshape(self.n_samples, self.n_samples)
+
+        return self.surfaces["Minimisable"], self.xvals, self.yvals
+
+    def get_inversions(self, key) -> dict[str, np.ndarray]:
         """
         Get the chirality of Cα atoms in a dataset and its decoded counterpart.
         """
@@ -350,26 +517,9 @@ class MolearnAnalysis:
                 % missing
             )
 
-        # Get atom indices
-        mol_df = self.mol.data
-        indices = dict()
-        for resid in mol_df.resid.unique():
-            resname = mol_df[mol_df["resid"] == resid].resname.unique()[0]
-            if not resname == "GLY":
-                N_id = mol_df[
-                    (mol_df["resid"] == resid) & (mol_df["name"] == "N")
-                ].index[0]
-                C_id = mol_df[
-                    (mol_df["resid"] == resid) & (mol_df["name"] == "C")
-                ].index[0]
-                CA_id = mol_df[
-                    (mol_df["resid"] == resid) & (mol_df["name"] == "CA")
-                ].index[0]
-                CB_id = mol_df[
-                    (mol_df["resid"] == resid) & (mol_df["name"] == "CB")
-                ].index[0]
-                indices[resname + str(resid)] = (N_id, CA_id, C_id, CB_id)
-        idx = np.asarray(list(indices.values()))
+        has_cb = self.indices["CB"] >= 0          # False for glycine
+        idx = np.stack([self.indices["N"][has_cb], self.indices["CA"][has_cb],
+                        self.indices["C"][has_cb], self.indices["CB"][has_cb]], axis=1)
 
         if key in self._datasets.keys():
             dataset = self.get_dataset(key, scale=True)
@@ -415,7 +565,7 @@ class MolearnAnalysis:
             return dict(decoded_inversions=np.asarray(results_decode))
 
 
-    def get_bondlengths(self, key):
+    def get_bondlengths(self, key) -> dict[str, dict[str, np.ndarray]]:
         """
         Get backbone bond lengths of a dataset and its decoded counterpart.
         """
@@ -427,26 +577,15 @@ class MolearnAnalysis:
         else:
             raise ValueError("Selected atoms should contain at least N, CA, and C.")
 
-        mol_df = self.mol.data
-        for resid in mol_df.resid.unique():
-            resname = mol_df[mol_df["resid"] == resid].resname.unique()[0]
-
-            N_id = mol_df[(mol_df["resid"] == resid) & (mol_df["name"] == "N")].index[0]
-            CA_id = mol_df[(mol_df["resid"] == resid) & (mol_df["name"] == "CA")].index[0]
-            C_id = mol_df[(mol_df["resid"] == resid) & (mol_df["name"] == "C")].index[0]
-            indices["N-CA"].append((N_id, CA_id))
-            indices["CA-C"].append((CA_id, C_id))
-            if resname != "GLY" and "CB" in self.atoms:
-                CB_id = mol_df[
-                    (mol_df["resid"] == resid) & (mol_df["name"] == "CB")
-                ].index[0]
-                indices["CA-CB"].append((CA_id, CB_id))
-
-            if resid != max(mol_df.resid.unique()):
-                next_N_id = mol_df[
-                    (mol_df["resid"] == (resid + 1)) & (mol_df["name"] == "N")
-                ].index[0]
-                indices["C-N"].append((C_id, next_N_id))
+        N, CA, C = self.indices["N"], self.indices["CA"], self.indices["C"]
+        indices["N-CA"] = list(zip(N, CA))
+        indices["CA-C"] = list(zip(CA, C))
+        # NOTE: consecutive residues are bonded regardless of chain, so a C-N
+        # "bond" is reported across chain breaks. 
+        indices["C-N"] = list(zip(C[:-1], N[1:]))
+        if "CA-CB" in indices:
+            has_cb = self.indices["CB"] >= 0
+            indices["CA-CB"] = list(zip(CA[has_cb], self.indices["CB"][has_cb]))
 
         # Look for the key in self._datasets and self._encoded
         if key in self._datasets.keys():
@@ -472,7 +611,7 @@ class MolearnAnalysis:
                 f"Key {key} not found in _datasets or _encoded. Please load the dataset or setup a grid first."
             )
         
-    def get_dihedrals(self, key):
+    def get_dihedrals(self, key) -> dict[str, dict[str, np.ndarray]]:
         if key in self._datasets.keys():
             dataset = self.get_dataset(key, scale=True)
             decoded = self.get_decoded(key, scale=True)
@@ -493,19 +632,19 @@ class MolearnAnalysis:
         CA = data[:, self.indices['CA'], :].numpy()
         C = data[:, self.indices['C'], :].numpy()
         C_prev = np.roll(C, shift=1, axis=1)
-        C_next = np.roll(C, shift=-1, axis=1)
         N_next = np.roll(N, shift=-1, axis=1)
+        CA_next = np.roll(CA, shift=-1, axis=1)
 
         # φ: C_{i-1}, N_i, CA_i, C_i
         phi = self._dihedrals(C_prev[:, 1:], N[:, 1:], CA[:, 1:], C[:, 1:])
         # ψ: N_i, CA_i, C_i, N_{i+1}
         psi = self._dihedrals(N[:, :-1], CA[:, :-1], C[:, :-1], N_next[:, :-1])
-        # ω: C_i, N_{i+1}, CA_{i+1}, C_{i+1}
-        omega = self._dihedrals(C[:, :-1], N_next[:, :-1], CA[:, :-1], C_next[:, :-1])
+        # ω: CA_i, C_i, N_{i+1}, CA_{i+1}
+        omega = self._dihedrals(CA[:, :-1], C[:, :-1], N_next[:, :-1], CA_next[:, :-1])
         dihedrals = {"Phi": phi, "Psi": psi, "Omega": omega}
 
         if 'CB' in self.atoms:
-            valid = (self.indices['CB'] > 0)
+            valid = (self.indices['CB'] >= 0)   # 0 is a valid atom index
             CB_atoms = self.indices['CB'][valid]
             CB = data[:, CB_atoms, :].numpy()
             N_v  = N[:,  valid, :]
@@ -516,7 +655,7 @@ class MolearnAnalysis:
 
         return dihedrals
     
-    def get_angles(self, key):
+    def get_angles(self, key) -> dict[str, dict[str, np.ndarray]]:
         if key in self._datasets.keys():
             dataset = self.get_dataset(key, scale=True)
             decoded = self.get_decoded(key, scale=True)
@@ -553,7 +692,7 @@ class MolearnAnalysis:
             "O-C-N": O_C_N_next,
         }
         if 'CB' in self.atoms:
-            valid = (self.indices['CB'] > 0)
+            valid = (self.indices['CB'] >= 0)   # 0 is a valid atom index
             CB_atoms = self.indices['CB'][valid]
             CB = data[:, CB_atoms, :].numpy()
             N_v  = N[:,  valid, :]
@@ -565,7 +704,7 @@ class MolearnAnalysis:
             angles['CA-CB-C'] = CA_CB_C
         return angles
 
-    def setup_grid(self, samples=64, bounds_from=None, bounds=None, padding=0.1):
+    def setup_grid(self, samples=64, bounds_from=None, bounds=None, padding=0.1) -> str:
         """
         Define a NxN point grid regularly sampling the latent space.
 
@@ -623,7 +762,7 @@ class MolearnAnalysis:
         xmax, ymax = max(xmax), max(ymax)
         return xmin, xmax, ymin, ymax
 
-    def scan_error_from_target(self, key, index=None, align=True):
+    def scan_error_from_target(self, key, index=None, align=True) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Compute an RMSD surface against a specific target structure.
 
         A dataset must already be registered under ``key`` and a latent space grid
@@ -682,7 +821,7 @@ class MolearnAnalysis:
 
         return self.surfaces[s_key], self.xvals, self.yvals
 
-    def scan_error(self, s_key="Network_RMSD", z_key="Network_z_drift"):
+    def scan_error(self, s_key="Network_RMSD", z_key="Network_z_drift") -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """Evaluate autoencoder consistency over the latent grid.
 
         The method decodes the latent grid, re-encodes the resulting structures and
@@ -712,7 +851,7 @@ class MolearnAnalysis:
                 dataset=decoded,
                 std=std,
                 mean=mean,
-                standardize=getattr(self, "standardize", True),
+                standardise=getattr(self, "standardise", True),
             )
             self._ensure_dataset_shape("grid_decoded", bundle)
             self._datasets["grid_decoded"] = bundle
@@ -824,7 +963,7 @@ class MolearnAnalysis:
         v /= np.linalg.norm(v, axis=-1, keepdims=True)
         w /= np.linalg.norm(w, axis=-1, keepdims=True)
         x = np.sum(v * w, axis=-1)
-        y = np.sum(np.cross(b1, v), axis=-1) * np.sum(w, axis=-1)    
+        y = np.sum(np.cross(b1, v) * w, axis=-1)
         return np.arctan2(y, x)
     
     @staticmethod
@@ -860,7 +999,7 @@ class MolearnAnalysis:
         ]
         return np.array(bond_lengths)
 
-    def get_all_ramachandran_score(self, tensor):
+    def get_all_ramachandran_score(self, tensor) -> dict[str, np.ndarray]:
         """
         Calculate Ramachandran score of an ensemble of atomic conrdinates.
 
@@ -879,7 +1018,7 @@ class MolearnAnalysis:
             rama["total"].append(total)
         return {key: np.array(value) for key, value in rama.items()}
 
-    def get_all_dope_score(self, tensor, refine=True):
+    def get_all_dope_score(self, tensor, refine=True) -> np.ndarray:
         """
         Calculate DOPE score of an ensemble of atom coordinates.
 
@@ -892,7 +1031,7 @@ class MolearnAnalysis:
         results = np.array([r.get() for r in tqdm(results, desc="Calc Dope")])
         return results
 
-    def reference_dope_score(self, frame):
+    def reference_dope_score(self, frame) -> float:
         """
         :param numpy.array frame: array with shape [1, N, 3] with Cartesian coordinates of atoms
         :return: DOPE score
@@ -907,7 +1046,7 @@ class MolearnAnalysis:
         score = atmsel.assess_dope()
         return score
 
-    def scan_dope(self, key=None, refine=True, **kwargs):
+    def scan_dope(self, key=None, refine=True, **kwargs) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Score decoded structures with DOPE over the latent grid.
 
         Each point on the latent grid is decoded, optionally refined, and assessed
@@ -952,7 +1091,7 @@ class MolearnAnalysis:
 
         return self.surfaces[key], self.xvals, self.yvals
 
-    def scan_ramachandran(self):
+    def scan_ramachandran(self) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Evaluate Ramachandran statistics for each decoded grid structure.
 
         The method decodes the latent grid, executes Ramachandran scoring for every
@@ -1029,68 +1168,14 @@ class MolearnAnalysis:
         """
         if "grid" not in self._encoded:
             raise ValueError("Call MolearnAnalysis.setup_grid before running custom scans")
-        decoded = self.get_decoded("grid")
+        decoded = self.get_decoded("grid", scale=True)
         results = []
         for i, j in enumerate(decoded):
-            s = (j.view(1, 3, -1).permute(0, 2, 1) * self.stdval).numpy()
+            s = j.unsqueeze(0).numpy()
             results.append(fct(s, *params))
         self.surfaces[key] = np.array(results).reshape(self.n_samples, self.n_samples)
 
         return self.surfaces[key], self.xvals, self.yvals
-
-    def _relax(
-        self,
-        pdb_file: Union[str, Path],
-        out_path: Union[str, Path],
-        maxIterations: int = 1000,
-    ) -> None:
-        """
-        Model the sidechains and relax generated structure
-
-        :param str pdb_file: path to the pdb file generated by the model
-        :param str out_path: path where the modelled/relaxed structures are be saved
-        """
-
-        if not isinstance(pdb_file, str):
-            pdb_file = str(pdb_file)
-        if not isinstance(out_path, str):
-            out_path = str(out_path)
-
-        # Assume sidechain modelling is required if the number of selected atoms is fewer than 6
-        if len(self.atoms) < 6:
-            modelled_file = out_path + os.sep + (pdb_file.stem + "_modelled.pdb")
-            try:
-                env = Environ()
-                env.libs.topology.read(file="$(LIB)/top_heav.lib")
-                env.libs.parameters.read(file="$(LIB)/par.lib")
-
-                mdl = complete_pdb(env, str(pdb_file))
-                mdl.write(str(modelled_file))
-                pdb_file = modelled_file
-            except Exception as e:
-                print(f"Failed to model {pdb_file}\n{e}")
-        try:
-            relaxed_file = out_path + os.sep + (pdb_file.stem + "_relaxed.pdb")
-            # Read pdb
-            pdb = PDBFile(pdb_file)
-            # Add hydrogens
-            forcefield = ForceField("amber99sb.xml")
-            modeller = Modeller(pdb.topology, pdb.positions)
-            modeller.addHydrogens(forcefield)
-
-            system = forcefield.createSystem(
-                modeller.topology, nonbondedMethod=NoCutoff
-            )
-            integrator = VerletIntegrator(0.001 * picoseconds)
-            simulation = Simulation(modeller.topology, system, integrator)
-            simulation.context.setPositions(modeller.positions)
-            # Energy minimization
-            simulation.minimizeEnergy(maxIterations=maxIterations)
-            positions = simulation.context.getState(getPositions=True).getPositions()
-            # Write energy minimized file
-            PDBFile.writeFile(simulation.topology, positions, open(relaxed_file, "w+"))
-        except Exception as e:
-            print(f"Failed to relax {pdb_file}\n{e}")
 
     def _pdb_file(
         self,
@@ -1119,17 +1204,43 @@ class MolearnAnalysis:
         self,
         crd: np.ndarray[tuple[int, int], np.dtype[np.float64]],
         pdb_path: str | None = None,
-        relax: bool = False,
+        pack: bool = False,
+        minimise: bool = False,
+        faspr: str | None = None,
+        **refine_kwargs,
     ) -> np.ndarray[tuple[int, int, int], np.dtype[np.float64]]:
         """
         Generate a collection of protein conformations, given coordinates in the latent space.
 
+        Decoded structures carry only the selected atoms. ``pack`` adds side chains with
+        FASPR and ``minimise`` relaxes the result with ff14SB and GBn2 implicit solvent
+        (:mod:`molearn.refinement`), writing the refined PDBs to ``pdb_path``.
+
         :param numpy.array crd: coordinates in the latent space, as a (Nx2) array
-        :param str pdb_path: path where to pdb_files should be stored as files named s_i.pdb where i is the index in the crd array
-        :param bool relax: Relax generated structures with energy minimisation. s_i_relaxed.pdb file
+        :param str pdb_path: directory for the generated PDBs, named ``s_i.pdb`` where
+            ``i`` indexes ``crd``. Required when ``pack`` is True.
+        :param bool pack: model side chains onto the generated backbones with FASPR.
+        :param bool minimise: energy-minimise the packed structures. Requires ``pack``.
+        :param str faspr: FASPR executable; falls back to ``$FASPR_BIN`` then ``PATH``.
+        :param refine_kwargs: forwarded to
+            :func:`molearn.refinement.minimise.minimise_structures`.
 
         :return: collection of protein conformations in the Cartesian space (NxMx3, where M is the number of atoms in the protein)
+        :raises ValueError: if ``minimise`` is set without ``pack``, or ``pack`` without
+            ``pdb_path``.
         """
+        if "relax" in refine_kwargs:
+            raise TypeError(
+                "generate() no longer takes `relax`. Use `pack=True, minimise=True` instead, or call get_refinement() for the per-structure packable/minimisable records."
+            )
+        if minimise and not pack:
+            raise ValueError(
+                "minimise=True requires pack=True: the decoded structures carry only "
+                "the selected atoms, and minimising them without modelled side chains "
+                "relaxes a molecule the force field was not given."
+            )
+        if pack and pdb_path is None:
+            raise ValueError("pack=True requires pdb_path, the directory for the PDBs")
         with torch.no_grad():
             key = list(self._datasets)[0]
             bundle = self._datasets[key]
@@ -1150,16 +1261,34 @@ class MolearnAnalysis:
         gen_prot_coords = s * self.stdval + self.meanval
 
         # create pdb files
+        struct_paths = []
         if pdb_path is not None:
+            os.makedirs(pdb_path, exist_ok=True)
             for i, coord in enumerate(
                 tqdm(gen_prot_coords, desc="Generating pdb files")
             ):
-                struct_path = os.path.join(pdb_path, f"s_{i}.pdb")
-                self._pdb_file(coord, struct_path)
+                struct_paths.append(os.path.join(pdb_path, f"s_{i}.pdb"))
+                self._pdb_file(coord, struct_paths[-1])
 
-                # relax and save as new file
-                if relax:
-                    self._relax(struct_path, pdb_path, maxIterations=1000)
+        if pack:
+            # One batched call, not one per structure: minimise_structures builds the
+            # OpenMM System and Context once and reuses them across the list, and
+            # pack_sidechains sizes a process pool to the cores. 
+            # FASPR reads the s_i.pdb files just written
+            from ..refinement import minimise_structures, pack_sidechains
+
+            packed, packable = pack_sidechains(struct_paths, pdb_path, faspr=faspr)
+            n_packed = sum(packable)
+            if not minimise:
+                print(f"packed {n_packed} of {len(packable)} structures -> {pdb_path}")
+            else:
+                records = minimise_structures(packed, out_dir=pdb_path, **refine_kwargs)
+                n_min = sum(r["minimisable"] for r in records)
+                print(f"packed {n_packed} of {len(packable)} structures, minimised "
+                      f"{n_min} of them -> {pdb_path}")
+                if n_min < len(packable):
+                    print("  some structures failed; call get_refinement() for the "
+                          "per-structure records")
 
         return gen_prot_coords
 
@@ -1193,9 +1322,9 @@ class MolearnAnalysis:
         self._cleanup_dope_score()
 
     @property
-    def datasets(self):
+    def datasets(self) -> dict[str, torch.Tensor]:
         return {key: bundle.dataset for key, bundle in self._datasets.items()}
     
     @property
-    def encoded(self):
+    def encoded(self) -> dict[str, torch.Tensor]:
         return dict(self._encoded)
