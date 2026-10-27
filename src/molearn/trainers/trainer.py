@@ -184,21 +184,10 @@ class Trainer:
 
         while epochs_run < max_epochs and not self.progress.converged:
             time1 = time.time()
-            train_logs, _ = self._run_phase(
-                self.train_dataloader,
-                self.train_step,
-                "train",
-                backward=True,
-                dry_run=False,
-            )
+            train_logs = self.train_epoch()
             time2 = time.time()
-            valid_logs, raw_valid = self._run_phase(
-                self.valid_dataloader,
-                self.valid_step,
-                "valid",
-                backward=False,
-                dry_run=False,
-            )
+            with torch.no_grad():
+                valid_logs = self.valid_epoch()
             time3 = time.time()
 
             logs = {**train_logs, **valid_logs}
@@ -233,7 +222,6 @@ class Trainer:
 
             self.epoch += 1
             epochs_run += 1
-            self.results_epoch = raw_valid
 
             if max_epochs is math.inf and patience is None and epochs_run >= 1:
                 break  # safety valve when neither stopping criterion is provided
