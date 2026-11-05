@@ -42,7 +42,8 @@ radii = {
 
 
 class PDBData:
-    def __init__(self, filename=None, topology=None, fix_terminal=False, atoms=None, standardise=True):
+    def __init__(self, filename=None, topology=None, fix_terminal=False, atoms=None, 
+                 standardise=True, allow_missing_terminals=False):
         """
         Create object enabling the manipulation of multi-PDB files into a dataset suitable for training.
 
@@ -51,11 +52,14 @@ class PDBData:
         :param bool fix_terminal: if True, calls :func:`fix_terminal <molearn.data.PDBData.fix_terminal>` after import, and before atomselect
         :param list[str] atoms: if not None, calls :func:`atomselect <molearn.data.PDBData.atomselect>`
         :param bool standardise: if True, standardise the dataset by removing the mean and dividing by the standard deviation.
+        :param bool allow_missing_terminals: if True, permits terminal residues to lack backbone atoms 
+            (useful for capped peptides like ACE-ALA-NME). Default False.
         """
 
         self.filename = filename
         self.topology = topology
         self.standardise = standardise
+        self.allow_missing_terminals = allow_missing_terminals
         if filename is not None:
             self.import_pdb(filename, topology)
             if fix_terminal:
@@ -80,12 +84,15 @@ class PDBData:
             [self._mol.atoms.positions.astype(float) for _ in self._mol.trajectory]
         )
 
-    def _compute_backbone_indices(self):
+    def _compute_backbone_indices(self, allow_missing_terminals=False):
         """Per-residue index of each backbone atom within the selected atoms.
 
         Returns one row per residue for each of N, CA, C, O and CB, holding the
         position of that atom in the coordinate array. CB is -1 where the residue
         has none (glycine, or a selection that excluded it).
+        
+        :param bool allow_missing_terminals: If True, permits terminal residues to lack
+            backbone atoms (useful for capped peptides like ACE-ALA-NME). Default False.
         """
         atoms = self._mol.atoms
         names = np.asarray(atoms.names)
@@ -102,11 +109,43 @@ class PDBData:
         incomplete = [n for n in ("N", "CA", "C", "O") if (indices[n] < 0).any()]
         if incomplete:
             n_missing = {n: int((indices[n] < 0).sum()) for n in incomplete}
-            raise ValueError(
-                f"{n_residues} residues selected but some lack backbone atoms "
-                f"{n_missing} (atom: number of residues missing it). Check the atom "
-                f"selection, and that the structure has no incomplete residues."
-            )
+            
+            if allow_missing_terminals:
+                # Check if missing atoms are only at terminals
+                first_res_missing = [n for n in incomplete if indices[n][0] < 0]
+                last_res_missing = [n for n in incomplete if indices[n][-1] < 0]
+                interior_missing = []
+                
+                for n in incomplete:
+                    missing_mask = indices[n] < 0
+                    # Check if any interior residue (not first or last) is missing this atom
+                    if n_residues > 2 and missing_mask[1:-1].any():
+                        interior_missing.append(n)
+                
+                if interior_missing:
+                    interior_n_missing = {n: int((indices[n] < 0).sum()) - 
+                                         (1 if n in first_res_missing else 0) -
+                                         (1 if n in last_res_missing else 0)
+                                         for n in interior_missing}
+                    raise ValueError(
+                        f"{n_residues} residues selected but interior residues lack "
+                        f"backbone atoms {interior_n_missing}. Terminal residue missing "
+                        f"atoms are allowed (N-terminal missing: {first_res_missing}, "
+                        f"C-terminal missing: {last_res_missing}). Check the atom selection."
+                    )
+                # Terminal missing atoms are acceptable, just warn
+                warnings.warn(
+                    f"Terminal residues lack some backbone atoms (N-terminal missing: {first_res_missing}, "
+                    f"C-terminal missing: {last_res_missing}). This is expected for capped peptides. "
+                    f"Some analyses (e.g., phi/psi at terminals) may be limited."
+                )
+            else:
+                raise ValueError(
+                    f"{n_residues} residues selected but some lack backbone atoms "
+                    f"{n_missing} (atom: number of residues missing it). Check the atom "
+                    f"selection, and that the structure has no incomplete residues. "
+                    f"For capped peptides, use allow_missing_terminals=True."
+                )
 
         self.indices = {k: torch.as_tensor(v) for k, v in indices.items()}
         self.cb_valid_idx = self.indices["CB"][self.indices["CB"] >= 0]
@@ -269,13 +308,22 @@ class PDBData:
 
         self._ensure_mol_loaded()
         coords = self._prepare_coordinates()
-        self._compute_backbone_indices()
+        self._compute_backbone_indices(allow_missing_terminals=self.allow_missing_terminals)
         coords = self._standardise_coordinates(coords)
         self.dataset = torch.from_numpy(coords).float()
         self._atom_names = list(np.unique(self._mol.atoms.names))
-        print(f"Dataset shape: {self.dataset.shape}") # (frames, atoms, 3)
-        return self.dataset
-            
+        
+        # Store backbone indices for trainer to use
+        self.backbone_indices = {
+            'N': self.indices['N'].clone(),
+            'CA': self.indices['CA'].clone(),
+            'C': self.indices['C'].clone(),
+        }
+        
+        print(f"Dataset shape: {self.dataset.shape}")
+        print(f"Backbone indices: N={self.backbone_indices['N'].tolist()}")
+        return self.dataset      
+
     def get_atominfo(self):
         """
         Generate list of all atoms in dataset, where every line contains [atom name, residue name, resid]
