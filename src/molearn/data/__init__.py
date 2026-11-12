@@ -12,5 +12,5 @@
 loaders holds classes for loading data
 """
 
-from .pdb_data import PDBData
+from .pdb_data import PDBData, ResidueWarning
 from .prepare import DataAssembler
