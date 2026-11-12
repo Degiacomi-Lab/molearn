@@ -13,6 +13,7 @@ import MDAnalysis as mda
 sys.path.insert(0, os.path.join(os.path.abspath(os.pardir), "src"))
 warnings.filterwarnings("ignore")
 
+# atom radii
 radii = {
     "H": 1.20,
     "N": 1.55,
@@ -39,6 +40,18 @@ radii = {
     "LI": 1.8,
     ".": 1.8,
 }
+# terminal capping groups, excluded by atomselect
+CAP_RESIDUES = {"ACE", "NME", "NMA", "NHE", "NH2", "CT3"}
+# the 20 amino acids plus their common protonation-state names
+STANDARD_RESIDUES = {
+    "ALA", "ARG", "ASN", "ASP", "CYS", "GLN", "GLU", "GLY", "HIS", "ILE",
+    "LEU", "LYS", "MET", "PHE", "PRO", "SER", "THR", "TRP", "TYR", "VAL",
+    "HID", "HIE", "HIP", "HSD", "HSE", "HSP", "CYX", "CYM", "ASH", "GLH", "LYN",
+}
+
+
+class ResidueWarning(UserWarning):
+    """Issued by :func:`PDBData.atomselect` when terminal caps or non-standard residues are found."""
 
 
 class PDBData:
@@ -242,6 +255,10 @@ class PDBData:
         """
         Select atoms used for training.
 
+        Terminal caps (:data:`CAP_RESIDUES`) are excluded from the selection, so the
+        uncapped equivalence is used. Other non-standard residues are kept. Both issue a
+        :class:`ResidueWarning`.
+
         :param str | list[str] atoms: if str then should be used with the MDAnalysis atom selection syntax
                     `https://userguide.mdanalysis.org/1.1.1/selections.html`
                     or a list like `["CA", ..., "O"]`
@@ -254,10 +271,28 @@ class PDBData:
             selection_string = atoms
         else:
             raise ValueError("Unsupported atom selection")
+
+        resnames = set(self._mol.residues.resnames)
+        caps = sorted(resnames & CAP_RESIDUES)
+        others = sorted(resnames - STANDARD_RESIDUES - CAP_RESIDUES)
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("always", ResidueWarning)
+            if caps:
+                warnings.warn(
+                    f"Terminal caps {caps} found. They are excluded from the atom selection. "
+                    f"Model will be trained on and generate its uncapped equivalence. "
+                    f"You may want to model them back for future simulations.",
+                    ResidueWarning, stacklevel=2,
+                )
+                selection_string = f"({selection_string}) and not resname {' '.join(caps)}"
+            if others:
+                warnings.warn(
+                    f"Non-standard residues {others} found. They are kept in atom selection. "
+                    f"Trainers that make use of force field parameters may fail. ",
+                    ResidueWarning, stacklevel=2,
+                )
         self._mol.atoms = self._mol.select_atoms(selection_string)
-        # get_atominfo() caches; the selection has just changed the atom set/order
-        if hasattr(self, "atominfo"):
-            del self.atominfo
 
     def prepare_dataset(self, std=None, mean=None) -> torch.Tensor:
         """
@@ -272,24 +307,8 @@ class PDBData:
         self._compute_backbone_indices()
         coords = self._standardise_coordinates(coords)
         self.dataset = torch.from_numpy(coords).float()
-        self._atom_names = list(np.unique(self._mol.atoms.names))
         print(f"Dataset shape: {self.dataset.shape}") # (frames, atoms, 3)
         return self.dataset
-            
-    def get_atominfo(self):
-        """
-        Generate list of all atoms in dataset, where every line contains [atom name, residue name, resid]
-        """
-        if not hasattr(self, "atominfo"):
-            assert hasattr(
-                self, "_mol"
-            ), "You need to call import_pdb before getting atom info"
-
-            self.atominfo = np.asarray(
-                [[i.name, i.resname, int(i.resid)] for i in self._mol.atoms],
-                dtype=object,
-            )
-        return self.atominfo
 
     def frame(self):
         """
@@ -445,13 +464,33 @@ class PDBData:
         stats = {"mean": float(self.mean), "std": float(self.std)}
         with open(filename, "w") as f:
             json.dump(stats, f)
-            
+
+    def get_atominfo(self):
+        """
+        Generate list of all atoms in dataset, where every line contains [atom name, residue name, resid]
+        """
+        return self.atominfo
+    
     @property
     def atoms(self):
-        self._ensure_dataset_prepared()
-        if hasattr(self, "_atom_names"):
-            return self._atom_names
-        return list(np.unique(self.frame().data["name"].values))  # all the atoms
+        """
+        Sorted unique atom names in the current selection
+        """
+        self._ensure_mol_loaded()
+        return sorted(set(self._mol.atoms.names))
+
+    @property
+    def atominfo(self):
+        """
+        [atom name, residue name, resid] for every selected atom, built from the current selection
+        """
+        self._ensure_mol_loaded()
+        atoms = self._mol.atoms
+        info = np.empty((len(atoms), 3), dtype=object)
+        info[:, 0] = atoms.names
+        info[:, 1] = atoms.resnames
+        info[:, 2] = atoms.resids.tolist()  # keep plain ints
+        return info
 
     @property
     def mol(self):
