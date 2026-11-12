@@ -1,9 +1,11 @@
 import unittest
 import sys
 import os
+import tempfile
+import warnings
 
 sys.path.insert(0, os.path.join(os.path.dirname(sys.path[0]), "src"))
-from molearn.data import PDBData
+from molearn.data import PDBData, ResidueWarning
 
 import torch
 
@@ -128,6 +130,43 @@ class Test_PDBData_atomselect_no_hydrogen(Test_PDBData_Basics):
         atoms = self.data.atoms
         self.assertTrue(len(atoms) == 37)
         self.assertTrue(all([isinstance(atom, str) for atom in atoms]))
+
+
+class Test_PDBData_residue_warnings(unittest.TestCase):
+    backbone = ["N", "CA", "C", "O", "CB"]
+
+    def test_caps_excluded(self):
+        data = PDBData()
+        data.import_pdb("ACE_ALA_NME.pdb")
+        with self.assertWarnsRegex(ResidueWarning, "Terminal caps"):
+            data.atomselect(atoms=self.backbone + ["CH3"])
+        data.prepare_dataset()
+        self.assertEqual(set(data.get_atominfo()[:, 1]), {"ALA"})
+        self.assertEqual(data.dataset.shape, (1, 5, 3))
+        for name in ("N", "CA", "C", "O", "CB"):
+            self.assertTrue((data.indices[name] >= 0).all())
+
+    def test_nonstandard_kept(self):
+        with open("ACE_ALA_NME.pdb") as f:
+            pdb = f.read().replace("ALA", "MSE")
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "ACE_MSE_NME.pdb")
+            with open(path, "w") as f:
+                f.write(pdb)
+            data = PDBData()
+            data.import_pdb(path)
+            with self.assertWarnsRegex(ResidueWarning, "Non-standard residues \\['MSE'\\]"):
+                data.atomselect(atoms=self.backbone)
+            data.prepare_dataset()
+        self.assertEqual(set(data.get_atominfo()[:, 1]), {"MSE"})
+        self.assertEqual(data.dataset.shape, (1, 5, 3))
+
+    def test_standard_no_warning(self):
+        data = PDBData()
+        data.import_pdb("MurD_test.dcd", "MurD_test_topo.pdb")
+        with warnings.catch_warnings(record=True) as caught:
+            data.atomselect(atoms=self.backbone)
+        self.assertFalse([w for w in caught if issubclass(w.category, ResidueWarning)])
 
 
 if __name__ == "__main__":
