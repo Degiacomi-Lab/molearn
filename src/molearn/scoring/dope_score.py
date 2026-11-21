@@ -44,22 +44,22 @@ class DOPE_Score:
         self.fast_mdl = complete_pdb(env, tmp_file)
         self.fast_fs = selection(self.fast_mdl.chains[0])
         self.fast_ss = self.fast_fs.only_atom_types(atoms)
-        atom_residue = _mol.get_data(columns=['name', 'resname', 'resid'])
+        atom_residue = _mol.get_data(columns=['name', 'resname', 'resid', "chain"])
         atom_order = []
         first_index = next(iter(self.fast_ss)).residue.index
         offset = atom_residue[0, 2]-first_index
         for i, j in enumerate(self.fast_ss):
             if i < len(atom_residue):
                 for j_residue_name in alternate_residue_names.get(j.residue.name, (j.residue.name,)):
-                    if [j.name, j_residue_name, j.residue.index+offset] == list(atom_residue[i]):
+                    if [j.name, j_residue_name, j.residue.index+offset, j.residue.chain.name] == list(atom_residue[i]):
                         atom_order.append(i)
                     else:
-                        where_arg = (atom_residue==(np.array([j.name, j_residue_name, j.residue.index+offset], dtype=object))).all(axis=1)
+                        where_arg = (atom_residue==(np.array([j.name, j_residue_name, j.residue.index+offset, j.residue.chain.name], dtype=object))).all(axis=1)
                         where = np.where(where_arg)[0]
                         if len(where)==0:
                             if (j_residue_name, j.name) in self.atom_map:
                                 alt_residue_name, alt_name = self.atom_map[(j_residue_name, j.name)]
-                                where_arg = (atom_residue==(np.array([alt_name, alt_residue_name, j.residue.index+offset], dtype=object))).all(axis=1)
+                                where_arg = (atom_residue==(np.array([alt_name, alt_residue_name, j.residue.index+offset, j.residue.chain.name], dtype=object))).all(axis=1)
                                 where = np.where(where_arg)[0]
                             else:
                                 print(f'Cant find {j.name} in the atoms {atom_residue[atom_residue[:,2]==j.residue.index+offset]} try adding a mapping to DOPE_Score.atom_map')
@@ -70,6 +70,7 @@ class DOPE_Score:
         for i, j in enumerate(self.fast_ss):
             if i<len(atom_residue):
                 assert _mol.data['name'][atom_order[i]]==j.name or reverse_map[(_mol.data['resname'][atom_order[i]], _mol.data['name'][atom_order[i]])][1]==j.name
+                assert _mol.data['chain'][atom_order[i]] == j.residue.chain.name
         self.cg = ConjugateGradients()
         os.remove(tmp_file)
 
