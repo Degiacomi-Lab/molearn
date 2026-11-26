@@ -15,6 +15,7 @@ trainers holds classes for training networks
 import warnings
 
 from .trainer import FitResult, Trainer, TrainerProgress, TrainingFailure
+from .trainer_RNA import Trainer_RNA
 from .torch_physics_trainer import Torch_Physics_Trainer
 
 
@@ -45,6 +46,7 @@ except ImportError as e:
 
 __all__ = [
     "Trainer",
+    "Trainer_RNA",
     "TrainerProgress",
     "FitResult",
     "TrainingFailure",

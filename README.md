@@ -16,6 +16,23 @@ Included in this repository are the following:
 * Software documentation (API and FAQ) in the `docs` folder, also accessible at [molearn.readthedocs.io](https://molearn.readthedocs.io/).
 * Example training and analysis scripts, along with example data, in the `examples` folder
 
+## Table of contents
+
+- [Dependencies](#dependencies)
+  - [Required Packages](#required-packages)
+  - [Optional Packages](#optional-packages)
+- [Installation](#installation)
+  - [Anaconda installation from conda-forge](#anaconda-installation-from-conda-forge)
+  - [Clone the repo and manually install](#clone-the-repo-and-manually-install)
+  - [Using molearn without installation](#using-molearn-without-installation)
+- [Usage](#usage)
+- [RNA workflows](#rna-workflows)
+  - [Input files and training](#input-files-and-training)
+  - [Reconstruction and transition analysis](#reconstruction-and-transition-analysis)
+  - [Optional refinement with SimRNA](#optional-refinement-with-simrna)
+- [References](#references)
+- [Contributing](#contributing)
+
 ## Dependencies
 
 The current version of molearn only supports Linux, and has verified to support Python >=3.9.
@@ -86,6 +103,113 @@ import molearn
 * See example scripts and notebooks in the `examples` folder.
 <!-- * Jupyter notebook tutorials describing the usage of a trained neural network are available [here](https://github.com/Degiacomi-Lab/molearn_notebook). -->
 * software API and a FAQ page are available at [molearn.readthedocs.io](https://molearn.readthedocs.io/).
+
+## RNA workflows
+
+Molearn uses FoldingNet to learn a two-dimensional latent space from RNA
+conformations on this branch. Each nucleotide is represented by five sites:
+`P, C4′, N9, C2, C6` for purines and `P, C4′, N1, C2, C4` for pyrimidines.
+Ensembles can come from different conditions, such as apo and holo, and must
+have matching selected RNA sites. The examples align the ensembles to a
+shared reference and save that reference and the coordinate normalization
+statistics for analysis.
+
+### Input files and training
+
+- **Molecular dynamics (MD).** Supply a trajectory and its matching PDB topology
+  for each ensemble. Set the `trajectory` and `topology` fields in
+  [`examples/rna_ensembles.json`](examples/rna_ensembles.json). The loader allows
+  separate topologies for systems with different ligands.
+- **SimRNA.** Supply a matching `.trc`, `.hdr`, and coarse-grained `.pdb`
+  for each ensemble. Set the `trc`, `hdr`, and `pdb` fields in
+  [`examples/simrna_ensembles.json`](examples/simrna_ensembles.json). The
+  reader uses the PDB to identify the physical sites and excludes trailing
+  dummy sites from training.
+
+The manifest paths are examples. Point them to your own inputs using paths
+relative to the repository root or absolute paths. Use `--ensemble-config`
+to supply an alternate manifest. Run the following commands from the
+repository root in your Molearn environment, using the names in your manifest.
+
+For MD training with coordinate reconstruction loss:
+
+```bash
+python examples/cb_foldingnet_basic_RNA.py --ensembles apo CTI --frame-step 1
+```
+
+For SimRNA training with a reproducible 90/10 split within each ensemble:
+
+```bash
+python examples/simrna_foldingnet_basic_RNA.py \
+  --ensembles apo holo --frame-step 1 --batch-size 16 \
+  --split-by-ensemble --validation-split 0.1
+```
+
+Both examples use `--frame-step 1` to read all frames and train with validation
+early stopping by default. Supply `--max-epochs` to run a fixed number of
+epochs, or `--dry-run` to check loading and reconstruction before training.
+The SimRNA trainer can add a differentiable local statistical potential for
+backbone distances, angles, and coupled η/θ pseudo-torsions. Set
+`--simrna-sp-weight` to a positive value to enable it. This training loss uses
+the tables installed with Molearn.
+
+### Reconstruction and transition analysis
+
+Use the [RNA analysis notebook](examples/analysis_example_RNA.ipynb) for MD
+results. For the SimRNA run above, the analysis script finds the checkpoint
+and statistics under `examples/`:
+
+```bash
+python examples/analysis_SimRNA_RNA.py \
+  --ensembles apo holo --start-state apo --end-state holo \
+  --trajectory-part validation --frame-step 1 --transition-states 10
+```
+
+Use `--frame-step 1` in both commands to evaluate the exact validation frames
+saved by training. These frames guide checkpoint selection. For an independent
+evaluation, use a separate trajectory excluded from training and validation.
+Use `--checkpoint` and `--statistics` to specify files explicitly when
+analysing a model stored elsewhere.
+
+The script reports reconstruction RMSD, compares original and reconstructed
+compactness, plots the latent space with PCA, and writes connected
+coarse-grained PDBs. Ten intermediate states produce twelve PDBs including the
+two decoded endpoints. The default endpoints are representative frames of the
+selected ensembles. Use `--start-frame` and `--end-frame` to select frames
+by zero-based index within the analysed subsets, or `--start-pdb` and
+`--end-pdb` to encode matching RNA PDB structures as endpoints. These paths
+are latent-space interpolations. Use `--detail-analysis` for additional
+diagnostic plots and `--show` for interactive display.
+
+See the [Slurm guide](slurm/README.md) for running the RNA examples with
+Docker-built images and Apptainer on a cluster.
+
+### Optional refinement with SimRNA
+
+To refine generated RNA conformations locally, download the standalone SimRNA
+package for your platform from the [SimRNA downloads page](https://genesilico.pl/software/simrna)
+or the standalone package link on the [SimRNAweb About page](https://iimcb.genesilico.pl/SimRNAweb/about).
+
+Extract the package and copy its executables and complete `data/` directory
+into `SimRNA/` at the root of the Molearn repository. Keep the
+`SimRNA` executable and the `SimRNA_trafl2pdbs` converter directly
+beside `data/`.
+
+```text
+molearn/
+└── SimRNA/
+    ├── SimRNA
+    ├── SimRNA_trafl2pdbs
+    └── data/
+```
+
+Append `--simrna-refine --simrna-iterations 1000` to the SimRNA analysis
+command to run restrained refinement on each generated structure. Molearn
+selects the lowest unrestrained-energy frame from each refinement, combines
+the selected frames into a TRAFL path, and uses `SimRNA_trafl2pdbs` for
+all-atom reconstruction. For a custom installation, specify
+`--simrna-executable` and `--simrna-data-directory` and keep the converter
+beside the executable.
 
 ## References ##
 

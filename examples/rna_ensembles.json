@@ -1,0 +1,14 @@
+{
+  "apo": {
+    "topology": "yjdf/apo/yjdf_gapo_rnaonly_set1.pdb",
+    "trajectory": "yjdf/apo/yjdf_gapo_aligned_rnaonly_set1.nc"
+  },
+  "CTI": {
+    "topology": "yjdf/holo/yjdf_com_m_rnaonly_set1.pdb",
+    "trajectory": "yjdf/holo/yjdf_com_m_aligned_rnaonly_set1.nc"
+  },
+  "LUM": {
+    "topology": "yjdf/holo/LUM/yjdf_lum_rnaonly_set1.pdb",
+    "trajectory": "yjdf/holo/LUM/yjdf_lum_aligned_rnaonly_set1.nc"
+  }
+}

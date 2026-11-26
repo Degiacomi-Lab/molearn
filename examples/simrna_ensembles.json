@@ -1,0 +1,22 @@
+{
+  "apo": {
+    "trc": "yjdf_simrna/apo/BSyjdf_GGARBS_apo_16M_minES_TOTAL.trc",
+    "hdr": "yjdf_simrna/apo/BSyjdf_GGARBS_apo_16M.hdr",
+    "pdb": "yjdf_simrna/apo/BSyjdf_GGARBS_apo_16M.pdb"
+  },
+  "holo": {
+    "trc": "yjdf_simrna/holo/BSyjdf_GGARBS_holo_16M_minES_TOTAL_0.1.trc",
+    "hdr": "yjdf_simrna/holo/BSyjdf_GGARBS_holo_16M.hdr",
+    "pdb": "yjdf_simrna/holo/BSyjdf_GGARBS_holo_16M.pdb"
+  },
+  "all": {
+    "trc": "yjdf_simrna/yjdf_all_minE.trc",
+    "hdr": "yjdf_simrna/yjdf_all_minE.hdr",
+    "pdb": "yjdf_simrna/yjdf_all.pdb"
+  },
+  "all_holo": {
+    "trc": "yjdf_simrna/yjdf_all_holo_minE.trc",
+    "hdr": "yjdf_simrna/yjdf_all_holo_minE.hdr",
+    "pdb": "yjdf_simrna/yjdf_all.pdb"
+  }
+}

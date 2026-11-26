@@ -1,0 +1,27 @@
+name: base
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - salilab
+dependencies:
+  - python=3.11
+  - pip
+  - numpy
+  - pandas
+  - scipy
+  - matplotlib
+  - pytorch
+  - pytorch-cuda=12.4
+  - mdanalysis
+  - biobox
+  - openmm
+  - openmmtorchplugin
+  - modeller
+  - mdtraj
+  - plotly
+  - ipywidgets
+  - nglview
+  - tk
+  - pip:
+      - geomloss
