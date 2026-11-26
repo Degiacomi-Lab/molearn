@@ -13,3 +13,5 @@
 """
 from .openmm_thread import openmm_energy, OpenmmPluginScore, OpenMMPluginScoreSoftForceField
 from .torch_protein_energy import TorchProteinEnergy
+from .openmm_simrna_RNA import OpenMMSimRNABaseline_RNA
+from .simrna_sp_RNA import SimRNALocalStatisticalPotential_RNA

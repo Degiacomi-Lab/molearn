@@ -263,6 +263,50 @@ TSWLatexianTemp*
 # standalone packages
 *.sta
 
+# RNA data
+yjdf/
+yjdf_2/
+yjdf_simrna/
+examples/data_statistics.json
+examples/data_statistics_RNA.json
+examples/data_statistics_RNA_CTI.json
+examples/data_statistics_RNA_CTI_LUM_aligned.json
+examples/data_statistics_RNA_CTI_aligned.json
+examples/data_statistics_SimRNA_RNA_apo_holo_aligned.json
+examples/foldingnet_RNA_CTI_LUM_aligned_checkpoints/
+examples/foldingnet_RNA_CTI_aligned_checkpoints/
+examples/foldingnet_RNA_CTI_checkpoints/
+examples/foldingnet_RNA_checkpoints/
+examples/foldingnet_SimRNA_RNA_apo_holo_aligned_checkpoints/
+examples/analysis_RNA_CTI/
+examples/analysis_RNA_CTI_LUM_CTI/
+examples/analysis_SimRNA_RNA_apo_holo_apo_to_holo/
+molearn.zip
+molearn_with_optuna.zip
+results_c4_distance/
+results_cosmopolitan10092026/
+trial_00028/
+molearn_hpc_optuna.zip
+results_md_distance_RNA_apo_CTI/
+results_md_distance_RNA_apo_CTI_latent2/
+results_md_distance_RNA_dry_run/
+results_md_local_sp/
+results_simrna_local_sp/
+results_simrna_local_sp2D/
+results_simrna_local_sp_2D/
+results_simrna_statistical/
+results_triangular_RNA/
+to_send/
+trial_00026/
+analysis_diffusion_SimRNA_RNA_apo_holo/
+qrnas_refined.pdb
+results_diffusion_RNA_apo_CTI/
+results_diffusion_SimRNA_RNA_apo_holo/
+trial_00004/
+trial_00032/
+trial_00058/
+
+
 # extra
 wop*
 mp*

@@ -11,7 +11,9 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     package_dir={"": "src"},
     packages=setuptools.find_packages(where='src',),
-    package_data={'molearn':['parameters/*']},
+    package_data={
+        'molearn': ['parameters/*', 'parameters/simrna_sp_RNA/*']
+    },
     #install_requires = ["numpy", "torch>=1.7", "biobox"],
     #extras_require={
     #    "gui": ["MDAnalysis", "plotly", "nglview"],

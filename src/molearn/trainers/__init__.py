@@ -15,6 +15,11 @@ trainers holds classes for training networks
 import warnings
 
 from .trainer import FitResult, Trainer, TrainerProgress, TrainingFailure
+from .trainer_RNA import Trainer_RNA
+from .distance_matrix_ae_trainer_RNA import (
+    DistanceMatrix_AE_Trainer_Config_RNA,
+    DistanceMatrix_AE_Trainer_RNA,
+)
 from .torch_physics_trainer import Torch_Physics_Trainer
 
 
@@ -48,6 +53,9 @@ __all__ = [
     "TrainerProgress",
     "FitResult",
     "TrainingFailure",
+    "Trainer_RNA",
+    "DistanceMatrix_AE_Trainer_RNA",
+    "DistanceMatrix_AE_Trainer_Config_RNA",
     "Torch_Physics_Trainer",
     "OpenMM_Physics_Trainer",
     "Sinkhorn_Trainer",

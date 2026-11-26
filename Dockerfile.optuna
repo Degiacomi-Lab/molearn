@@ -1,0 +1,6 @@
+FROM molearn-rna:latest
+
+ARG MAMBA_DOCKERFILE_ACTIVATE=1
+RUN micromamba run --name base python -m pip install --no-cache-dir \
+    "optuna>=4,<6" psycopg2-binary
+COPY --chown=$MAMBA_USER:$MAMBA_USER examples/optuna_simrna_RNA.py ./examples/

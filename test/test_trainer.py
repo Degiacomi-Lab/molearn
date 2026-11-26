@@ -106,6 +106,23 @@ class TestTrainers(unittest.TestCase):
         self.assertTrue(os.path.exists(result.best_checkpoint))
         self.assertTrue(os.path.exists(result.log_file))
 
+    def test_run_until_converge_honours_max_epochs(self):
+        trainer = Trainer(device=self.device)
+        trainer.set_autoencoder(TinyAutoEncoder, n_atoms=5, latent_dim=2)
+        trainer.set_data(self.data, batch_size=4)
+        trainer.prepare_optimiser(lr=1e-3)
+
+        result = trainer.run_until_converge(
+            patience=10,
+            max_epochs=2,
+            log_folder=os.path.join(self.tmp_dir, "bounded_logs"),
+            checkpoint_folder=os.path.join(self.tmp_dir, "bounded_ckpts"),
+            verbose=False,
+        )
+
+        self.assertEqual(result.epochs_run, 2)
+        self.assertFalse(trainer.progress.converged)
+
     def test_load_checkpoint_best_selects_lowest_loss_filename(self):
         trainer = Trainer(device=self.device)
         trainer.set_autoencoder(TinyAutoEncoder, n_atoms=5, latent_dim=2)

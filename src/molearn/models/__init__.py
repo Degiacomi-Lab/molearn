@@ -14,5 +14,10 @@
 
 from .foldingnet import AutoEncoder as Foldingnet_AutoEncoder
 from .distance_matrix_ae import DistanceMatrix_AE
+from .distance_matrix_ae_RNA import DistanceMatrix_AE_RNA
 
-__all__ = ["Foldingnet_AutoEncoder", "DistanceMatrix_AE"]
+__all__ = [
+    "Foldingnet_AutoEncoder",
+    "DistanceMatrix_AE",
+    "DistanceMatrix_AE_RNA",
+]

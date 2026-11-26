@@ -417,12 +417,15 @@ class Trainer:
         log_folder="checkpoint_folder",
         checkpoint_folder="checkpoint_folder",
         verbose=None,
+        max_epochs=None,
     ):
         """
         Train until convergence. This method will call :func:`Trainer.run <molearn.trainers.Trainer.run>` in a loop until the training has converged.
         The training will stop when the validation loss has not improved for ``patience`` epochs.
 
         :param int patience: how many epochs to wait before stopping training if the validation loss has not improved.
+        :param int max_epochs: optional safety ceiling. If given, training stops
+            after this many epochs even when convergence has not yet been reached.
         :param str log_filename: the name of the log file.
         :param str log_folder: the folder in which the log file will be saved.
         :param str checkpoint_folder: the folder in which the checkpoint will be saved.
@@ -430,7 +433,7 @@ class Trainer:
     :returns: :class:`FitResult` with information about the training run.
         """
         return self._train_loop(
-            max_epochs=None,
+            max_epochs=max_epochs,
             patience=patience,
             log_filename=log_filename,
             log_folder=log_folder,

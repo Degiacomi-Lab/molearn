@@ -1,0 +1,12 @@
+{
+  "apo": {
+    "trc": "yjdf_simrna/apo/BSyjdf_GGARBS_apo_16M_minES_TOTAL.trc",
+    "hdr": "yjdf_simrna/apo/BSyjdf_GGARBS_apo_16M.hdr",
+    "pdb": "yjdf_simrna/apo/BSyjdf_GGARBS_apo_16M.pdb"
+  },
+  "holo": {
+    "trc": "yjdf_simrna/holo/BSyjdf_GGARBS_holo_16M_minES_TOTAL_0.1.trc",
+    "hdr": "yjdf_simrna/holo/BSyjdf_GGARBS_holo_16M.hdr",
+    "pdb": "yjdf_simrna/holo/BSyjdf_GGARBS_holo_16M.pdb"
+  }
+}

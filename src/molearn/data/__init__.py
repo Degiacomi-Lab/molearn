@@ -13,4 +13,6 @@ loaders holds classes for loading data
 """
 
 from .pdb_data import PDBData
+from .pdb_data_RNA import PDBData_RNA
+from .simrna_data_RNA import SimRNAData_RNA
 from .prepare import DataAssembler
